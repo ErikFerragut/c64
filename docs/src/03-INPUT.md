@@ -12,13 +12,13 @@ Create `src/colors.asm`:
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
-!byte $0c, $08                  ; Pointer to next BASIC line
-!byte $0a, $00                  ; Line number 10
-!byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
-!byte $00                       ; End of line
-!byte $00, $00                  ; End of BASIC program
+; BASIC standard stub: 10 SYS 2064
+!byte $0c, $08
+!byte $0a, $00
+!byte $9e
+!text "2064"
+!byte $00
+!byte $00, $00
 
 * = $0810                       ; Code start (2064 decimal)
 
@@ -62,14 +62,7 @@ done:
 
 Unlike Chapter 2's program, which ran once and returned, this program runs in a **loop**: read a key, act on it, read another key. It keeps going until you press Q.
 
-```
-loop → read key → no key?  → go back to loop
-                → key "1"? → set black, go back to loop
-                → key "2"? → set red, go back to loop
-                → key "3"? → set blue, go back to loop
-                → key "Q"? → quit
-                → other?   → ignore, go back to loop
-```
+![Program flowchart](images/ch3-flowchart.png)
 
 This read-process-repeat pattern is the basis of every interactive program.
 
@@ -155,13 +148,11 @@ These test the Zero flag from the most recent instruction that set it:
 
 The "fall-through" behavior is important: when the branch isn't taken, execution simply continues to the next line.
 
-**JMP** (Jump) always goes to the target — no condition, no questions:
+**JMP** (Jump) *always* goes to the target without checking any conditions:
 
 ```asm
 jmp loop        ; Always jump to "loop"
 ```
-
-The difference: BEQ/BNE *might* jump depending on the flags. JMP *always* jumps.
 
 ### The CMP/BNE Pattern
 
@@ -268,6 +259,8 @@ The address shown (`$e5cd` or similar) is where the CPU was when you interrupted
 
 The breakpoint address `$0815` is right after `jsr $ffe4` (3 bytes at $0810) and `beq loop` (2 bytes at $0813). You can verify addresses with `d 0810`.
 
+On real hardware (and in normal emulation), writing to `$D020` takes effect immediately — the border changes on the very next pixel the VIC-II draws. In the monitor, behavior depends on how you're stepping: single-stepping with `z` may not visually update the display between steps, but running to a breakpoint with `g` does, because the emulator runs full emulation up to the break. Either way, typing `r` will show the new value in the register dump.
+
 ## Exercises
 
 ### Exercise 1: All Eight Colors
@@ -289,6 +282,36 @@ Add keys 4 through 8 using more colors from the [palette](A-REF.md):
 Modify each key handler to set both the border (`$d020`) and the background (`$d021`) to different colors. For example, key 1 could set a black border with a white background.
 
 **Hint:** Each handler needs two LDA/STA pairs — one for each color register. This is the same technique as [Chapter 2, Exercise 2](02-HELLO.md#exercise-2-two-colors).
+
+### Exercise 3 (Challenge): Shorter Code
+
+The approach developed in this chapter was chosen for maximum clarity and simplicity. However, it results in more bytes than are required. Each branch includes an `lda` and `sta` pair of steps. What if we could get the value directly from the input character?
+
+Try this:
+- Wait for a character
+- If it's the Q character then quit
+- If it's bigger than `#$3f` then go back to waiting
+- If it's smaller than `#$30` then go back to waiting
+- Write the character into the border color location
+- Go back to waiting
+
+This approach is harder to understand. It requires > and < comparisons instead of just equality checks. Also, it writes numbers that are outside the range 0-15 into the border color, using the fact that only the last four bits are used. Also, it doesn't worry about choosing good characters for input. Here, `#$30` through `#$39` are the digits 0--9. But what are `#$3A` through `#$3F`? You'll have to check a PETSCII listing to find them.
+
+To test if accumulator is less than `#$30`, you can do this:
+```asm
+  cmp #$30            ; compare A to #$30 leaving A unchanged
+  bcc less_than       ; branch if A < $30
+```
+
+Similarly, you can check if the accumulator >= #$40. 
+```asm
+  cmp #$40
+  bcs greater         ; branch if A >= $40 (same as A > $3F)
+```
+
+There's no "branch if greater" instruction on the 6502. Instead you reframe the condition `A > $3F` as `A >= $40`. Then you can use the BCS operator.
+
+This exercise previews the carry-based branching covered in detail in [Chapter 7](07-BUCKET.md).
 
 Solutions are in [Appendix C](C-SOLUTIONS.md).
 

@@ -89,7 +89,7 @@ Almost all data movement goes through the accumulator. To set a memory location 
 
 C64 programs loaded from disk need a BASIC stub to auto-run. When you `LOAD "*",8,1` and `RUN`, BASIC executes the stub which jumps to your machine code.
 
-BASIC programs always start at address $0801. This is where the C64 expects to find BASIC program data, and it's where `LOAD "*",8,1` places the file contents (after stripping the 2-byte load address header).
+BASIC programs always start at address $0801. When you `LOAD "*",8,1`, the `,1` tells the LOAD command to read the 2-byte address header from the PRG file and load the data at that address. The header comes from our `* = $0801` directive — ACME's `-f cbm` flag writes it into the file. If we changed the directive to `* = $1000`, the file would load at $1000 instead. We use $0801 because that's where BASIC's `RUN` command expects to find programs.
 
 | Bytes | Meaning |
 |-------|---------|
@@ -102,7 +102,7 @@ BASIC programs always start at address $0801. This is where the C64 expects to f
 
 This creates the equivalent of typing: `10 SYS 2064`
 
-When BASIC runs this, `SYS 2064` transfers execution to address 2064 ($0810), where our machine code begins.
+When BASIC runs this, `SYS 2064` transfers execution to address 2064 ($0810), where our machine code begins. It also stores the return location on the stack to be accessed later.
 
 ### The Machine Code
 
@@ -158,6 +158,8 @@ Color values are 0-15 (see [Appendix A](A-REF.md) for the full palette). Here ar
 | 0 | Black |
 | 6 | Blue (default background) |
 | 14 | Light Blue (default border) |
+
+For numbers bigger than 15, VIC-II will just use the low four bits.
 
 ## Compiling
 
@@ -237,6 +239,4 @@ Solutions are in [Appendix C](C-SOLUTIONS.md).
 
 ## Next Steps
 
-- Experiment with other VIC-II registers at `$d000-$d02e` (see [Appendix B](B-VIC-II.md))
-- Try setting sprite colors even though no sprites are visible yet
-- Read the next chapter when available
+- This is just the beginning! Go on to the next chapter.

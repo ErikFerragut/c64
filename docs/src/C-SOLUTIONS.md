@@ -100,6 +100,33 @@ not_one:
 
 Pick any color combinations you like. Notice that we need a fresh `lda` before each `sta $d021` because the previous `sta $d020` didn't change A — but the *first* `lda` loaded the border color, not the background color.
 
+### Exercise 3 (Challenge): Shorter Code
+
+```asm
+loop:
+    jsr $ffe4               ; Call GETIN: read key into A
+    beq loop                ; No key pressed? Keep waiting
+
+    cmp #$51                ; Was it "Q"?
+    beq done                ;   Yes: quit
+
+    cmp #$30                ; Was it < $30?
+    bcc loop                ; Yes: out of range, ignore
+
+    cmp #$40                ; Was it >= $40?
+    bcs loop                ; Yes: out of range, ignore
+
+    sta $d020               ; Store directly to border color
+    jmp loop                ; Back to waiting
+
+done:
+    rts                     ; Return to BASIC
+```
+
+The Q check must come first — if it came after the range check, "Q" ($51) would be rejected by the `cmp #$40` / `bcs` before we ever test for it.
+
+The trick is that PETSCII digits `$30`-`$39` map to the values 0-9 in their low nibble, and VIC-II ignores the high nibble of color values (it only uses bits 0-3). So storing `$32` into `$D020` has the same effect as storing `$02` — both set the border to red. The "extra" keys `$3A`-`$3F` (`:`, `;`, `<`, `=`, `>`, `?` in PETSCII) map to colors 10-15, giving access to all 16 colors with zero branching per key.
+
 ## Chapter 4: Joystick Control
 
 ### Exercise 1: EOR Toggle
