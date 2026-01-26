@@ -8,6 +8,8 @@ A hands-on guide to learning 6502 assembly on the Commodore 64 using modern tool
 2. [Hello World](02-HELLO.md) - Your first C64 program explained byte-by-byte
 3. [Keyboard Input](03-INPUT.md) - Read keys, change colors, loops and branching
 4. [Joystick Control](04-JOYSTICK.md) - Read joystick input with bit masking
+5. [Loops and Timing](05-STROBE.md) - Delay loops with X and Y registers
+6. [Your First Sprite](06-SPRITE.md) - Display a hardware sprite on screen
 
 ## Appendices
 
