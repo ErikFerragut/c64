@@ -3,15 +3,56 @@
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+* = $0880                       ; Ball sprite (pointer = 34)
+
+ball_data:
+    !fill 21, 0                 ; Rows 0-6: empty
+    ; Row 7: top of ball
+    !byte %00000000,%00111100,%00000000
+    ; Row 8
+    !byte %00000000,%01111110,%00000000
+    ; Rows 9-12: middle
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    ; Row 13
+    !byte %00000000,%01111110,%00000000
+    ; Row 14: bottom of ball
+    !byte %00000000,%00111100,%00000000
+    ; Rows 15-20: empty
+    !fill 18, 0
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 ; --- Zero page variables ---
 
@@ -167,7 +208,7 @@ start_game:
     lda #0
     sta sprite_x_h
 
-    lda #56                     ; Bucket at $0E00 (56 x 64)
+    lda #33                     ; Bucket at $0840 (33 x 64)
     sta $07f8
     lda #224
     sta $d001
@@ -175,7 +216,7 @@ start_game:
     sta $d027
 
     ; Setup balls (sprites 1-3)
-    lda #57                     ; Ball at $0E40 (57 x 64)
+    lda #34                     ; Ball at $0880 (34 x 64)
     sta $07f9
     sta $07fa
     sta $07fb
@@ -874,38 +915,3 @@ yourscore_text:
 
 retry_text:
     !scr "PRESS FIRE TO RETRY",0
-
-; --- Sprite Data ---
-* = $0e00                       ; Bucket sprite (pointer = 56)
-
-bucket_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    !byte $0f,$ff,$f0
-
-* = $0e40                       ; Ball sprite (pointer = 57)
-
-ball_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00
-    !byte $00,$3c,$00
-    !byte $00,$7e,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$7e,$00
-    !byte $00,$3c,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00

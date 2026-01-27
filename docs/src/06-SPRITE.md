@@ -50,25 +50,21 @@ done:
 * = $0840                       ; 64-byte aligned (pointer = 33)
 
 sprite_data:
-    ; Rows 0-11: empty
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
+    !fill 36, 0                                           ; Rows 0-11: empty
     ; Row 12-13: rim (full width)
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
     ; Row 14-15: body tapers
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
     ; Row 16-17
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
     ; Row 18-19
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
     ; Row 20: bottom
-    !byte $0f,$ff,$f0
+    !byte %00001111,%11111111,%11110000
 ```
 
 The program sets up one sprite and loops forever. No input, no animation — just a bucket shape sitting at the bottom center of the screen. Let's break down every piece.
@@ -190,7 +186,7 @@ The registers follow a pattern — each sprite gets two consecutive bytes:
 | 6 | $D00C | $D00D |
 | 7 | $D00E | $D00F |
 
-The visible screen area starts at approximately X=24, Y=50 and ends around X=343, Y=249. Our X=172 centers the 24-pixel-wide sprite horizontally: 24 + (320 - 24) / 2 = 172. Y=229 places it near the bottom.
+The coordinate system has its origin (0, 0) at the top-left corner. X increases to the right, Y increases downward — standard for screen graphics, though the opposite of math-class Y axes. The visible screen area starts at approximately X=24, Y=50 and ends around X=343, Y=249. Our X=172 centers the 24-pixel-wide sprite horizontally: 24 + (320 - 24) / 2 = 172. Y=229 places it near the bottom.
 
 Since X coordinates can go up to 343 but a single byte only holds 0-255, there's a ninth bit for each sprite's X position stored in register `$D010`. We don't need it here since 172 fits in one byte, but we'll use it in the next chapter.
 

@@ -3,15 +3,56 @@
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+* = $0880                       ; Ball sprite (pointer = 34)
+
+ball_data:
+    !fill 21, 0                 ; Rows 0-6: empty
+    ; Row 7: top of ball
+    !byte %00000000,%00111100,%00000000
+    ; Row 8
+    !byte %00000000,%01111110,%00000000
+    ; Rows 9-12: middle
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    ; Row 13
+    !byte %00000000,%01111110,%00000000
+    ; Row 14: bottom of ball
+    !byte %00000000,%00111100,%00000000
+    ; Rows 15-20: empty
+    !fill 18, 0
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Bucket X position, low byte
 sprite_x_h = $03                ; Bucket X position, high byte
@@ -38,7 +79,7 @@ NUM_BALLS  = 3                  ; Number of falling balls
     lda #0
     sta sprite_x_h
 
-    lda #52                     ; Bucket data at $0D00 (52 x 64)
+    lda #33                     ; Bucket data at $0840 (33 x 64)
     sta $07f8
 
     lda #224
@@ -49,7 +90,7 @@ NUM_BALLS  = 3                  ; Number of falling balls
 
     ; --- Initialize ball sprites (sprites 1-3) ---
 
-    lda #53                     ; Ball data at $0D40 (53 x 64)
+    lda #34                     ; Ball data at $0880 (34 x 64)
     sta $07f9                   ; Sprite 1 pointer
     sta $07fa                   ; Sprite 2 pointer
     sta $07fb                   ; Sprite 3 pointer
@@ -62,34 +103,25 @@ NUM_BALLS  = 3                  ; Number of falling balls
     lda #$05                    ; Green
     sta $d02a                   ; Sprite 3
 
-    ; Set initial Y positions (staggered)
+    ; Set initial positions (staggered)
     lda #50
     sta ball_y_tbl
+    sta $d003                   ; Sprite 1 Y
     lda #120
     sta ball_y_tbl+1
+    sta $d005                   ; Sprite 2 Y
     lda #190
     sta ball_y_tbl+2
-
-    ; Set initial X positions using SID random
-    lda #$ff
-    sta $d40e
-    sta $d40f
-    lda #$80
-    sta $d412
-
-    ; Write initial positions to VIC-II
-    lda ball_y_tbl
-    sta $d003                   ; Sprite 1 Y
-    lda ball_y_tbl+1
-    sta $d005                   ; Sprite 2 Y
-    lda ball_y_tbl+2
     sta $d007                   ; Sprite 3 Y
 
-    lda ball_x_tbl
+    lda #80
+    sta ball_x_tbl
     sta $d002                   ; Sprite 1 X
-    lda ball_x_tbl+1
+    lda #160
+    sta ball_x_tbl+1
     sta $d004                   ; Sprite 2 X
-    lda ball_x_tbl+2
+    lda #120
+    sta ball_x_tbl+2
     sta $d006                   ; Sprite 3 X
 
     ; --- Enable sprites 0-3 ---
@@ -169,7 +201,7 @@ ri_right:
 
 animate_balls:
     ldx #0                      ; Ball index (0, 1, 2)
-    stx $0a                     ; VIC register offset (0, 2, 4)
+    stx $10                     ; VIC register offset (0, 2, 4)
 
 ab_loop:
     ; Increment Y position for this ball
@@ -177,7 +209,7 @@ ab_loop:
     lda ball_y_tbl,x
 
     ; Write Y to VIC-II (sprite 1+x Y register)
-    ldy $0a                     ; VIC register offset
+    ldy $10                     ; VIC register offset
     sta $d003,y                 ; $D003, $D005, $D007
 
     ; Check if past bottom
@@ -192,7 +224,7 @@ ab_loop:
     ; Missed! Lose a life — save registers before subroutine calls
     txa
     pha                         ; Save ball index
-    lda $0a
+    lda $10
     pha                         ; Save VIC offset
 
     dec lives
@@ -200,7 +232,7 @@ ab_loop:
     jsr sfx_miss
 
     pla
-    sta $0a                     ; Restore VIC offset
+    sta $10                     ; Restore VIC offset
     pla
     tax                         ; Restore ball index
 
@@ -223,11 +255,11 @@ ab_do_reset:
     and caught                  ; Clear just this ball's bit
     sta caught
 
-    ; Reset Y to top (staggered slightly)
+    ; Reset Y to top
     lda #50
     sta ball_y_tbl,x
 
-    ldy $0a
+    ldy $10
     sta $d003,y                 ; Update VIC Y register
 
     ; Random X position
@@ -242,8 +274,8 @@ ab_do_reset:
 
 ab_next:
     inx
-    inc $0a
-    inc $0a                     ; VIC offset += 2
+    inc $10
+    inc $10                     ; VIC offset += 2
     cpx #NUM_BALLS
     bne ab_loop
     rts
@@ -252,14 +284,14 @@ ab_next:
 
 check_collisions:
     lda $d01e                   ; Read collision register (clears on read)
-    sta $0b                     ; Save collision state
+    sta $11                     ; Save collision state
     and #%00000001              ; Was sprite 0 involved?
     beq cc_done                 ; No collision with bucket
 
     ; Check each ball
     ldx #0
 cc_loop:
-    lda $0b
+    lda $11
     and bit_mask_spr,x          ; Check if sprite 1+x collided
     beq cc_next
 
@@ -273,6 +305,10 @@ cc_loop:
     ora bit_mask,x
     sta caught
 
+    ; Save X before subroutine calls
+    txa
+    pha
+
     ; Add 10 points
     lda score_lo
     clc
@@ -283,6 +319,9 @@ cc_loop:
     sta score_hi
     jsr show_score
     jsr sfx_catch
+
+    pla
+    tax
 
 cc_next:
     inx
@@ -486,38 +525,3 @@ ball_y_tbl:
 ; Ball X positions
 ball_x_tbl:
     !byte 80, 160, 120
-
-; --- Sprite Data ---
-* = $0d00                       ; Bucket sprite (pointer = 52)
-
-bucket_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    !byte $0f,$ff,$f0
-
-* = $0d40                       ; Ball sprite (pointer = 53)
-
-ball_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00
-    !byte $00,$3c,$00
-    !byte $00,$7e,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$7e,$00
-    !byte $00,$3c,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00

@@ -1,14 +1,33 @@
 # Chapter 13: Difficulty Progression
 
-The balls start slow and get faster as your score climbs. This chapter introduces raster timing for smooth animation and a level system that ramps up the challenge.
+The game gets harder as you play. Balls fall faster at higher scores, and a level indicator tracks your progress. We also replace the delay loop with **raster timing** -- synchronizing to the display hardware for smooth, consistent speed.
 
-## The Code
+## Building on Chapter 12
 
-Create `src/levels.asm`:
+Copy the previous chapter's source as a starting point:
 
-The program extends the multi-ball game with level progression and raster-synchronized timing. The full source is in `src/levels.asm`. Here are the key new sections:
+```bash
+cp src/multi.asm src/levels.asm
+```
 
-### Raster Wait (Replaces Delay Loop)
+We make several changes to add difficulty progression and proper timing.
+
+**New variables.** Add `level` and `fall_speed` to the zero page assignments:
+
+```asm
+level      = $08                ; Current level (1-4)
+fall_speed = $09                ; Pixels per frame for balls
+```
+
+Initialize them at the start of the program alongside the other game state:
+
+```asm
+    lda #1
+    sta level
+    sta fall_speed              ; Start: 1 pixel per frame
+```
+
+**Replace delay_loop with wait_vblank.** Remove the `delay_loop` subroutine entirely and add this in its place:
 
 ```asm
 wait_vblank:
@@ -23,88 +42,70 @@ wv_low:
     rts
 ```
 
-### Level Check
-
-```asm
-check_level:
-    lda score_lo
-    cmp #150
-    bcs cl_4                    ; Score >= 150: level 4
-    cmp #100
-    bcs cl_3                    ; Score >= 100: level 3
-    cmp #50
-    bcs cl_2                    ; Score >= 50:  level 2
-    ; ... set fall_speed based on level ...
-```
-
-### Variable Fall Speed
-
-```asm
-    lda ball_y_tbl,x
-    clc
-    adc fall_speed              ; Add 1, 2, or 3 pixels per frame
-    sta ball_y_tbl,x
-```
-
-## Code Explanation
-
-### The Raster and Vertical Blank
-
-The C64's display is drawn by an electron beam that scans across the screen line by line, 50 times per second (PAL) or 60 times per second (NTSC). The current scan line is stored in two places:
-
-- `$D012` — raster line low 8 bits (0-255)
-- Bit 7 of `$D011` — raster line bit 8
-
-Together they give a 9-bit value (0-311 on PAL, 0-262 on NTSC). Lines 0-250 draw the visible screen. Lines 251+ are the **vertical blank** (vblank) — the beam is below the visible area, returning to the top.
-
-Our `wait_vblank` subroutine waits for line 251:
-
-```asm
-wait_vblank:
-    lda $d011
-    and #%10000000              ; Check bit 8 of raster
-    bne wait_vblank             ; If set, raster > 255 — wait
-wv_low:
-    lda $d012
-    cmp #251
-    bcc wv_low                  ; Less than 251? Keep waiting
-    rts
-```
-
-First we wait for the raster to be in the 0-255 range (bit 8 clear), then we wait for it to reach 251. This ensures we detect the transition to vblank rather than catching it while it's already past.
-
-### Why Raster Timing?
-
-Until now we used a delay loop to control speed. Delay loops have a problem: they waste CPU time doing nothing, and their timing depends on how much work the game loop does. Adding more game logic makes the loop slower, changing the game speed.
-
-Raster timing is different. The vblank happens at a fixed interval — every 20ms on PAL (50 Hz) or 16.7ms on NTSC (60 Hz). By waiting for vblank at the start of each loop iteration, we lock the game to a consistent frame rate regardless of how much work we do:
+The game loop calls `jsr wait_vblank` instead of `jsr delay_loop`, and now includes `jsr check_level`:
 
 ```asm
 loop:
-    jsr wait_vblank             ; Wait for next frame
-    jsr read_input              ; ~50 cycles
-    jsr animate_balls           ; ~300 cycles
-    jsr check_collisions        ; ~200 cycles
-    jsr update_bucket           ; ~50 cycles
-    jsr check_level             ; ~30 cycles
-    jmp loop                    ; Total: ~630 cycles
+    ; Wait for vertical blank (raster line 251)
+    jsr wait_vblank
+
+    jsr read_input
+    jsr animate_balls
+    jsr check_collisions
+    jsr update_bucket
+    jsr check_level
+    jmp loop
 ```
 
-The game logic takes about 630 cycles. A PAL frame is ~19,656 cycles. That means 97% of the frame is spent waiting — the CPU has plenty of headroom. Even if we doubled the game logic, the speed would remain constant. The delay loop is gone completely.
+**Variable-speed ball movement.** In `animate_balls`, replace the single `inc` with an addition using `fall_speed`:
 
-### Level Progression
+```asm
+ab_loop:
+    ; Move ball down by fall_speed pixels
+    lda ball_y_tbl,x
+    clc
+    adc fall_speed              ; Add speed (1, 2, 3, or 4)
+    sta ball_y_tbl,x
+```
 
-The `check_level` subroutine compares the score against thresholds and sets the fall speed:
+This makes balls fall 1 pixel per frame at level 1 and up to 3 pixels per frame at level 4.
 
-| Score | Level | Fall Speed | Effect |
-|-------|-------|------------|--------|
-| 0-49 | 1 | 1 pixel/frame | Gentle start |
-| 50-99 | 2 | 2 pixels/frame | Noticeably faster |
-| 100-149 | 3 | 2 pixels/frame | Same speed, more pressure |
-| 150+ | 4 | 3 pixels/frame | Frantic |
+**Faster bucket.** The bucket now moves 2 pixels per frame instead of 1, keeping it playable at higher ball speeds:
+
+```asm
+ri_left:
+    lda sprite_x
+    sec
+    sbc #2                      ; Move 2 pixels (faster bucket)
+    sta sprite_x
+    lda sprite_x_h
+    sbc #0
+    sta sprite_x_h
+    rts
+
+ri_right:
+    lda sprite_x
+    clc
+    adc #2                      ; Move 2 pixels
+    sta sprite_x
+    lda sprite_x_h
+    adc #0
+    sta sprite_x_h
+    rts
+```
+
+**Level checking.** A new subroutine compares the score against thresholds and sets the level and fall speed:
 
 ```asm
 check_level:
+    ; Level 1: 0-49    speed 1
+    ; Level 2: 50-99   speed 2
+    ; Level 3: 100-149 speed 2
+    ; Level 4: 150+    speed 3
+
+    lda score_hi
+    bne cl_high                 ; Score >= 256? Level 4
+
     lda score_lo
     cmp #150
     bcs cl_4
@@ -112,38 +113,181 @@ check_level:
     bcs cl_3
     cmp #50
     bcs cl_2
-    ; Level 1: speed 1
+
+    ; Level 1
     lda #1
     sta fall_speed
-    ; ...
+    lda #1
+    jmp cl_set
+
+cl_2:
+    lda #2
+    sta fall_speed
+    lda #2
+    jmp cl_set
+
+cl_3:
+    lda #2
+    sta fall_speed
+    lda #3
+    jmp cl_set
+
+cl_high:
+cl_4:
+    lda #3
+    sta fall_speed
+    lda #4
+
+cl_set:
+    cmp level                   ; Changed?
+    beq cl_done
+    sta level
+    jsr show_level
+    jsr sfx_level               ; Level-up sound
+cl_done:
+    rts
 ```
 
-We use CMP with BCS (Branch if Carry Set, meaning >=) to check thresholds in descending order. The first threshold that matches determines the level. When the level changes, we play an ascending tone to signal the increase.
-
-The fall speed is applied in `animate_balls`:
+**Level-up sound effect.** A quick ascending beep that sweeps frequency from `$10` to `$20`:
 
 ```asm
-    lda ball_y_tbl,x
-    clc
-    adc fall_speed              ; Move 1, 2, or 3 pixels
-    sta ball_y_tbl,x
+sfx_level:
+    ; Quick ascending beep
+    lda #$09
+    sta $d405
+    lda #$00
+    sta $d406
+    lda #$10
+    sta $d401
+    lda #$11
+    sta $d404
+    ldx #$10
+sl_asc:
+    stx $d401
+    ldy #$80
+sl_d:
+    dey
+    bne sl_d
+    inx
+    cpx #$20
+    bne sl_asc
+    lda #$10
+    sta $d404
+    rts
 ```
 
-Instead of `inc` (always +1), we use `adc` with the speed variable. At level 4 with speed 3, each ball crosses the screen in about 67 frames — just over a second on PAL. That's fast enough to be challenging but still playable.
+**HUD additions.** The `draw_hud` subroutine now writes "LVL:" at screen positions `$0410`-`$0413`, and a `show_level` subroutine displays the current level digit at `$0414`:
+
+```asm
+    lda #12                     ; L
+    sta $0410
+    lda #22                     ; V
+    sta $0411
+    lda #12                     ; L
+    sta $0412
+    lda #58                     ; :
+    sta $0413
+```
+
+```asm
+show_level:
+    lda level
+    clc
+    adc #$30
+    sta $0414
+    rts
+```
+
+The full source is in `src/levels.asm`.
+
+## Code Explanation
+
+### The Raster and Vertical Blank
+
+The C64's VIC-II chip draws the screen by sweeping an electron beam left-to-right, top-to-bottom, 50 times per second on PAL systems (60 on NTSC). The current scan line is exposed as a **9-bit raster counter** split across two registers:
+
+| Register | Purpose |
+|----------|---------|
+| `$D012` | Raster line, bits 0-7 (low byte) |
+| `$D011` | Bit 7 = raster line bit 8 (high bit) |
+
+On a PAL C64, the raster counts from 0 to 311 (312 lines total). Lines 0-50 and 251-311 are in the **vertical blank** (vblank) -- the beam is off-screen, returning to the top. The visible screen occupies lines 51-250.
+
+Our `wait_vblank` subroutine waits for line 251, the first line after the visible area:
+
+```asm
+wait_vblank:
+    lda $d011                   ; Check bit 7 (raster >= 256?)
+    and #%10000000
+    bne wait_vblank             ; If set, raster is 256-311: wait for wrap
+
+wv_low:
+    lda $d012                   ; Read low byte
+    cmp #251
+    bcc wv_low                  ; Below 251: keep waiting
+    rts
+```
+
+The two-step check is necessary because the raster counter is 9 bits wide. We first wait for bit 8 to clear (raster < 256), then wait for the low byte to reach 251. This ensures we catch line 251 exactly once per frame, not line 507 (which doesn't exist but would match the low byte alone).
+
+### Why Raster Timing?
+
+Chapter 12 used a delay loop -- nested `DEX`/`DEY` loops that waste a fixed number of CPU cycles:
+
+```asm
+delay_loop:
+    ldx #$04
+dl_outer:
+    ldy #$ff
+dl_inner:
+    dey
+    bne dl_inner
+    dex
+    bne dl_outer
+    rts
+```
+
+This has two problems:
+
+1. **Speed depends on game logic.** If the game loop takes longer one frame (processing a collision, playing a sound), the delay stays the same length, so the total frame time increases. The game stutters.
+
+2. **Speed depends on the machine.** PAL and NTSC C64s run at slightly different clock speeds, and the delay loop runs differently on each.
+
+Raster timing fixes both. The VIC-II reaches line 251 at a fixed interval (every 20ms on PAL, every 16.7ms on NTSC). If our game logic finishes before line 251, `wait_vblank` idles until the beam catches up. If it takes too long, the next frame starts immediately. The result is a **rock-solid frame rate** locked to the display refresh.
+
+As a bonus, the time spent waiting in `wait_vblank` is visible headroom. The game logic takes roughly 630 cycles per frame. A PAL frame is about 19,656 cycles. That means about 97% of the frame is spent waiting -- the CPU has plenty of room to grow. When we add more features, we can measure how much headroom remains (see Exercise 1).
+
+### Level Progression
+
+The `check_level` subroutine uses a cascade of `CMP`/`BCS` (Compare / Branch if Carry Set) instructions to classify the score into levels:
+
+```asm
+    lda score_lo
+    cmp #150
+    bcs cl_4                    ; Score >= 150: level 4
+    cmp #100
+    bcs cl_3                    ; Score >= 100: level 3
+    cmp #50
+    bcs cl_2                    ; Score >= 50: level 2
+    ; Otherwise: level 1
+```
+
+`CMP` subtracts the operand from A and sets the carry flag if A >= operand (no borrow needed). `BCS` branches if carry is set. By testing from highest threshold to lowest, each `BCS` peels off a range:
+
+| Score | Level | Fall Speed |
+|-------|-------|------------|
+| 0-49 | 1 | 1 px/frame |
+| 50-99 | 2 | 2 px/frame |
+| 100-149 | 3 | 2 px/frame |
+| 150+ | 4 | 3 px/frame |
+
+The `cl_set` code compares the new level against the current level. If it changed, it updates the display and plays the level-up sound. This avoids re-triggering the sound effect every frame.
+
+For scores above 255 (where `score_hi` is nonzero), we jump straight to level 4. The 8-bit `score_lo` can only distinguish values 0-255, so high scores always map to the maximum difficulty.
 
 ### Faster Bucket Movement
 
-To keep the game fair at higher speeds, the bucket now moves 2 pixels per frame instead of 1:
-
-```asm
-ri_left:
-    lda sprite_x
-    sec
-    sbc #2                      ; 2 pixels per frame
-    sta sprite_x
-```
-
-This is a simple change — replace `#1` with `#2` — but it makes a meaningful difference in playability. The bucket can cross the screen twice as fast, which it needs to when balls are falling at speed 3.
+With balls falling 2-3 pixels per frame at higher levels, the old 1-pixel bucket speed feels sluggish. Doubling it to 2 pixels keeps the game playable. The joystick code simply changes `sbc #1` / `adc #1` to `sbc #2` / `adc #2`. Because the bucket position is 16-bit (for the X MSB), we still propagate the borrow/carry to the high byte.
 
 ## Compiling
 
@@ -151,30 +295,62 @@ This is a simple change — replace `#1` with `#2` — but it makes a meaningful
 acme -f cbm -o src/levels.prg src/levels.asm
 ```
 
+The compiled program is **1100 bytes**.
+
 ## Running
 
 ```bash
 vice-jz.x64sc -autostart src/levels.prg
 ```
 
-The game starts at level 1 with slow-falling balls. As you catch more (every 50 points), the level increases and balls fall faster. The HUD shows the current level. Notice the smooth, consistent animation — the raster timing eliminates the jitter from delay loops.
+The game plays like Chapter 12 at first, but as your score crosses 50, 100, and 150, the balls visibly accelerate. The "LVL:" indicator on the HUD updates, and you hear an ascending beep at each transition. The game now has a difficulty curve -- easy enough to start learning, challenging enough to keep playing.
 
 ## Exercises
 
 ### Exercise 1: Vblank Timing Test
 
-Add a border color change at the start and end of the game logic (before and after the subroutine calls in the game loop). Set border to red before the work and back to light blue after. The red stripe shows exactly how much of each frame the CPU spends on game logic. As you add more code in future chapters, this stripe grows — when it reaches the bottom of the screen, you've run out of frame time.
+Measure how much CPU time your game logic uses by changing the border color at the start and end of each frame:
 
-**Hint:** `lda #$02` / `sta $d020` before the subroutine calls, and `lda #$0e` / `sta $d020` after. The width of the red band on screen shows CPU utilization.
+```asm
+loop:
+    jsr wait_vblank
+    inc $d020               ; Change border color (start of logic)
+    jsr read_input
+    jsr animate_balls
+    jsr check_collisions
+    jsr update_bucket
+    jsr check_level
+    dec $d020               ; Restore border color (end of logic)
+    jmp loop
+```
+
+The colored stripe in the border shows exactly how many raster lines your code consumes. A thin stripe means plenty of headroom; a stripe that fills the screen means you are running out of time. This is the standard C64 profiling technique.
+
+**Hint:** Use different colors for different subroutines to see which one costs the most. For example, set `$D020` to red before `animate_balls` and green before `check_collisions`.
 
 ### Exercise 2: Speed Curve
 
-Instead of step-wise level transitions, make speed increase smoothly. Every 20 points, increment `fall_speed` by 1 (up to a max of 4). Use `lda score_lo` / `lsr` / `lsr` / `lsr` / `lsr` to divide score by 16, then add 1 for the minimum speed. Clamp at 4 with `cmp #5` / `bcc ok` / `lda #4`.
+Instead of discrete speed jumps at level thresholds, implement a smooth speed increase. Divide the score by 64 using `LSR` (Logical Shift Right) to get a speed value that rises gradually:
 
-**Hint:** `lsr` four times divides by 16. Score 0-15 gives speed 1, 16-31 gives speed 2, 32-47 gives speed 3, 48+ gives speed 4. This gives a smoother difficulty curve.
+```asm
+    lda score_lo
+    lsr                     ; / 2
+    lsr                     ; / 4
+    lsr                     ; / 8
+    lsr                     ; / 16
+    lsr                     ; / 32
+    lsr                     ; / 64
+    clc
+    adc #1                  ; Minimum speed of 1
+    sta fall_speed
+```
+
+At score 0 the speed is 1; at score 64 it becomes 2; at score 128 it becomes 3; at score 192 it becomes 4. The balls accelerate smoothly instead of in sudden jumps.
+
+**Hint:** This ignores `score_hi`. For a version that handles scores above 255, shift `score_hi` bits into the result using `ROR` (Rotate Right through carry) on a temporary copy.
 
 Solutions are in [Appendix C](C-SOLUTIONS.md).
 
 ## Next Steps
 
-We have a complete game with challenge progression. The last chapter adds the finishing touches — a title screen, game over screen with high score, and the ability to replay. It's the full Bucket Brigade experience.
+The gameplay loop is now complete -- multiple balls, increasing difficulty, raster-locked timing. What's missing is the wrapper: a title screen to greet the player, a game over screen to show the final score, and the ability to play again. In the next chapter, we build the complete game with a state machine that ties it all together.

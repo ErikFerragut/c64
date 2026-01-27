@@ -268,6 +268,8 @@ The key change is `ldx speed` instead of `ldx #$20`. The `#` means "immediate" (
 
 Note that `speed` is defined with `!byte $20` — it's a memory location initialized to 32. INC/DEC work on it just like they work on `$d020`.
 
+One gotcha: INC and DEC wrap around silently. If speed reaches 0 and you DEC again, it wraps to 255 — an extremely long delay. If it reaches 255 and you INC, it wraps to 0 — and `ldx #0` followed by `dex`/`bne` will loop 256 times instead of zero. Clamping the value (e.g., don't DEC below 1, don't INC above some maximum) would make this more robust.
+
 ### Exercise 2: Two-Color Strobe
 
 Replace `inc $d020` with an EOR toggle:
@@ -522,7 +524,7 @@ Set up sprite 2 as an avoid-ball:
 
 ```asm
     ; Initialization
-    lda #42                     ; Same ball shape (or different)
+    lda #34                     ; Same ball shape (pointer 34 = $0880)
     sta $07fa                   ; Sprite 2 pointer
     lda #$02                    ; Red (danger!)
     sta $d029                   ; Sprite 2 color

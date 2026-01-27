@@ -3,15 +3,36 @@
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Sprite X position, low byte
 sprite_x_h = $03                ; Sprite X position, high byte (0 or 1)
@@ -25,7 +46,7 @@ sprite_x_h = $03                ; Sprite X position, high byte (0 or 1)
     sta sprite_x_h
 
     ; Set sprite 0 data pointer
-    lda #35                     ; Sprite data at $08C0 (35 x 64)
+    lda #33                     ; Sprite data at $0840 (33 x 64)
     sta $07f8                   ; Sprite 0 pointer
 
     ; Enable sprite 0
@@ -104,27 +125,3 @@ delay_inner:
     bne delay_outer             ; Loop until X = 0
 
     jmp loop                    ; Back to game loop
-
-; --- Sprite Data ---
-* = $08c0                       ; 64-byte aligned (pointer = 35)
-
-sprite_data:
-    ; Rows 0-11: empty
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    ; Row 12-13: rim (full width)
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    ; Row 14-15: body tapers
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    ; Row 16-17
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    ; Row 18-19
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    ; Row 20: bottom
-    !byte $0f,$ff,$f0

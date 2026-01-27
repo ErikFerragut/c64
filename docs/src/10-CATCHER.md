@@ -1,168 +1,233 @@
 # Chapter 10: Catch Game
 
-The game mechanics reverse — now you *want* to catch the falling object. Miss it and you lose a life. Catch it and you score 10 points. This chapter adds a HUD with score display and 16-bit score arithmetic.
+The game gets a proper HUD. This chapter adds 16-bit scoring, "SCORE:" and "LIVES:" labels drawn to screen memory, and a binary-to-decimal conversion routine that displays the score as three digits.
 
-## The Code
+## Building on Chapter 9
 
-Create `src/catcher.asm`:
+Before making changes, save a copy of your current file:
+
+```bash
+cp src/dodge.asm src/catcher.asm
+```
+
+Open `src/catcher.asm`. We are adding score tracking, a HUD, and a display routine. The game loop and subroutine structure stay the same -- we are extending what is already there.
+
+### New Variables
+
+Add `score_lo` and `score_hi` between `lives` and `caught`:
 
 ```asm
-; catcher.asm - Catch falling objects for points
-; Miss = lose a life, catch = score points
+score_lo   = $05                ; Score low byte
+score_hi   = $06                ; Score high byte
+```
 
-* = $0801                       ; BASIC start address
+The score needs two bytes because each catch awards 10 points. After 26 catches, the score hits 260 -- beyond what a single byte can hold.
 
-; BASIC stub: 10 SYS 2064
-!byte $0c, $08                  ; Pointer to next BASIC line
-!byte $0a, $00                  ; Line number 10
-!byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
-!byte $00                       ; End of line
-!byte $00, $00                  ; End of BASIC program
+### Initialization
 
-* = $0810                       ; Code start (2064 decimal)
+Initialize the score to zero alongside the existing lives and caught setup:
 
-sprite_x   = $02                ; Bucket X position, low byte
-sprite_x_h = $03                ; Bucket X position, high byte
-ball_y     = $04                ; Ball Y position
-lives      = $05                ; Lives remaining
-score_lo   = $06                ; Score low byte
-score_hi   = $07                ; Score high byte
-caught     = $08                ; Flag: 1 = ball was caught this pass
-
-    ; --- Initialize game state ---
-
+```asm
     lda #3
     sta lives
     lda #0
     sta score_lo
     sta score_hi
     sta caught
+```
 
-    ; --- Initialize bucket sprite (sprite 0) ---
+### Ball Color Change
 
-    lda #172
-    sta sprite_x
-    lda #0
-    sta sprite_x_h
+The ball changes from red to yellow to signal the shift in game mechanics -- this is something you want to catch, not avoid:
 
-    lda #41                     ; Bucket data at $0A40 (41 x 64)
-    sta $07f8
-
-    lda #224
-    sta $d001
-
-    lda #$01
-    sta $d027
-
-    ; --- Initialize ball sprite (sprite 1) ---
-
-    lda #42                     ; Ball data at $0A80 (42 x 64)
-    sta $07f9
-
-    lda #50
-    sta ball_y
-    sta $d003
-
-    lda #172
-    sta $d002
-
+```asm
     lda #$07                    ; Yellow
     sta $d028
+```
 
-    ; --- Enable sprites ---
+### Drawing the HUD
 
-    lda $d015
-    ora #%00000011
-    sta $d015
+After sprite initialization, call three subroutines to set up the display:
 
-    ; --- Set up SID voice 3 for random numbers ---
-
-    lda #$ff
-    sta $d40e
-    sta $d40f
-    lda #$80
-    sta $d412
-
-    ; --- Draw labels on screen ---
-
+```asm
     jsr draw_hud
     jsr show_lives
     jsr show_score
-
-    ; --- Game loop ---
-
-loop:
-    jsr read_input
-    jsr animate_ball
-    jsr check_collision
-    jsr update_sprites
-    jsr delay_loop
-    jmp loop
 ```
 
-The full source continues with subroutines for input, animation, collision, HUD drawing, and a 16-bit score display routine. See `src/catcher.asm` for the complete listing.
+The `draw_hud` subroutine writes text labels character by character to screen memory. Each letter is stored as its screen code (A=1, B=2, ... Z=26), not as PETSCII:
+
+```asm
+draw_hud:
+    ; "SCORE:" at row 0, col 0 ($0400)
+    lda #19                     ; S (screen code)
+    sta $0400
+    lda #3                      ; C
+    sta $0401
+    lda #15                     ; O
+    sta $0402
+    lda #18                     ; R
+    sta $0403
+    lda #5                      ; E
+    sta $0404
+    lda #58                     ; : (screen code)
+    sta $0405
+
+    ; "LIVES:" at row 0, col 34 ($0400 + 34)
+    lda #12                     ; L
+    sta $0422
+    lda #9                      ; I
+    sta $0423
+    lda #22                     ; V
+    sta $0424
+    lda #5                      ; E
+    sta $0425
+    lda #19                     ; S
+    sta $0426
+    lda #58                     ; :
+    sta $0427
+
+    ; Set text color to white
+    ldx #0
+dh_color:
+    lda #$01                    ; White
+    sta $d800,x
+    inx
+    cpx #40                     ; First row only
+    bne dh_color
+
+    rts
+```
+
+The `show_lives` subroutine moves from `$0400` to `$0428` -- right after the "LIVES:" label:
+
+```asm
+show_lives:
+    lda lives
+    clc
+    adc #$30                    ; Number to screen code
+    sta $0428                   ; After "LIVES:"
+    rts
+```
+
+### Scoring on Catch
+
+In `check_collision`, after setting the caught flag, add 10 points using a 16-bit add and update the display:
+
+```asm
+    lda #1
+    sta caught                  ; Mark as caught
+
+    lda score_lo
+    clc
+    adc #10                     ; Add 10 points
+    sta score_lo
+    lda score_hi
+    adc #0                      ; Add carry to high byte
+    sta score_hi
+
+    jsr show_score
+```
+
+### The Score Display Routine
+
+The `show_score` subroutine converts the 16-bit binary score into three decimal digits using repeated subtraction. It copies the score to temporary locations `$0d`/`$0e` (since the conversion is destructive), then counts how many times it can subtract 100 for the hundreds digit, 10 for the tens digit, and uses the remainder as the ones digit:
+
+```asm
+show_score:
+    ; Copy score to temp for destructive division
+    lda score_lo
+    sta $0d                     ; Temp low byte
+    lda score_hi
+    sta $0e                     ; Temp high byte
+
+    ; --- Extract hundreds digit ---
+    ldx #0                      ; Hundreds counter
+ss_h_loop:
+    lda $0d
+    sec
+    sbc #100                    ; Subtract 100 from low byte
+    tay                         ; Save low result
+    lda $0e
+    sbc #0                      ; Subtract borrow from high byte
+    bcc ss_h_done               ; Went negative? Done
+    sta $0e                     ; Store new high byte
+    sty $0d                     ; Store new low byte
+    inx
+    jmp ss_h_loop
+ss_h_done:
+    txa                         ; Hundreds digit
+    clc
+    adc #$30                    ; Convert to screen code
+    sta $0406
+
+    ; --- Extract tens digit from remainder in $0d ---
+    lda $0d
+    ldx #0                      ; Tens counter
+ss_t_loop:
+    cmp #10
+    bcc ss_t_done
+    sec
+    sbc #10
+    inx
+    jmp ss_t_loop
+ss_t_done:
+    pha                         ; Save ones digit
+    txa                         ; Tens digit
+    clc
+    adc #$30
+    sta $0407
+
+    pla                         ; Ones digit
+    clc
+    adc #$30
+    sta $0408
+
+    rts
+```
+
+The full source is in `src/catcher.asm`.
 
 ## Code Explanation
 
 ### The Caught Flag
 
-A subtle problem arises: the ball overlaps the bucket for multiple frames as it falls through. Without protection, we'd score points every frame of overlap. The `caught` flag prevents this:
-
-```asm
-check_collision:
-    lda $d01e                   ; Read collision register
-    and #%00000011
-    cmp #%00000011
-    bne cc_done
-
-    lda caught                  ; Already caught this pass?
-    bne cc_done                 ; Yes: don't double-count
-
-    lda #1
-    sta caught                  ; Mark as caught
-    ; ... add points ...
-```
-
-When the ball resets to the top, we clear the flag:
-
-```asm
-    lda #0
-    sta caught                  ; Ready for next ball
-```
-
-This pattern — a flag that prevents repeated triggers — is common in game programming. It's sometimes called a "one-shot" or "edge detector."
+The caught flag was introduced in [Chapter 9](09-DODGE.md) to prevent double-counting during the frames when the ball and bucket overlap. Here it gains an additional role: it controls whether the ball reset awards points or costs a life. When the ball reaches the bottom of the screen, `animate_ball` checks the caught flag. If it is set, the ball was already caught and we simply reset it to the top. If it is clear, the player missed -- lose a life and flash the border red. This single flag drives both the scoring and penalty logic.
 
 ### Screen Memory and the HUD
 
-The C64's screen is a 40x25 grid of characters stored at `$0400`-`$07E7`. Each byte is a **screen code** that selects which character to display. Screen codes differ from PETSCII — letters A-Z are codes 1-26, digits 0-9 are codes $30-$39, and `:` is code 58:
+The C64's screen is a 40x25 grid of characters stored at `$0400`-`$07E7`. Each byte is a **screen code** that selects which character to display. Screen codes differ from PETSCII -- uppercase letters A-Z are codes 1-26, digits 0-9 are codes `$30`-`$39`, and the colon `:` is code 58.
+
+We write each character individually with LDA/STA pairs:
 
 ```asm
-draw_hud:
     lda #19                     ; S (screen code)
     sta $0400                   ; Row 0, col 0
     lda #3                      ; C
     sta $0401                   ; Row 0, col 1
-    ; ... etc for "SCORE:" and "LIVES:" ...
 ```
 
-Each character also needs a color set in **color RAM** at `$D800`:
+This is tedious but straightforward. The C64 has no "print string" instruction -- everything goes to memory one byte at a time. In later chapters we will use a loop with indexed addressing to write strings more efficiently, but for short labels the direct approach is clear and costs no extra code.
+
+Each character also needs a color set in **color RAM** at `$D800`. The layout mirrors screen memory: `$D800` corresponds to `$0400`, `$D801` to `$0401`, and so on. We color the entire first row white with a loop:
 
 ```asm
     ldx #0
 dh_color:
     lda #$01                    ; White
-    sta $d800,x                 ; Set color for first row
+    sta $d800,x
     inx
     cpx #40                     ; 40 columns
     bne dh_color
 ```
 
-This loop sets all 40 characters in the top row to white. Without this, characters would be invisible against the background.
+Without this, characters would appear in whatever color was left over from the BASIC startup screen -- typically light blue, which is readable but inconsistent. Setting white explicitly ensures the HUD is always visible regardless of what happened before our program ran.
+
+The "SCORE:" label occupies columns 0-5 and the score digits go at columns 6-8 (`$0406`-`$0408`). The "LIVES:" label starts at column 34 (`$0422`-`$0427`) and the lives digit goes at column 40 (`$0428`). This layout keeps both pieces of information visible without overlapping.
 
 ### 16-Bit Score Display
 
-Each catch adds 10 points. After 26 catches, the score exceeds 255 — a single byte isn't enough. We store the score as two bytes (`score_lo` and `score_hi`) and add 10 using the familiar carry chain from [Chapter 7](07-BUCKET.md):
+Each catch adds 10 points using the same carry-chain addition from [Chapter 7](07-BUCKET.md):
 
 ```asm
     lda score_lo
@@ -174,42 +239,29 @@ Each catch adds 10 points. After 26 catches, the score exceeds 255 — a single 
     sta score_hi
 ```
 
-Displaying the score is harder — we need to convert a binary number to decimal digits. The approach is **repeated subtraction**: subtract 100 repeatedly to find the hundreds digit, then subtract 10 for the tens, and whatever remains is the ones:
+When `score_lo` is 250 and we add 10, it wraps to 4 (260 - 256) and the carry flag is set. The `adc #0` on `score_hi` adds 0 + 1 (the carry), so `score_hi` becomes 1. The score is now stored as `$01:$04` = 260 in binary. This two-byte representation can hold scores up to 65,535.
+
+Displaying the score requires converting this binary value to decimal digits. The CPU does not have a divide instruction, so we use **repeated subtraction** -- the same algorithm you would use to divide by hand. To find the hundreds digit, subtract 100 repeatedly until the result goes negative, counting how many times you succeeded:
 
 ```asm
-show_score:
-    ; Copy score to temp variables (destructive operation)
-    lda score_lo
-    sta $09
-    lda score_hi
-    sta $0a
-
-    ; Count hundreds
     ldx #0                      ; Hundreds counter
 ss_h_loop:
-    lda $09
+    lda $0d
     sec
-    sbc #100                    ; Try subtracting 100
-    tay                         ; Save low result
-    lda $0a
+    sbc #100                    ; Subtract 100 from low byte
+    tay                         ; Save low result in Y
+    lda $0e
     sbc #0                      ; Subtract borrow from high byte
     bcc ss_h_done               ; Went negative? Done counting
-    sta $0a                     ; Store new high byte
-    sty $09                     ; Store new low byte
+    sta $0e                     ; Commit the subtraction
+    sty $0d
     inx                         ; One more hundred
     jmp ss_h_loop
 ```
 
-This is 16-bit division by repeated subtraction. We subtract 100 from the full 16-bit value (low byte with carry into high byte) until the result goes negative. The count in X is our hundreds digit. The remainder in `$09` contains the tens and ones, which we extract the same way by subtracting 10.
+This is 16-bit subtraction: we subtract 100 from the low byte, and the SBC on the high byte propagates the borrow. If the high byte goes negative (carry clear after SBC means a borrow occurred), we have subtracted too many times -- the count in X is our hundreds digit and the value in `$0d` (before the last subtraction) is the remainder.
 
-Each digit is converted to a screen code by adding `$30` and stored directly to screen memory:
-
-```asm
-    txa                         ; Hundreds digit
-    clc
-    adc #$30                    ; Convert to screen code
-    sta $0406                   ; Screen position after "SCORE:"
-```
+The tens digit uses the same approach but only needs 8-bit subtraction since the remainder is always less than 100. Whatever is left after extracting tens is the ones digit. Each digit is converted to a screen code by adding `$30` and written directly to the screen positions after "SCORE:".
 
 ## Compiling
 
@@ -217,30 +269,32 @@ Each digit is converted to a screen code by adding `$30` and stored directly to 
 acme -f cbm -o src/catcher.prg src/catcher.asm
 ```
 
+Your .prg file should be **732 bytes**.
+
 ## Running
 
 ```bash
 vice-jz.x64sc -autostart src/catcher.prg
 ```
 
-The HUD shows "SCORE:" and "LIVES:" at the top of the screen. Catch the yellow ball with the bucket to score 10 points. Miss it and lose a life. The border flashes green on a catch and red on a miss. When lives reach 0, the game halts.
+The HUD shows "SCORE:" and "LIVES:" across the top of the screen. Catch the yellow ball with the bucket to score 10 points -- the border flashes green and the score updates immediately. Miss it and lose a life -- the border flashes red and the lives digit decreases. When lives reach 0, the screen turns red and black and the game halts.
 
 ## Exercises
 
 ### Exercise 1: Catch and Avoid
 
-Add a second falling object (sprite 2) in a different color that you must *avoid*. Getting hit by sprite 2 costs a life instead of scoring points. Use a separate caught flag for each ball and check both collision bits in `$D01E`.
+Add a second falling object (sprite 2) in a different color that you must *avoid*. Getting hit by sprite 2 costs a life instead of scoring points. Set up sprite 2 with its own pointer (`$07FA`), color (`$D029`), and position registers (`$D004`/`$D005`). Use a separate caught flag and check the appropriate collision bits in `$D01E`.
 
-**Hint:** Set up sprite 2 with its own pointer (`$07FA`), color (`$D029`), and position registers (`$D004`/`$D005`). In `check_collision`, check bit 2 of the saved collision value for the avoid-ball.
+**Hint:** Enable sprite 2 by ORing `%00000100` into `$D015`. In `check_collision`, save the `$D01E` value to a variable first (remember, it clears on read). Then check bit 2 for the avoid-ball collision separately from the catch-ball collision in bits 0 and 1.
 
 ### Exercise 2: BCD Score Display
 
-The 6502 has a **decimal mode** (SED/CLD instructions) where ADC/SBC operate in Binary-Coded Decimal — each nibble holds one decimal digit (0-9). Replace the repeated-subtraction display with BCD: use `sed` before adding to the score and `cld` after. The score bytes now hold decimal digits directly, making display trivial (just split the nibbles). Note: always CLD after you're done — leaving decimal mode on will break all other arithmetic.
+The 6502 has a **decimal mode** (SED/CLD instructions) where ADC and SBC operate in Binary-Coded Decimal -- each nibble holds one decimal digit (0-9). Replace the repeated-subtraction display with BCD: use `sed` before adding to the score and `cld` after. The score bytes now hold decimal digits directly, making display trivial (just split the nibbles with shifts and masks). Note: always CLD after you are done -- leaving decimal mode on will break all other arithmetic in your program.
 
-**Hint:** `sed` / `lda score_lo` / `clc` / `adc #$10` / `sta score_lo` / `lda score_hi` / `adc #$00` / `sta score_hi` / `cld`. Then display: `lda score_lo` / `lsr` / `lsr` / `lsr` / `lsr` gives the tens digit, `lda score_lo` / `and #$0f` gives the ones.
+**Hint:** `sed` / `lda score_lo` / `clc` / `adc #$10` / `sta score_lo` / `lda score_hi` / `adc #$00` / `sta score_hi` / `cld`. Then to display: `lda score_lo` / `lsr` / `lsr` / `lsr` / `lsr` gives the tens digit, `lda score_lo` / `and #$0f` gives the ones.
 
 Solutions are in [Appendix C](C-SOLUTIONS.md).
 
 ## Next Steps
 
-The catch game works, but it's silent. In the next chapter, we'll program the SID chip to play sound effects — a ding when you catch and a buzz when you miss.
+The catch game works, but it is silent. In the next chapter, we will program the SID chip to play sound effects -- a ding when you catch and a buzz when you miss.

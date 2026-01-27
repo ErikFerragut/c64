@@ -2,15 +2,23 @@
 
 The SID chip comes alive — a bright ding when you catch the ball, a low buzz when you miss, and a descending wail on game over. This chapter introduces the C64's legendary sound chip.
 
-## The Code
+## Building on Chapter 10
 
-Create `src/sound.asm`:
+Before making changes, save a copy of your current file:
 
-The program extends the catch game from [Chapter 10](10-CATCHER.md) with three sound effects. The full source is in `src/sound.asm`. Here are the key new sections:
+```bash
+cp src/catcher.asm src/sound.asm
+```
+
+Open `src/sound.asm`. We'll add full SID initialization and three sound effect subroutines, then remove the border flash effects from `check_collision` and `animate_ball` — sound replaces the visual feedback.
 
 ### SID Initialization
 
+In Chapter 10, we set up SID voice 3 as a random number generator with just three writes. Now we need voice 1 for sound effects, so we initialize the entire SID properly. Replace the voice 3 setup block with a full SID clear followed by the voice 3 configuration:
+
 ```asm
+    ; --- Initialize SID ---
+
     ; Clear all SID registers
     ldx #$18
 sid_clear:
@@ -22,14 +30,80 @@ sid_clear:
     ; Set master volume
     lda #$0f                    ; Max volume (15)
     sta $d418
+
+    ; Voice 3: random number generator (not audible)
+    lda #$ff
+    sta $d40e                   ; Voice 3 frequency high
+    sta $d40f
+    lda #$80                    ; Noise waveform, gate off
+    sta $d412
 ```
 
-### Catch Sound (High-Pitched Ding)
+The loop clears all 25 registers (`$D400`-`$D418`) to zero, giving us a clean slate. Then we set master volume to maximum and reconfigure voice 3 for random numbers exactly as before.
+
+### Remove Border Flashes
+
+In `check_collision`, remove the green border flash after scoring — sound will replace it. Delete this block:
 
 ```asm
+    ; Flash border green        ← DELETE
+    lda #$05                    ← DELETE
+    sta $d020                   ← DELETE
+    ldx #$08                    ← DELETE
+cc_flash:                       ← DELETE
+    ldy #$ff                    ← DELETE
+cc_fi:                          ← DELETE
+    dey                         ← DELETE
+    bne cc_fi                   ← DELETE
+    dex                         ← DELETE
+    bne cc_flash                ← DELETE
+    lda #$0e                    ← DELETE
+    sta $d020                   ← DELETE
+```
+
+Add a call to the catch sound after `jsr show_score`:
+
+```asm
+    jsr show_score
+    jsr sfx_catch               ; Play catch sound
+```
+
+In `animate_ball`, remove the red border flash after `jsr show_lives` and replace it with the miss sound:
+
+```asm
+    ; Missed!
+    dec lives
+    jsr show_lives
+    jsr sfx_miss                ; Play miss sound
+
+    lda lives
+    bne ab_reset
+```
+
+And add the game over sound before the halt:
+
+```asm
+    ; Game over
+    jsr sfx_gameover
+    lda #$02
+    sta $d020
+    lda #$00
+    sta $d021
+game_over:
+    jmp game_over
+```
+
+### Sound Effect Subroutines
+
+Add these three subroutines after `update_sprites`:
+
+```asm
+; --- Sound effect: catch (high-pitched ding) ---
+
 sfx_catch:
     pha                         ; Save A on stack
-    lda #$25                    ; Frequency low (C5 ~523 Hz)
+    ; Voice 1: triangle wave, high pitch
+    lda #$25                    ; Frequency low  (C5 ~523 Hz)
     sta $d400
     lda #$1c                    ; Frequency high
     sta $d401
@@ -43,14 +117,13 @@ sfx_catch:
     sta $d404
     pla                         ; Restore A
     rts
-```
 
-### Miss Sound (Low Buzz)
+; --- Sound effect: miss (low buzz) ---
 
-```asm
 sfx_miss:
     pha
-    lda #$00                    ; Frequency low (~200 Hz)
+    ; Voice 1: sawtooth wave, low pitch
+    lda #$00                    ; Frequency low  (~200 Hz)
     sta $d400
     lda #$08                    ; Frequency high
     sta $d401
@@ -64,7 +137,40 @@ sfx_miss:
     sta $d404
     pla
     rts
+
+; --- Sound effect: game over (descending tone) ---
+
+sfx_gameover:
+    ; Play a descending sequence
+    lda #$09
+    sta $d405
+    lda #$00
+    sta $d406
+
+    lda #$1c                    ; Start high
+    sta $d401
+    lda #$00
+    sta $d400
+    lda #$11                    ; Triangle + gate
+    sta $d404
+
+    ldx #$1c                    ; Start frequency high byte
+go_descend:
+    stx $d401
+    ldy #$ff
+go_delay:
+    dey
+    bne go_delay
+    dex
+    cpx #$04                    ; Stop at low frequency
+    bne go_descend
+
+    lda #$10                    ; Gate off
+    sta $d404
+    rts
 ```
+
+See `src/sound.asm` for the complete listing.
 
 ## Code Explanation
 
@@ -152,7 +258,7 @@ Register `$D405` packs Attack (high nibble) and Decay (low nibble). Register `$D
 
 With Attack=0 and Sustain=0, the sound hits full volume instantly and decays to silence. Decay=9 gives a medium-length fade. This produces a short "ping" — perfect for a catch effect. Lower Decay values (1-3) make shorter clicks; higher values (12-15) make longer tones.
 
-### PHA and PLA — Saving the Accumulator
+### PHA and PLA -- Saving the Accumulator
 
 Our sound subroutines modify the accumulator, but the caller might still need its value. **PHA** (Push Accumulator) saves A onto the stack, and **PLA** (Pull Accumulator) retrieves it:
 
@@ -164,7 +270,7 @@ sfx_catch:
     rts
 ```
 
-The stack is the same one JSR/RTS use for return addresses. PHA/PLA add one byte each time (vs. 2 for JSR). They nest correctly — the stack is LIFO, so the last value pushed is the first pulled:
+The stack is the same one JSR/RTS use for return addresses. PHA/PLA add one byte each time (vs. 2 for JSR). They nest correctly — the stack is LIFO (last in, first out), so the last value pushed is the first pulled:
 
 ```asm
     pha                         ; Push first value
@@ -175,6 +281,8 @@ The stack is the same one JSR/RTS use for return addresses. PHA/PLA add one byte
     tax                         ; Back to X
     pla                         ; Pull first value (back in A)
 ```
+
+The order matters. If you push A then X, you must pull X then A. Mixing up the order corrupts both values — and if a JSR's return address is on the stack too, pulling in the wrong order will crash the program.
 
 ### The Game Over Sound
 
@@ -198,13 +306,15 @@ go_delay:
     sta $d404
 ```
 
-This sweeps the frequency from `$1C` (high) to `$04` (low) over about a second, creating a classic "womp womp" descending tone. The gate stays on throughout so the envelope sustains, and we gate off at the end.
+This sweeps the frequency from `$1C` (high) to `$04` (low) over about a second, creating a classic descending tone. The gate stays on throughout so the envelope sustains, and we gate off at the end.
 
 ## Compiling
 
 ```bash
 acme -f cbm -o src/sound.prg src/sound.asm
 ```
+
+Your .prg file should be **828 bytes**.
 
 ## Running
 

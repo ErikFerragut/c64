@@ -3,24 +3,64 @@
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+* = $0880                       ; Ball sprite (pointer = 34)
+
+ball_data:
+    !fill 21, 0                 ; Rows 0-6: empty
+    ; Row 7: top of ball
+    !byte %00000000,%00111100,%00000000
+    ; Row 8
+    !byte %00000000,%01111110,%00000000
+    ; Rows 9-12: middle
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    ; Row 13
+    !byte %00000000,%01111110,%00000000
+    ; Row 14: bottom of ball
+    !byte %00000000,%00111100,%00000000
+    ; Rows 15-20: empty
+    !fill 18, 0
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Bucket X position, low byte
 sprite_x_h = $03                ; Bucket X position, high byte
-ball_y     = $04                ; Ball Y position
-lives      = $05                ; Lives remaining
-score_lo   = $06                ; Score low byte
-score_hi   = $07                ; Score high byte
-caught     = $08                ; Caught flag
-snd_timer  = $09                ; Sound duration counter
+lives      = $04                ; Lives remaining
+score_lo   = $05                ; Score low byte
+score_hi   = $06                ; Score high byte
+caught     = $07                ; Caught flag
+ball_y     = $10                ; Ball Y position
 
     ; --- Initialize game state ---
 
@@ -30,7 +70,6 @@ snd_timer  = $09                ; Sound duration counter
     sta score_lo
     sta score_hi
     sta caught
-    sta snd_timer
 
     ; --- Initialize bucket sprite (sprite 0) ---
 
@@ -39,7 +78,7 @@ snd_timer  = $09                ; Sound duration counter
     lda #0
     sta sprite_x_h
 
-    lda #44                     ; Bucket data at $0B00 (44 x 64)
+    lda #33                     ; Bucket data at $0840 (33 x 64)
     sta $07f8
 
     lda #224
@@ -50,7 +89,7 @@ snd_timer  = $09                ; Sound duration counter
 
     ; --- Initialize ball sprite (sprite 1) ---
 
-    lda #45                     ; Ball data at $0B40 (45 x 64)
+    lda #34                     ; Ball data at $0880 (34 x 64)
     sta $07f9
 
     lda #50
@@ -90,12 +129,6 @@ sid_clear:
     lda #$80                    ; Noise waveform, gate off
     sta $d412
 
-    ; Voice 1 ADSR: short attack, short decay, no sustain
-    lda #$00                    ; Attack=0, Decay=0
-    sta $d405
-    lda #$00                    ; Sustain=0, Release=0
-    sta $d406
-
     ; --- Draw HUD ---
 
     jsr draw_hud
@@ -109,7 +142,6 @@ loop:
     jsr animate_ball
     jsr check_collision
     jsr update_sprites
-    jsr update_sound
     jsr delay_loop
     jmp loop
 
@@ -312,46 +344,33 @@ go_delay:
     sta $d404
     rts
 
-; --- Update sound (decay timer) ---
-
-update_sound:
-    lda snd_timer
-    beq usnd_done
-    dec snd_timer
-    bne usnd_done
-    ; Timer expired: silence voice 1
-    lda #$10
-    sta $d404
-usnd_done:
-    rts
-
 ; --- Draw HUD ---
 
 draw_hud:
-    lda #19                     ; S
+    lda #19
     sta $0400
-    lda #3                      ; C
+    lda #3
     sta $0401
-    lda #15                     ; O
+    lda #15
     sta $0402
-    lda #18                     ; R
+    lda #18
     sta $0403
-    lda #5                      ; E
+    lda #5
     sta $0404
-    lda #58                     ; :
+    lda #58
     sta $0405
 
-    lda #12                     ; L
+    lda #12
     sta $0422
-    lda #9                      ; I
+    lda #9
     sta $0423
-    lda #22                     ; V
+    lda #22
     sta $0424
-    lda #5                      ; E
+    lda #5
     sta $0425
-    lda #19                     ; S
+    lda #19
     sta $0426
-    lda #58                     ; :
+    lda #58
     sta $0427
 
     ldx #0
@@ -376,21 +395,21 @@ show_lives:
 
 show_score:
     lda score_lo
-    sta $0b                     ; Temp low
+    sta $0d                     ; Temp low
     lda score_hi
-    sta $0c                     ; Temp high
+    sta $0e                     ; Temp high
 
     ldx #0
 ss_h_loop:
-    lda $0b
+    lda $0d
     sec
     sbc #100
     tay
-    lda $0c
+    lda $0e
     sbc #0
     bcc ss_h_done
-    sta $0c
-    sty $0b
+    sta $0e
+    sty $0d
     inx
     jmp ss_h_loop
 ss_h_done:
@@ -399,7 +418,7 @@ ss_h_done:
     adc #$30
     sta $0406
 
-    lda $0b
+    lda $0d
     ldx #0
 ss_t_loop:
     cmp #10
@@ -432,38 +451,3 @@ dl_inner:
     dex
     bne dl_outer
     rts
-
-; --- Sprite Data ---
-* = $0b00                       ; Bucket sprite (pointer = 44)
-
-bucket_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    !byte $0f,$ff,$f0
-
-* = $0b40                       ; Ball sprite (pointer = 45)
-
-ball_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00
-    !byte $00,$3c,$00
-    !byte $00,$7e,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$7e,$00
-    !byte $00,$3c,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00

@@ -12,15 +12,36 @@ Create `src/bucket.asm`:
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Sprite X position, low byte
 sprite_x_h = $03                ; Sprite X position, high byte (0 or 1)
@@ -34,7 +55,7 @@ sprite_x_h = $03                ; Sprite X position, high byte (0 or 1)
     sta sprite_x_h
 
     ; Set sprite 0 data pointer
-    lda #35                     ; Sprite data at $08C0 (35 x 64)
+    lda #33                     ; Sprite data at $0840 (33 x 64)
     sta $07f8                   ; Sprite 0 pointer
 
     ; Enable sprite 0
@@ -113,35 +134,25 @@ delay_inner:
     bne delay_outer             ; Loop until X = 0
 
     jmp loop                    ; Back to game loop
-
-; --- Sprite Data ---
-* = $08c0                       ; 64-byte aligned (pointer = 35)
-
-sprite_data:
-    ; Rows 0-11: empty
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    ; Row 12-13: rim (full width)
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    ; Row 14-15: body tapers
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    ; Row 16-17
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    ; Row 18-19
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    ; Row 20: bottom
-    !byte $0f,$ff,$f0
 ```
 
 The bucket from Chapter 6 is back, but now the joystick controls its horizontal position. The program reads input, updates a 16-bit position variable, writes the result to the VIC-II, waits briefly, and repeats. Let's work through each new concept.
 
 ## Code Explanation
+
+### Memory Layout
+
+Notice the new layout — sprite data sits *before* the code:
+
+```
+$0801-$080C: BASIC stub (SYS 2304)
+$0840-$087F: Bucket sprite data (pointer 33)
+$0900+     : Code
+```
+
+In Chapter 6, our code started at `$0810` and the sprite lived at `$0840` right after it. That worked because the code was tiny. Now that our programs will grow over the coming chapters, we're giving code its own region starting at `$0900`. The gap between `$0840` and `$0900` is exactly 192 bytes — room for three 64-byte sprites. The sprite data stays at fixed addresses and never needs to move, no matter how much code we add.
+
+The BASIC stub changes accordingly: `SYS 2304` jumps to `$0900` instead of `$0810`.
 
 ### Game Variables and Zero Page
 
@@ -154,7 +165,7 @@ sprite_x_h = $03                ; Sprite X position, high byte (0 or 1)
 
 Zero page is the C64's fastest memory — not because the RAM chips are faster, but because the CPU uses **2-byte instructions** instead of 3. A normal `lda $0400` assembles to 3 bytes (`AD 00 04`), but `lda $02` only needs 2 bytes (`A5 02`). That saves one byte of code *and* one clock cycle per access. For variables read every frame in a game loop, that speed difference adds up.
 
-We pick `$02` and `$03` because they're safe to use. Addresses `$00` and `$01` are reserved by the CPU (the processor port), and while BASIC uses some zero page locations during execution, our program takes over completely after `SYS 2064` so we won't conflict. Locations `$02`-`$8F` are commonly used for game variables in C64 programs.
+We pick `$02` and `$03` because they're safe to use. Addresses `$00` and `$01` are reserved by the CPU (the processor port), and while BASIC uses some zero page locations during execution, our program takes over completely after `SYS 2304` so we won't conflict. Locations `$02`-`$8F` are commonly used for game variables in C64 programs.
 
 Note that `sprite_x = $02` doesn't generate any code — it's a **label assignment** that tells the assembler "wherever I write `sprite_x`, substitute `$02`." The initialization happens at runtime:
 
@@ -311,6 +322,8 @@ In later chapters we'll replace this crude delay with proper raster timing, but 
 ```bash
 acme -f cbm -o src/bucket.prg src/bucket.asm
 ```
+
+Your .prg file should be **377 bytes**.
 
 ## Running
 

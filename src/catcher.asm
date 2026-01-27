@@ -3,23 +3,64 @@
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+* = $0880                       ; Ball sprite (pointer = 34)
+
+ball_data:
+    !fill 21, 0                 ; Rows 0-6: empty
+    ; Row 7: top of ball
+    !byte %00000000,%00111100,%00000000
+    ; Row 8
+    !byte %00000000,%01111110,%00000000
+    ; Rows 9-12: middle
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    ; Row 13
+    !byte %00000000,%01111110,%00000000
+    ; Row 14: bottom of ball
+    !byte %00000000,%00111100,%00000000
+    ; Rows 15-20: empty
+    !fill 18, 0
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Bucket X position, low byte
 sprite_x_h = $03                ; Bucket X position, high byte
-ball_y     = $04                ; Ball Y position
-lives      = $05                ; Lives remaining
-score_lo   = $06                ; Score low byte
-score_hi   = $07                ; Score high byte
-caught     = $08                ; Flag: 1 = ball was caught this pass
+lives      = $04                ; Lives remaining
+score_lo   = $05                ; Score low byte
+score_hi   = $06                ; Score high byte
+caught     = $07                ; 1 = ball was caught this pass
+ball_y     = $10                ; Ball Y position
 
     ; --- Initialize game state ---
 
@@ -37,7 +78,7 @@ caught     = $08                ; Flag: 1 = ball was caught this pass
     lda #0
     sta sprite_x_h
 
-    lda #41                     ; Bucket data at $0A40 (41 x 64)
+    lda #33                     ; Bucket data at $0840 (33 x 64)
     sta $07f8
 
     lda #224                    ; Near bottom
@@ -48,7 +89,7 @@ caught     = $08                ; Flag: 1 = ball was caught this pass
 
     ; --- Initialize ball sprite (sprite 1) ---
 
-    lda #42                     ; Ball data at $0A80 (42 x 64)
+    lda #34                     ; Ball data at $0880 (34 x 64)
     sta $07f9
 
     lda #50
@@ -306,22 +347,22 @@ show_lives:
 show_score:
     ; Copy score to temp for destructive division
     lda score_lo
-    sta $09                     ; Temp low byte
+    sta $0d                     ; Temp low byte
     lda score_hi
-    sta $0a                     ; Temp high byte
+    sta $0e                     ; Temp high byte
 
     ; --- Extract hundreds digit ---
     ldx #0                      ; Hundreds counter
 ss_h_loop:
-    lda $09
+    lda $0d
     sec
     sbc #100                    ; Subtract 100 from low byte
     tay                         ; Save low result
-    lda $0a
+    lda $0e
     sbc #0                      ; Subtract borrow from high byte
     bcc ss_h_done               ; Went negative? Done
-    sta $0a                     ; Store new high byte
-    sty $09                     ; Store new low byte
+    sta $0e                     ; Store new high byte
+    sty $0d                     ; Store new low byte
     inx
     jmp ss_h_loop
 ss_h_done:
@@ -330,8 +371,8 @@ ss_h_done:
     adc #$30                    ; Convert to screen code
     sta $0406
 
-    ; --- Extract tens digit from remainder in $09 ---
-    lda $09
+    ; --- Extract tens digit from remainder in $0d ---
+    lda $0d
     ldx #0                      ; Tens counter
 ss_t_loop:
     cmp #10
@@ -366,38 +407,3 @@ dl_inner:
     dex
     bne dl_outer
     rts
-
-; --- Sprite Data ---
-* = $0a40                       ; Bucket sprite (pointer = 41)
-
-bucket_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    !byte $0f,$ff,$f0
-
-* = $0a80                       ; Ball sprite (pointer = 42)
-
-ball_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00
-    !byte $00,$3c,$00
-    !byte $00,$7e,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$7e,$00
-    !byte $00,$3c,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00

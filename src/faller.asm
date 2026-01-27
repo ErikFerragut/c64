@@ -3,19 +3,60 @@
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+* = $0880                       ; Ball sprite (pointer = 34)
+
+ball_data:
+    !fill 21, 0                 ; Rows 0-6: empty
+    ; Row 7: top of ball
+    !byte %00000000,%00111100,%00000000
+    ; Row 8
+    !byte %00000000,%01111110,%00000000
+    ; Rows 9-12: middle
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    ; Row 13
+    !byte %00000000,%01111110,%00000000
+    ; Row 14: bottom of ball
+    !byte %00000000,%00111100,%00000000
+    ; Rows 15-20: empty
+    !fill 18, 0
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Bucket X position, low byte
 sprite_x_h = $03                ; Bucket X position, high byte (0 or 1)
-ball_y     = $04                ; Ball Y position
+ball_y     = $10                ; Ball Y position
 
     ; --- Initialize bucket sprite (sprite 0) ---
 
@@ -24,7 +65,7 @@ ball_y     = $04                ; Ball Y position
     lda #0                      ; High byte = 0
     sta sprite_x_h
 
-    lda #36                     ; Bucket data at $0900 (36 x 64)
+    lda #33                     ; Bucket data at $0840 (33 x 64)
     sta $07f8                   ; Sprite 0 pointer
 
     lda #224                    ; Near bottom of screen
@@ -35,7 +76,7 @@ ball_y     = $04                ; Ball Y position
 
     ; --- Initialize ball sprite (sprite 1) ---
 
-    lda #37                     ; Ball data at $0940 (37 x 64)
+    lda #34                     ; Ball data at $0880 (34 x 64)
     sta $07f9                   ; Sprite 1 pointer
 
     lda #50                     ; Start near top of screen
@@ -152,51 +193,3 @@ delay_inner:
     bne delay_outer
 
     jmp loop                    ; Back to game loop
-
-; --- Sprite Data ---
-* = $0900                       ; Bucket sprite (pointer = 36)
-
-bucket_data:
-    ; Rows 0-11: empty
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    ; Row 12-13: rim (full width)
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    ; Row 14-15: body tapers
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    ; Row 16-17
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    ; Row 18-19
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    ; Row 20: bottom
-    !byte $0f,$ff,$f0
-
-* = $0940                       ; Ball sprite (pointer = 37)
-
-ball_data:
-    ; Rows 0-6: empty
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00
-    ; Row 7: top of ball
-    !byte $00,$3c,$00
-    ; Row 8
-    !byte $00,$7e,$00
-    ; Rows 9-12: middle
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    ; Row 13
-    !byte $00,$7e,$00
-    ; Row 14: bottom of ball
-    !byte $00,$3c,$00
-    ; Rows 15-20: empty
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00

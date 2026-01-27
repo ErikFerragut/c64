@@ -1,30 +1,71 @@
-; dodge.asm - Dodge falling objects
+; dodge.asm - Catch the falling ball
 ; Collision detection, subroutines, and game over
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
+; BASIC stub: 10 SYS 2304
 !byte $0c, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+; --- Sprite Data ---
+* = $0840                       ; Bucket sprite (pointer = 33)
+
+bucket_data:
+    !fill 36, 0                 ; Rows 0-11: empty
+    ; Row 12-13: rim (full width)
+    !byte %11111111,%11111111,%11111111
+    !byte %11111111,%11111111,%11111111
+    ; Row 14-15: body tapers
+    !byte %01111111,%11111111,%11111110
+    !byte %01111111,%11111111,%11111110
+    ; Row 16-17
+    !byte %00111111,%11111111,%11111100
+    !byte %00111111,%11111111,%11111100
+    ; Row 18-19
+    !byte %00011111,%11111111,%11111000
+    !byte %00011111,%11111111,%11111000
+    ; Row 20: bottom
+    !byte %00001111,%11111111,%11110000
+
+* = $0880                       ; Ball sprite (pointer = 34)
+
+ball_data:
+    !fill 21, 0                 ; Rows 0-6: empty
+    ; Row 7: top of ball
+    !byte %00000000,%00111100,%00000000
+    ; Row 8
+    !byte %00000000,%01111110,%00000000
+    ; Rows 9-12: middle
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    !byte %00000000,%11111111,%00000000
+    ; Row 13
+    !byte %00000000,%01111110,%00000000
+    ; Row 14: bottom of ball
+    !byte %00000000,%00111100,%00000000
+    ; Rows 15-20: empty
+    !fill 18, 0
+
+; --- Code ---
+* = $0900                       ; Code start (2304 decimal)
 
 sprite_x   = $02                ; Bucket X position, low byte
 sprite_x_h = $03                ; Bucket X position, high byte
-ball_y     = $04                ; Ball Y position
-lives      = $05                ; Lives remaining
-score      = $06                ; Score (balls dodged)
+lives      = $04                ; Lives remaining
+caught     = $07                ; 1 = ball was caught this pass
+ball_y     = $10                ; Ball Y position
 
     ; --- Initialize game state ---
 
     lda #3
     sta lives
     lda #0
-    sta score
+    sta caught
 
     ; --- Initialize bucket sprite (sprite 0) ---
 
@@ -33,7 +74,7 @@ score      = $06                ; Score (balls dodged)
     lda #0
     sta sprite_x_h
 
-    lda #38                     ; Bucket data at $0980 (38 x 64)
+    lda #33                     ; Bucket data at $0840 (33 x 64)
     sta $07f8
 
     lda #224                    ; Near bottom
@@ -44,7 +85,7 @@ score      = $06                ; Score (balls dodged)
 
     ; --- Initialize ball sprite (sprite 1) ---
 
-    lda #39                     ; Ball data at $09C0 (39 x 64)
+    lda #34                     ; Ball data at $0880 (34 x 64)
     sta $07f9
 
     lda #50
@@ -80,7 +121,7 @@ score      = $06                ; Score (balls dodged)
 loop:
     jsr read_input              ; Handle joystick
     jsr animate_ball            ; Move ball down
-    jsr check_collision         ; Test for hits
+    jsr check_collision         ; Test for catch
     jsr update_sprites          ; Write to VIC-II
     jsr delay_loop              ; Speed control
     jmp loop
@@ -132,25 +173,56 @@ animate_ball:
     cmp #250                    ; Past bottom?
     bcc ab_done                 ; No: return
 
-    ; Ball passed bucket without collision — score!
-    inc score
+    ; Ball reached bottom — was it caught?
+    lda caught
+    bne ab_reset                ; Yes: just reset
 
+    ; Missed! Lose a life
+    dec lives
+    jsr show_lives
+
+    ; Flash border red
+    lda #$02
+    sta $d020
+    ldx #$18
+ab_flash:
+    ldy #$ff
+ab_fi:
+    dey
+    bne ab_fi
+    dex
+    bne ab_flash
+    lda #$0e
+    sta $d020
+
+    ; Check game over
+    lda lives
+    bne ab_reset
+
+    lda #$02
+    sta $d020
+    lda #$00
+    sta $d021
+game_over:
+    jmp game_over
+
+ab_reset:
     ; Reset ball to top with random X
     lda #50
     sta ball_y
     sta $d003
-
-    lda $d41b                   ; Random X from SID
+    lda $d41b
     sta $d002
-
     lda $d010
     and #%11111101              ; Clear ball MSB
     sta $d010
+    lda #0
+    sta caught                  ; Clear caught flag
 
 ab_done:
     rts
 
-; --- Check sprite collision register ---
+; --- Check sprite collision ---
 
 check_collision:
     lda $d01e                   ; Read collision register (clears on read)
@@ -158,49 +230,25 @@ check_collision:
     cmp #%00000011
     bne cc_done                 ; No collision
 
-    ; Collision! Lose a life
-    dec lives
-    jsr show_lives
+    lda caught                  ; Already caught this pass?
+    bne cc_done
 
-    ; Flash border to show hit
-    lda #$02                    ; Red
+    lda #1
+    sta caught                  ; Mark as caught
+
+    ; Flash border green briefly
+    lda #$05
     sta $d020
-    ldx #$20
+    ldx #$08
 cc_flash:
     ldy #$ff
-cc_flash_inner:
+cc_fi:
     dey
-    bne cc_flash_inner
+    bne cc_fi
     dex
     bne cc_flash
-
-    lda #$0e                    ; Light blue (default)
+    lda #$0e
     sta $d020
-
-    ; Reset ball position
-    lda #50
-    sta ball_y
-    sta $d003
-
-    lda $d41b
-    sta $d002
-
-    lda $d010
-    and #%11111101
-    sta $d010
-
-    ; Check for game over
-    lda lives
-    bne cc_done                 ; Still alive
-
-    ; Game over
-    lda #$02                    ; Red border
-    sta $d020
-    lda #$00                    ; Black background
-    sta $d021
-
-game_over:
-    jmp game_over               ; Halt
 
 cc_done:
     rts
@@ -226,16 +274,15 @@ us_clear:
     sta $d010
     rts
 
-; --- Display lives as border flashes (simple) ---
+; --- Display lives at top-left of screen ---
 
 show_lives:
-    ; Write lives digit to top-left of screen
     lda lives
     clc
-    adc #$30                    ; Convert number to screen code for digit
-    sta $0400                   ; Screen position: row 0, column 0
+    adc #$30                    ; Convert number to screen code
+    sta $0400                   ; Screen position: row 0, col 0
     lda #$01                    ; White
-    sta $d800                   ; Color RAM for that position
+    sta $d800                   ; Color RAM
     rts
 
 ; --- Delay loop ---
@@ -250,38 +297,3 @@ dl_inner:
     dex
     bne dl_outer
     rts
-
-; --- Sprite Data ---
-* = $0980                       ; Bucket sprite (pointer = 38)
-
-bucket_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $ff,$ff,$ff
-    !byte $ff,$ff,$ff
-    !byte $7f,$ff,$fe
-    !byte $7f,$ff,$fe
-    !byte $3f,$ff,$fc
-    !byte $3f,$ff,$fc
-    !byte $1f,$ff,$f8
-    !byte $1f,$ff,$f8
-    !byte $0f,$ff,$f0
-
-* = $09c0                       ; Ball sprite (pointer = 39)
-
-ball_data:
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00
-    !byte $00,$3c,$00
-    !byte $00,$7e,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$ff,$00
-    !byte $00,$7e,$00
-    !byte $00,$3c,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
-    !byte $00,$00,$00, $00,$00,$00, $00,$00,$00
