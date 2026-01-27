@@ -1,4 +1,5 @@
 .claude/
 *.prg
 docs/out/
+docs/mermaid-filter.err
 *~
