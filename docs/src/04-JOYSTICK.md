@@ -92,24 +92,6 @@ fire:
 
 ## Code Explanation
 
-### The CIA and Joystick Port
-
-In [Chapter 2](02-HELLO.md) we saw the VIC-II graphics chip at `$d000`. The C64 has another important chip: **CIA 1** (Complex Interface Adapter), mapped to `$dc00-$dcff`. CIA 1 handles keyboard scanning and joystick input.
-
-The register we care about is **$DC00** — CIA 1 Port A. When a joystick is plugged into control port 2, its switches are connected to the lower 5 bits of this register:
-
-| Bit | Direction | Bit Mask |
-|-----|-----------|----------|
-| 0 | Up | `%00000001` |
-| 1 | Down | `%00000010` |
-| 2 | Left | `%00000100` |
-| 3 | Right | `%00001000` |
-| 4 | Fire | `%00010000` |
-
-The joystick is a simple device — each direction is a physical switch. Pushing the stick closes a switch, connecting the CIA pin to ground. The CIA has internal pull-up resistors, so an unpressed switch reads as 1 (pulled high) and a pressed switch reads as 0 (grounded).
-
-This is called **active-low logic**: the signal is active (pressed) when low (0). It's counterintuitive at first — 0 means "yes, pressed" and 1 means "no, not pressed."
-
 ### Binary Notation
 
 ACME supports binary literals with the `%` prefix. Each digit is one bit, and we write all 8 bits of a byte:
@@ -132,6 +114,24 @@ and #%00000100  ; Bit 2. Immediately clear.
 ```
 
 We use binary when working with individual bits, and hex for everything else (addresses, color values, character codes).
+
+### The CIA and Joystick Port
+
+In [Chapter 2](02-HELLO.md) we saw the VIC-II graphics chip at `$d000`. The C64 has another important chip: **CIA 1** (Complex Interface Adapter), mapped to `$dc00-$dcff`. CIA 1 handles keyboard scanning and joystick input.
+
+The register we care about is **$DC00** — CIA 1 Port A. When a joystick is plugged into control port 2, its switches are connected to the lower 5 bits of this register:
+
+| Bit | Direction | Bit Mask |
+|-----|-----------|----------|
+| 0 | Up | `%00000001` |
+| 1 | Down | `%00000010` |
+| 2 | Left | `%00000100` |
+| 3 | Right | `%00001000` |
+| 4 | Fire | `%00010000` |
+
+The joystick is a simple device — each direction is a physical switch. Pushing the stick closes a switch, connecting the CIA pin to ground. The CIA has internal pull-up resistors, so an unpressed switch reads as 1 (pulled high) and a pressed switch reads as 0 (grounded).
+
+This is called **active-low logic**: the signal is active (pressed) when low (0). It's counterintuitive at first — 0 means "yes, pressed" and 1 means "no, not pressed."
 
 ### AND — Bit Masking
 
@@ -235,29 +235,30 @@ Unlike Chapter 3's program, this one has no quit key — it polls forever, just 
 
 Modify the fire handler so that pressing fire **toggles** the background between two colors instead of always setting green.
 
-Replace the fire handler with:
+The approach: load the current background color from `$d021` into the accumulator, flip it using EOR with a mask value, then store the result back to `$d021`. Also set the border to green so you can see fire is working.
 
-```asm
-fire:
-    lda $d021
-    eor #$06
-    sta $d021
-    lda #$05
-    sta $d020
-    jmp loop
-```
+**EOR** (Exclusive OR) is a bitwise operation like AND, but with different logic. Here's its truth table:
 
-Run it and press fire repeatedly. What two colors does the background alternate between? Why those two?
+| A bit | Mask bit | Result |
+|-------|----------|--------|
+| 0 | 0 | 0 |
+| 0 | 1 | 1 |
+| 1 | 0 | 1 |
+| 1 | 1 | 0 |
 
-**Hint:** EOR (Exclusive OR) flips bits. `eor #$06` flips the bits that correspond to the value 6. If the background is 6 (blue), it becomes 0 (black). If it's 0, it becomes 6. This gives you a toggle with a single instruction — no need to compare and branch.
+Where the mask bit is 1, the result bit is the *opposite* of the input. Where the mask bit is 0, the input passes through unchanged. This means EOR **flips** selected bits.
+
+Try `eor #$06` (binary `%00000110`). The default background is blue, which is also color 6 (`%00000110`). What value does `%00000110 EOR %00000110` produce? What about EORing that result with `%00000110` again? Press fire repeatedly and watch what happens.
 
 ### Exercise 2: Second Player
 
-Add joystick port 1 support using `$DC01` (CIA 1 Port B). The second joystick should change the **background** color (`$d021`) while the first joystick still controls the border.
+Add joystick port 1 support using `$DC01` (CIA 1 Port B). One joystick should change the **background** color (`$d021`) while the other still controls the border.
 
-Use the same bit layout — port 1 uses the same bit-to-direction mapping as port 2, just at a different address.
+Port 1 uses the same bit-to-direction mapping as port 2, just at a different address.
 
-**Hint:** Add five more LDA/AND/BEQ checks after the port 2 fire test, reading from `$dc01` instead of `$dc00`. Create handlers (e.g., `p1_up`, `p1_down`, etc.) that write to `$d021` instead of `$d020`.
+**Hint:** After the port 2 fire test, add five more LDA/AND/BEQ checks that read from `$dc01` instead of `$dc00`. For each direction, branch to a new label (e.g., `p1_up`, `p1_down`) that writes to `$d021` instead of `$d020`.
+
+Note that each direction block ends with `jmp loop`, which restarts the loop immediately. This means only one direction takes effect per loop iteration — if both joysticks are held at the same time, the port 2 checks come first and the port 1 checks are never reached. Port 1 only registers when port 2 is idle.
 
 Solutions are in [Appendix C](C-SOLUTIONS.md).
 

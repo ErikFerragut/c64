@@ -160,7 +160,7 @@ The background toggles between Blue and Black on each fire press. EOR is the sta
 
 ### Exercise 2: Second Player
 
-Add these checks after the port 2 fire test (before `jmp loop`), and add the corresponding handlers:
+Add these checks after the port 2 fire test (before `jmp loop`):
 
 ```asm
     ; --- Port 1 checks (after port 2 fire check) ---
@@ -188,7 +188,7 @@ Add these checks after the port 2 fire test (before `jmp loop`), and add the cor
     jmp loop
 ```
 
-And the handlers:
+And the corresponding direction blocks:
 
 ```asm
 p1_up:
