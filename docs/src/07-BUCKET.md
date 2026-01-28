@@ -290,14 +290,9 @@ This is the same read-modify-write pattern from [Chapter 6](06-SPRITE.md) with O
 
 This program introduces the first **game loop** — a repeating cycle that forms the backbone of every game:
 
-```
-loop:
-    1. Read input     (joystick)
-    2. Update state   (move position)
-    3. Render         (write to VIC-II)
-    4. Delay          (control speed)
-    5. Jump to 1
-```
+![Game loop flowchart](images/ch7-gameloop.png)
+
+Read input, update state, render, delay, repeat. The two decision diamonds show the joystick branching — left and right each modify the position, then all three paths converge at the VIC-II update. After the delay, control flows back to the top.
 
 Without the delay, the CPU would execute the loop thousands of times per second — the bucket would fly across the screen faster than you could see. The nested delay loop (the same pattern from [Chapter 5](05-STROBE.md)) slows things down to a playable speed:
 
@@ -315,7 +310,7 @@ delay_inner:
 
 This burns roughly 8 x 255 x 5 = 10,200 CPU cycles per frame. At ~1 MHz, that's about 10ms of delay per loop iteration. The result is smooth, controllable movement.
 
-In later chapters we'll replace this crude delay with proper raster timing, but for now it does the job.
+In later chapters we'll replace this crude delay with **raster timing** — synchronizing the game loop to the electron beam that draws the screen. The C64's display refreshes ~60 times per second (NTSC) or ~50 times (PAL). By waiting for the beam to reach a specific screen line before starting each loop iteration, the game runs at a rock-steady 50 or 60 FPS regardless of how much work the CPU does. That's how real C64 games keep consistent speed. For now, the busy-wait loop does the job.
 
 ## Compiling
 

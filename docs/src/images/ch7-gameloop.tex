@@ -1,0 +1,58 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+\begin{document}
+
+\tikzset{
+  process/.style={
+    rectangle, rounded corners=3pt,
+    draw=blue!40, fill=blue!8,
+    minimum width=2.8cm, minimum height=0.9cm,
+    text centered, font=\sffamily\small
+  },
+  decision/.style={
+    diamond, aspect=2.2,
+    draw=blue!40, fill=blue!8,
+    minimum width=2.2cm, minimum height=1cm,
+    text centered, font=\sffamily\small,
+    inner sep=1pt
+  },
+  arrow/.style={
+    -Stealth, thick, draw=black!60
+  },
+  label/.style={
+    font=\sffamily\scriptsize, text=black!70
+  }
+}
+
+\begin{tikzpicture}[node distance=1.3cm]
+
+% Nodes
+\node[process] (read) {Read joystick};
+\node[decision, below=of read] (left) {Left held?};
+\node[process, left=2cm of left] (moveleft) {X = X $-$ 1};
+\node[decision, below=of left] (right) {Right held?};
+\node[process, right=2cm of right] (moveright) {X = X + 1};
+\node[process, below=1.6cm of right] (update) {Write X to VIC-II};
+\node[process, below=of update] (delay) {Delay};
+
+% Main flow
+\draw[arrow] (read) -- (left);
+\draw[arrow] (left) -- node[label, above] {Yes} (moveleft);
+\draw[arrow] (left) -- node[label, right] {No} (right);
+\draw[arrow] (right) -- node[label, above] {Yes} (moveright);
+\draw[arrow] (right) -- node[label, right] {No} (update);
+\draw[arrow] (update) -- (delay);
+
+% Converge left/right into update
+\draw[arrow] (moveleft) |- (update);
+\draw[arrow] (moveright) |- (update);
+
+% Loop back from delay to read
+\draw[arrow] (delay.west) -- ++(-3.2,0) |- (read.west);
+
+\end{tikzpicture}
+\end{document}

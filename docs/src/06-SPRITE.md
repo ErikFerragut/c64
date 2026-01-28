@@ -97,7 +97,7 @@ Row 19: ...XXXXXXXXXXXXXXXXXX...  $1F $FF $F8
 Row 20: ....XXXXXXXXXXXXXXXX....  $0F $FF $F0  <- bottom (16px)
 ```
 
-Each `X` is a set bit (1) and each `.` is a clear bit (0). The rim at row 12 is all 24 bits set: `%11111111 %11111111 %11111111` = `$FF $FF $FF`. Each pair of rows below loses one pixel on each side — the `$7F` at the start of row 14 is `%01111111` (top bit cleared), and the `$FE` at the end is `%11111110` (bottom bit cleared).
+Each `X` is a set bit (1) and each `.` is a clear bit (0). The rim at row 12 is all 24 bits set: `%11111111 %11111111 %11111111` = `$FF $FF $FF`. Each pair of rows below loses one pixel on each side — the `$7F` at the start of row 14 is `%01111111` (high bit cleared), and the `$FE` at the end is `%11111110` (low bit cleared).
 
 The result is a trapezoid shape — wider at the top (the catching area) and narrowing toward the bottom, like a bucket viewed from the front.
 
@@ -109,7 +109,7 @@ Sprite data must start on a **64-byte boundary** — an address evenly divisible
 
 We store this pointer value (33) at `$07F8`, which is the **sprite 0 pointer** location. The VIC-II reads this byte to find the sprite data: pointer value x 64 = data address.
 
-Why `$07F8`? Sprite pointers live at the end of **screen memory**. The default screen starts at `$0400` (1024 bytes of character data), and the 8 sprite pointers occupy the last 8 bytes of that 1K block:
+Why `$07F8`? Sprite pointers live at the end of **screen memory**. The default screen is 1024 (`$0400`) bytes and runs from `$0400` through `$07ff`. The 8 sprite pointers occupy the last 8 bytes of that 1K block:
 
 | Address | Sprite |
 |---------|--------|
@@ -122,7 +122,7 @@ Why `$07F8`? Sprite pointers live at the end of **screen memory**. The default s
 | $07FE | Sprite 6 |
 | $07FF | Sprite 7 |
 
-That's `$0400 + $03F8` = `$07F8` for sprite 0. The pointer is a single byte, so sprite data can address 256 x 64 = 16,384 bytes — the first 16K of memory. Our data at `$0840` is safely within that range and doesn't conflict with the BASIC stub or our code at `$0810`.
+Each pointer is a single byte, so sprite data can address 256 x 64 = 16,384 bytes — the first 16K of memory. Our data at `$0840` is safely within that range and doesn't conflict with the BASIC stub or our code at `$0810`.
 
 ### ORA — Setting Bits
 
@@ -186,7 +186,9 @@ The registers follow a pattern — each sprite gets two consecutive bytes:
 | 6 | $D00C | $D00D |
 | 7 | $D00E | $D00F |
 
-The coordinate system has its origin (0, 0) at the top-left corner. X increases to the right, Y increases downward — standard for screen graphics, though the opposite of math-class Y axes. The visible screen area starts at approximately X=24, Y=50 and ends around X=343, Y=249. Our X=172 centers the 24-pixel-wide sprite horizontally: 24 + (320 - 24) / 2 = 172. Y=229 places it near the bottom.
+The coordinate system has its origin (0, 0) at the top-left corner. X increases to the right, Y increases downward — standard for screen graphics, though the opposite of math-class Y axes. The visible screen area starts at approximately X=24, Y=50 and ends around X=343, Y=249. The location of the sprite is the location of its upper left pixel. Since the sprite is 24 pixels wide, it is fully visible on screen only up to 343 - 23 = 320. We chose to center it halfway between the first fully visible position (X=24) and the last fully visible position (X=320) using (24 + 320) / 2 = 172. 
+
+The sprite is 20 pixels tall, so 230 would be the lowest position where all pixels are visible, appearing in pixel rows 230, 231, ..., 249. We choose Y=224 to allow a little space below the sprite.
 
 Since X coordinates can go up to 343 but a single byte only holds 0-255, there's a ninth bit for each sprite's X position stored in register `$D010`. We don't need it here since 172 fits in one byte, but we'll use it in the next chapter.
 
