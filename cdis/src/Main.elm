@@ -74,6 +74,7 @@ type Msg
     | UpdateSegmentName String
     | CancelSegmentCreate
     | DeleteSegment Int
+    | ToggleHelp
     | NoOp
 
 
@@ -216,6 +217,10 @@ update msg model =
                         -- Escape: clear segment marking
                         ( { model | markingSegmentStart = Nothing }, Cmd.none )
 
+                    "?" ->
+                        -- ?: toggle help
+                        update ToggleHelp model
+
                     _ ->
                         ( model, Cmd.none )
 
@@ -345,6 +350,9 @@ update msg model =
                             Nothing
             in
             ( { model | segments = newSegments, activeSegment = newActiveSegment }, Cmd.none )
+
+        ToggleHelp ->
+            ( { model | helpExpanded = not model.helpExpanded }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -628,16 +636,46 @@ viewCommentText maybeComment =
 
 viewFooter : Model -> Html Msg
 viewFooter model =
-    footer [ class "cdis-footer" ]
-        [ span []
-            [ text "Scroll: Mouse wheel | "
-            , text "Select: Click | "
-            , text "Comment: Double-click | "
-            , text "L: Center | "
-            , text "S: Mark segment start | "
-            , text "[ ]: Prev/Next segment"
+    if model.helpExpanded then
+        footer [ class "cdis-footer expanded" ]
+            [ div [ class "help-grid" ]
+                [ div [ class "help-section" ]
+                    [ div [ class "help-title" ] [ text "Navigation" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "L" ], text "Center selected line" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "[ ]" ], text "Prev/Next segment" ]
+                    ]
+                , div [ class "help-section" ]
+                    [ div [ class "help-title" ] [ text "Selection" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Click" ], text "Select line" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Double-click" ], text "Edit comment" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save comment" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel" ]
+                    ]
+                , div [ class "help-section" ]
+                    [ div [ class "help-title" ] [ text "Segments" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "S" ], text "Mark segment start" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel segment" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Tab click" ], text "Jump to segment" ]
+                    ]
+                , div [ class "help-section" ]
+                    [ div [ class "help-title" ] [ text "Other" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Go to $" ], text "Jump to address" ]
+                    ]
+                ]
             ]
-        ]
+
+    else
+        footer [ class "cdis-footer" ]
+            [ span []
+                [ text "?: Help | "
+                , text "Scroll: Wheel | "
+                , text "L: Center | "
+                , text "S: Segment | "
+                , text "[ ]: Nav"
+                ]
+            ]
 
 
 

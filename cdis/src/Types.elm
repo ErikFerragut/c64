@@ -21,6 +21,7 @@ type alias Model =
     , jumpToInput : String
     , editingComment : Maybe ( Int, String )
     , markingSegmentStart : Maybe Int
+    , helpExpanded : Bool
     }
 
 
@@ -89,4 +90,5 @@ initModel =
     , jumpToInput = ""
     , editingComment = Nothing
     , markingSegmentStart = Nothing
+    , helpExpanded = False
     }

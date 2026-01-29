@@ -5558,7 +5558,7 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {activeSegment: $elm$core$Maybe$Nothing, bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, markingSegmentStart: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, segmentNameInput: '', segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 40, viewStart: 0};
+var $author$project$Types$initModel = {activeSegment: $elm$core$Maybe$Nothing, bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, markingSegmentStart: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, segmentNameInput: '', segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 40, viewStart: 0};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
@@ -6000,6 +6000,7 @@ var $author$project$Main$PrevSegment = {$: 'PrevSegment'};
 var $author$project$Main$SelectSegment = function (a) {
 	return {$: 'SelectSegment', a: a};
 };
+var $author$project$Main$ToggleHelp = {$: 'ToggleHelp'};
 var $elm$core$Basics$clamp = F3(
 	function (low, high, number) {
 		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
@@ -6381,6 +6382,7 @@ var $elm$core$List$isEmpty = function (xs) {
 };
 var $elm$file$File$name = _File_name;
 var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$Basics$not = _Basics_not;
 var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
@@ -6871,7 +6873,6 @@ var $elm$core$String$padLeft = F3(
 			string);
 	});
 var $elm$core$Basics$modBy = _Basics_modBy;
-var $elm$core$Basics$not = _Basics_not;
 var $author$project$Main$toHexHelper = F2(
 	function (n, acc) {
 		toHexHelper:
@@ -7098,6 +7099,12 @@ var $author$project$Main$update = F2(
 										model,
 										{markingSegmentStart: $elm$core$Maybe$Nothing}),
 									$elm$core$Platform$Cmd$none);
+							case '?':
+								var $temp$msg = $author$project$Main$ToggleHelp,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
 							default:
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 						}
@@ -7236,6 +7243,12 @@ var $author$project$Main$update = F2(
 						_Utils_update(
 							model,
 							{activeSegment: newActiveSegment, segments: newSegments}),
+						$elm$core$Platform$Cmd$none);
+				case 'ToggleHelp':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				default:
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -8349,7 +8362,340 @@ var $author$project$Main$viewDisassembly = function (model) {
 };
 var $elm$html$Html$footer = _VirtualDom_node('footer');
 var $author$project$Main$viewFooter = function (model) {
-	return A2(
+	return model.helpExpanded ? A2(
+		$elm$html$Html$footer,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('cdis-footer expanded')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('help-grid')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('help-section')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-title')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Navigation')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Mouse wheel')
+											])),
+										$elm$html$Html$text('Scroll')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('L')
+											])),
+										$elm$html$Html$text('Center selected line')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('[ ]')
+											])),
+										$elm$html$Html$text('Prev/Next segment')
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('help-section')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-title')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Selection')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Click')
+											])),
+										$elm$html$Html$text('Select line')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Double-click')
+											])),
+										$elm$html$Html$text('Edit comment')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Enter')
+											])),
+										$elm$html$Html$text('Save comment')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Escape')
+											])),
+										$elm$html$Html$text('Cancel')
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('help-section')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-title')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Segments')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('S')
+											])),
+										$elm$html$Html$text('Mark segment start')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Escape')
+											])),
+										$elm$html$Html$text('Cancel segment')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Tab click')
+											])),
+										$elm$html$Html$text('Jump to segment')
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('help-section')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-title')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Other')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('?')
+											])),
+										$elm$html$Html$text('Toggle this help')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Go to $')
+											])),
+										$elm$html$Html$text('Jump to address')
+									]))
+							]))
+					]))
+			])) : A2(
 		$elm$html$Html$footer,
 		_List_fromArray(
 			[
@@ -8362,12 +8708,11 @@ var $author$project$Main$viewFooter = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Scroll: Mouse wheel | '),
-						$elm$html$Html$text('Select: Click | '),
-						$elm$html$Html$text('Comment: Double-click | '),
+						$elm$html$Html$text('?: Help | '),
+						$elm$html$Html$text('Scroll: Wheel | '),
 						$elm$html$Html$text('L: Center | '),
-						$elm$html$Html$text('S: Mark segment start | '),
-						$elm$html$Html$text('[ ]: Prev/Next segment')
+						$elm$html$Html$text('S: Segment | '),
+						$elm$html$Html$text('[ ]: Nav')
 					]))
 			]));
 };
