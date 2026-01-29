@@ -2,12 +2,12 @@ module Main exposing (main)
 
 import Array exposing (Array)
 import Browser
+import Browser.Dom as Dom
 import Browser.Events as Events
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Dict exposing (Dict)
 import Disassembler exposing (disassembleRange)
-import Opcodes exposing (opcodeBytes)
 import File exposing (File)
 import File.Download as Download
 import File.Select as Select
@@ -16,6 +16,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
+import Opcodes exposing (opcodeBytes)
 import Project
 import Task
 import Types exposing (..)
@@ -85,6 +86,7 @@ type Msg
     | LoadProjectRequested
     | LoadProjectSelected File
     | LoadProjectLoaded String
+    | FocusResult
     | NoOp
 
 
@@ -95,6 +97,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        FocusResult ->
+            ( model, Cmd.none )
+
         FileRequested ->
             ( model
             , Select.file [ "application/octet-stream", ".prg" ] FileSelected
@@ -165,7 +170,9 @@ update msg model =
                 existingComment =
                     Dict.get offset model.comments |> Maybe.withDefault ""
             in
-            ( { model | editingComment = Just ( offset, existingComment ) }, Cmd.none )
+            ( { model | editingComment = Just ( offset, existingComment ) }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "comment-input")
+            )
 
         UpdateEditComment text ->
             case model.editingComment of
@@ -225,6 +232,15 @@ update msg model =
                         -- s: mark segment start at selected line
                         update MarkSegmentStart model
 
+                    "c" ->
+                        -- c: edit the comment
+                        case model.selectedOffset of
+                            Just offset ->
+                                update (StartEditComment offset) model
+
+                            Nothing ->
+                                update NoOp model
+
                     "Escape" ->
                         -- Escape: clear segment marking
                         ( { model | markingSegmentStart = Nothing }, Cmd.none )
@@ -274,12 +290,14 @@ update msg model =
                         Nothing ->
                             if List.isEmpty model.segments then
                                 Nothing
+
                             else
                                 Just 0
 
                         Just i ->
                             if i + 1 < List.length model.segments then
                                 Just (i + 1)
+
                             else
                                 Just i
             in
@@ -295,6 +313,7 @@ update msg model =
                         Just i ->
                             if i > 0 then
                                 Just (i - 1)
+
                             else
                                 Nothing
             in
@@ -315,12 +334,14 @@ update msg model =
                         ( actualStart, actualEnd ) =
                             if startOffset <= endOffset then
                                 ( startOffset, endOffset )
+
                             else
                                 ( endOffset, startOffset )
 
                         segmentName =
                             if String.isEmpty model.segmentNameInput then
                                 "$" ++ toHex 4 (model.loadAddress + actualStart)
+
                             else
                                 model.segmentNameInput
 
@@ -365,8 +386,10 @@ update msg model =
                         Just i ->
                             if i == index then
                                 Nothing
+
                             else if i > index then
                                 Just (i - 1)
+
                             else
                                 Just i
 
@@ -504,7 +527,7 @@ centerSelectedLine model =
 
 
 {-| Ensure the selected line is visible in the view.
-    Returns adjusted viewStart if needed.
+Returns adjusted viewStart if needed.
 -}
 ensureSelectionVisible : Model -> Model
 ensureSelectionVisible model =
@@ -538,8 +561,8 @@ ensureSelectionVisible model =
 
 
 {-| Find the start of the previous instruction.
-    We scan backwards trying offsets until we find one whose instruction length
-    would land us at or past the target. This is imperfect but works for linear code.
+We scan backwards trying offsets until we find one whose instruction length
+would land us at or past the target. This is imperfect but works for linear code.
 -}
 findPrevInstructionStart : Array Int -> Int -> Int
 findPrevInstructionStart bytes targetOffset =

@@ -6003,13 +6003,41 @@ var $author$project$Main$LoadProjectSelected = function (a) {
 };
 var $author$project$Main$MarkSegmentStart = {$: 'MarkSegmentStart'};
 var $author$project$Main$NextSegment = {$: 'NextSegment'};
+var $author$project$Main$NoOp = {$: 'NoOp'};
 var $author$project$Main$PrevSegment = {$: 'PrevSegment'};
 var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
 var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
 var $author$project$Main$SelectSegment = function (a) {
 	return {$: 'SelectSegment', a: a};
 };
+var $author$project$Main$StartEditComment = function (a) {
+	return {$: 'StartEditComment', a: a};
+};
 var $author$project$Main$ToggleHelp = {$: 'ToggleHelp'};
+var $elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
+var $elm$core$Task$onError = _Scheduler_onError;
+var $elm$core$Task$attempt = F2(
+	function (resultToMessage, task) {
+		return $elm$core$Task$command(
+			$elm$core$Task$Perform(
+				A2(
+					$elm$core$Task$onError,
+					A2(
+						$elm$core$Basics$composeL,
+						A2($elm$core$Basics$composeL, $elm$core$Task$succeed, resultToMessage),
+						$elm$core$Result$Err),
+					A2(
+						$elm$core$Task$andThen,
+						A2(
+							$elm$core$Basics$composeL,
+							A2($elm$core$Basics$composeL, $elm$core$Task$succeed, resultToMessage),
+							$elm$core$Result$Ok),
+						task))));
+	});
 var $elm$core$Basics$clamp = F3(
 	function (low, high, number) {
 		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
@@ -6905,6 +6933,7 @@ var $author$project$Main$findPrevInstructionStart = F2(
 		};
 		return ((try3 >= 0) && (lenAt(try3) === 3)) ? try3 : (((try2 >= 0) && (lenAt(try2) === 2)) ? try2 : ((try1 >= 0) ? try1 : 0));
 	});
+var $elm$browser$Browser$Dom$focus = _Browser_call('focus');
 var $author$project$Project$segmentTypeToString = function (st) {
 	switch (st.$) {
 		case 'Code':
@@ -7565,6 +7594,8 @@ var $author$project$Main$update = F2(
 		update:
 		while (true) {
 			switch (msg.$) {
+				case 'FocusResult':
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				case 'FileRequested':
 					return _Utils_Tuple2(
 						model,
@@ -7665,13 +7696,18 @@ var $author$project$Main$update = F2(
 								editingComment: $elm$core$Maybe$Just(
 									_Utils_Tuple2(offset, existingComment))
 							}),
-						$elm$core$Platform$Cmd$none);
+						A2(
+							$elm$core$Task$attempt,
+							function (_v2) {
+								return $author$project$Main$NoOp;
+							},
+							$elm$browser$Browser$Dom$focus('comment-input')));
 				case 'UpdateEditComment':
 					var text = msg.a;
-					var _v2 = model.editingComment;
-					if (_v2.$ === 'Just') {
-						var _v3 = _v2.a;
-						var offset = _v3.a;
+					var _v3 = model.editingComment;
+					if (_v3.$ === 'Just') {
+						var _v4 = _v3.a;
+						var offset = _v4.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7684,11 +7720,11 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveComment':
-					var _v4 = model.editingComment;
-					if (_v4.$ === 'Just') {
-						var _v5 = _v4.a;
-						var offset = _v5.a;
-						var text = _v5.b;
+					var _v5 = model.editingComment;
+					if (_v5.$ === 'Just') {
+						var _v6 = _v5.a;
+						var offset = _v6.a;
+						var text = _v6.b;
 						var newComments = $elm$core$String$isEmpty(
 							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.comments) : A3($elm$core$Dict$insert, offset, text, model.comments);
 						return _Utils_Tuple2(
@@ -7713,8 +7749,8 @@ var $author$project$Main$update = F2(
 					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.markingSegmentStart, $elm$core$Maybe$Nothing))) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var _v6 = event.key;
-						switch (_v6) {
+						var _v7 = event.key;
+						switch (_v7) {
 							case 'l':
 								return $author$project$Main$centerSelectedLine(model);
 							case '[':
@@ -7735,6 +7771,22 @@ var $author$project$Main$update = F2(
 								msg = $temp$msg;
 								model = $temp$model;
 								continue update;
+							case 'c':
+								var _v8 = model.selectedOffset;
+								if (_v8.$ === 'Just') {
+									var offset = _v8.a;
+									var $temp$msg = $author$project$Main$StartEditComment(offset),
+										$temp$model = model;
+									msg = $temp$msg;
+									model = $temp$model;
+									continue update;
+								} else {
+									var $temp$msg = $author$project$Main$NoOp,
+										$temp$model = model;
+									msg = $temp$msg;
+									model = $temp$model;
+									continue update;
+								}
 							case 'Escape':
 								return _Utils_Tuple2(
 									_Utils_update(
@@ -7773,10 +7825,10 @@ var $author$project$Main$update = F2(
 					var maybeIndex = msg.a;
 					if (maybeIndex.$ === 'Just') {
 						var index = maybeIndex.a;
-						var _v8 = $elm$core$List$head(
+						var _v10 = $elm$core$List$head(
 							A2($elm$core$List$drop, index, model.segments));
-						if (_v8.$ === 'Just') {
-							var segment = _v8.a;
+						if (_v10.$ === 'Just') {
+							var segment = _v10.a;
 							return _Utils_Tuple2(
 								_Utils_update(
 									model,
@@ -7794,11 +7846,11 @@ var $author$project$Main$update = F2(
 					}
 				case 'NextSegment':
 					var nextIndex = function () {
-						var _v9 = model.activeSegment;
-						if (_v9.$ === 'Nothing') {
+						var _v11 = model.activeSegment;
+						if (_v11.$ === 'Nothing') {
 							return $elm$core$List$isEmpty(model.segments) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(0);
 						} else {
-							var i = _v9.a;
+							var i = _v11.a;
 							return (_Utils_cmp(
 								i + 1,
 								$elm$core$List$length(model.segments)) < 0) ? $elm$core$Maybe$Just(i + 1) : $elm$core$Maybe$Just(i);
@@ -7811,11 +7863,11 @@ var $author$project$Main$update = F2(
 					continue update;
 				case 'PrevSegment':
 					var prevIndex = function () {
-						var _v10 = model.activeSegment;
-						if (_v10.$ === 'Nothing') {
+						var _v12 = model.activeSegment;
+						if (_v12.$ === 'Nothing') {
 							return $elm$core$Maybe$Nothing;
 						} else {
-							var i = _v10.a;
+							var i = _v12.a;
 							return (i > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Nothing;
 						}
 					}();
@@ -7825,9 +7877,9 @@ var $author$project$Main$update = F2(
 					model = $temp$model;
 					continue update;
 				case 'MarkSegmentStart':
-					var _v11 = model.selectedOffset;
-					if (_v11.$ === 'Just') {
-						var offset = _v11.a;
+					var _v13 = model.selectedOffset;
+					if (_v13.$ === 'Just') {
+						var offset = _v13.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7839,13 +7891,13 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'CreateSegment':
-					var _v12 = _Utils_Tuple2(model.markingSegmentStart, model.selectedOffset);
-					if ((_v12.a.$ === 'Just') && (_v12.b.$ === 'Just')) {
-						var startOffset = _v12.a.a;
-						var endOffset = _v12.b.a;
-						var _v13 = (_Utils_cmp(startOffset, endOffset) < 1) ? _Utils_Tuple2(startOffset, endOffset) : _Utils_Tuple2(endOffset, startOffset);
-						var actualStart = _v13.a;
-						var actualEnd = _v13.b;
+					var _v14 = _Utils_Tuple2(model.markingSegmentStart, model.selectedOffset);
+					if ((_v14.a.$ === 'Just') && (_v14.b.$ === 'Just')) {
+						var startOffset = _v14.a.a;
+						var endOffset = _v14.b.a;
+						var _v15 = (_Utils_cmp(startOffset, endOffset) < 1) ? _Utils_Tuple2(startOffset, endOffset) : _Utils_Tuple2(endOffset, startOffset);
+						var actualStart = _v15.a;
+						var actualEnd = _v15.b;
 						var segmentName = $elm$core$String$isEmpty(model.segmentNameInput) ? ('$' + A2($author$project$Main$toHex, 4, model.loadAddress + actualStart)) : model.segmentNameInput;
 						var newSegment = {end: actualEnd, name: segmentName, segType: $author$project$Types$Code, start: actualStart};
 						var newSegments = A2(
@@ -7885,15 +7937,15 @@ var $author$project$Main$update = F2(
 						$elm$core$Tuple$second,
 						A2(
 							$elm$core$List$filter,
-							function (_v15) {
-								var i = _v15.a;
+							function (_v17) {
+								var i = _v17.a;
 								return !_Utils_eq(i, index);
 							},
 							A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, model.segments)));
 					var newActiveSegment = function () {
-						var _v14 = model.activeSegment;
-						if (_v14.$ === 'Just') {
-							var i = _v14.a;
+						var _v16 = model.activeSegment;
+						if (_v16.$ === 'Just') {
+							var i = _v16.a;
 							return _Utils_eq(i, index) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(i, index) > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Just(i));
 						} else {
 							return $elm$core$Maybe$Nothing;
@@ -7911,9 +7963,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v16 = model.selectedOffset;
-					if (_v16.$ === 'Just') {
-						var offset = _v16.a;
+					var _v18 = model.selectedOffset;
+					if (_v18.$ === 'Just') {
+						var offset = _v18.a;
 						var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 						var instrLen = A2(
 							$elm$core$Maybe$withDefault,
@@ -7942,9 +7994,9 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v17 = model.selectedOffset;
-					if (_v17.$ === 'Just') {
-						var offset = _v17.a;
+					var _v19 = model.selectedOffset;
+					if (_v19.$ === 'Just') {
+						var offset = _v19.a;
 						if (offset > 0) {
 							var newOffset = A2($author$project$Main$findPrevInstructionStart, model.bytes, offset - 1);
 							return _Utils_Tuple2(
@@ -7999,16 +8051,16 @@ var $author$project$Main$update = F2(
 							$elm$file$File$toString(file)));
 				case 'LoadProjectLoaded':
 					var jsonString = msg.a;
-					var _v18 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
-					if (_v18.$ === 'Ok') {
-						var saveData = _v18.a;
+					var _v20 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
+					if (_v20.$ === 'Ok') {
+						var saveData = _v20.a;
 						var newModel = A2($author$project$Project$toModel, saveData, model);
 						var withSelection = function () {
 							if ($elm$core$Array$isEmpty(newModel.bytes)) {
 								return newModel;
 							} else {
-								var _v19 = newModel.selectedOffset;
-								if (_v19.$ === 'Nothing') {
+								var _v21 = newModel.selectedOffset;
+								if (_v21.$ === 'Nothing') {
 									return _Utils_update(
 										newModel,
 										{
@@ -8548,9 +8600,6 @@ var $author$project$Main$viewDisassemblyHeader = A2(
 		]));
 var $author$project$Main$SelectLine = function (a) {
 	return {$: 'SelectLine', a: a};
-};
-var $author$project$Main$StartEditComment = function (a) {
-	return {$: 'StartEditComment', a: a};
 };
 var $author$project$Main$formatBytes = function (bytes) {
 	return A2(
