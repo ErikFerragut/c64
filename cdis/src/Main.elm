@@ -8,11 +8,14 @@ import Bytes.Decode as Decode
 import Dict exposing (Dict)
 import Disassembler exposing (disassembleRange)
 import File exposing (File)
+import File.Download as Download
 import File.Select as Select
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as JD
+import Json.Encode as JE
+import Project
 import Task
 import Types exposing (..)
 
@@ -75,6 +78,10 @@ type Msg
     | CancelSegmentCreate
     | DeleteSegment Int
     | ToggleHelp
+    | SaveProject
+    | LoadProjectRequested
+    | LoadProjectSelected File
+    | LoadProjectLoaded String
     | NoOp
 
 
@@ -354,6 +361,46 @@ update msg model =
         ToggleHelp ->
             ( { model | helpExpanded = not model.helpExpanded }, Cmd.none )
 
+        SaveProject ->
+            let
+                saveData =
+                    Project.fromModel model
+
+                json =
+                    Project.encode saveData
+                        |> JE.encode 2
+
+                fileName =
+                    if String.isEmpty model.fileName then
+                        "untitled.cdis"
+
+                    else
+                        String.replace ".prg" ".cdis" model.fileName
+                            |> (\n ->
+                                    if String.endsWith ".cdis" n then
+                                        n
+
+                                    else
+                                        n ++ ".cdis"
+                               )
+            in
+            ( model, Download.string fileName "application/json" json )
+
+        LoadProjectRequested ->
+            ( model, Select.file [ "application/json", ".cdis" ] LoadProjectSelected )
+
+        LoadProjectSelected file ->
+            ( model, Task.perform LoadProjectLoaded (File.toString file) )
+
+        LoadProjectLoaded jsonString ->
+            case JD.decodeString Project.decoder jsonString of
+                Ok saveData ->
+                    ( Project.toModel saveData model, Cmd.none )
+
+                Err _ ->
+                    -- TODO: show error to user
+                    ( model, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -430,6 +477,12 @@ viewToolbar : Model -> Html Msg
 viewToolbar model =
     div [ class "toolbar" ]
         [ button [ onClick FileRequested ] [ text "Load PRG" ]
+        , button
+            [ onClick SaveProject
+            , disabled (Array.isEmpty model.bytes)
+            ]
+            [ text "Save" ]
+        , button [ onClick LoadProjectRequested ] [ text "Open" ]
         , span [ class "separator" ] []
         , label []
             [ text "Go to: $"

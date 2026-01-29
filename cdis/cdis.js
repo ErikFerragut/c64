@@ -5994,6 +5994,12 @@ var $author$project$Main$FileLoaded = function (a) {
 var $author$project$Main$FileSelected = function (a) {
 	return {$: 'FileSelected', a: a};
 };
+var $author$project$Main$LoadProjectLoaded = function (a) {
+	return {$: 'LoadProjectLoaded', a: a};
+};
+var $author$project$Main$LoadProjectSelected = function (a) {
+	return {$: 'LoadProjectSelected', a: a};
+};
 var $author$project$Main$MarkSegmentStart = {$: 'MarkSegmentStart'};
 var $author$project$Main$NextSegment = {$: 'NextSegment'};
 var $author$project$Main$PrevSegment = {$: 'PrevSegment'};
@@ -6254,6 +6260,92 @@ var $author$project$Main$decodeBytes = function (bytes) {
 			_List_Nil,
 			A2($elm$bytes$Bytes$Decode$decode, decoder, bytes)));
 };
+var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $elm$json$Json$Decode$andThen = _Json_andThen;
+var $author$project$Project$SaveData = F6(
+	function (version, fileName, loadAddress, comments, labels, segments) {
+		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, segments: segments, version: version};
+	});
+var $author$project$Project$currentVersion = 1;
+var $elm$json$Json$Decode$int = _Json_decodeInt;
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $author$project$Project$decodeComment = A3(
+	$elm$json$Json$Decode$map2,
+	$elm$core$Tuple$pair,
+	A2($elm$json$Json$Decode$field, 'offset', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'text', $elm$json$Json$Decode$string));
+var $author$project$Project$decodeLabel = A3(
+	$elm$json$Json$Decode$map2,
+	$elm$core$Tuple$pair,
+	A2($elm$json$Json$Decode$field, 'address', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string));
+var $author$project$Project$SegmentSave = F4(
+	function (name, start, end, segType) {
+		return {end: end, name: name, segType: segType, start: start};
+	});
+var $elm$json$Json$Decode$oneOf = _Json_oneOf;
+var $elm$json$Json$Decode$maybe = function (decoder) {
+	return $elm$json$Json$Decode$oneOf(
+		_List_fromArray(
+			[
+				A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, decoder),
+				$elm$json$Json$Decode$succeed($elm$core$Maybe$Nothing)
+			]));
+};
+var $author$project$Project$optionalField = F3(
+	function (field, dec, _default) {
+		return A2(
+			$elm$json$Json$Decode$map,
+			$elm$core$Maybe$withDefault(_default),
+			$elm$json$Json$Decode$maybe(
+				A2($elm$json$Json$Decode$field, field, dec)));
+	});
+var $author$project$Project$decodeSegment = A5(
+	$elm$json$Json$Decode$map4,
+	$author$project$Project$SegmentSave,
+	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'start', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'end', $elm$json$Json$Decode$int),
+	A3($author$project$Project$optionalField, 'type', $elm$json$Json$Decode$string, 'code'));
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $elm$json$Json$Decode$map6 = _Json_map6;
+var $author$project$Project$decodeV1 = A7(
+	$elm$json$Json$Decode$map6,
+	$author$project$Project$SaveData,
+	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
+	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
+	A3(
+		$author$project$Project$optionalField,
+		'comments',
+		$elm$json$Json$Decode$list($author$project$Project$decodeComment),
+		_List_Nil),
+	A3(
+		$author$project$Project$optionalField,
+		'labels',
+		$elm$json$Json$Decode$list($author$project$Project$decodeLabel),
+		_List_Nil),
+	A3(
+		$author$project$Project$optionalField,
+		'segments',
+		$elm$json$Json$Decode$list($author$project$Project$decodeSegment),
+		_List_Nil));
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $author$project$Project$decoderForVersion = function (version) {
+	if (version === 1) {
+		return $author$project$Project$decodeV1;
+	} else {
+		return $elm$json$Json$Decode$fail(
+			'Unknown save file version: ' + $elm$core$String$fromInt(version));
+	}
+};
+var $author$project$Project$decoder = A2(
+	$elm$json$Json$Decode$andThen,
+	$author$project$Project$decoderForVersion,
+	A2($elm$json$Json$Decode$field, 'version', $elm$json$Json$Decode$int));
 var $elm$core$List$drop = F2(
 	function (n, list) {
 		drop:
@@ -6275,6 +6367,101 @@ var $elm$core$List$drop = F2(
 			}
 		}
 	});
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Project$encodeComment = function (_v0) {
+	var offset = _v0.a;
+	var text = _v0.b;
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'offset',
+				$elm$json$Json$Encode$int(offset)),
+				_Utils_Tuple2(
+				'text',
+				$elm$json$Json$Encode$string(text))
+			]));
+};
+var $author$project$Project$encodeLabel = function (_v0) {
+	var addr = _v0.a;
+	var name = _v0.b;
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'address',
+				$elm$json$Json$Encode$int(addr)),
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(name))
+			]));
+};
+var $author$project$Project$encodeSegment = function (seg) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(seg.name)),
+				_Utils_Tuple2(
+				'start',
+				$elm$json$Json$Encode$int(seg.start)),
+				_Utils_Tuple2(
+				'end',
+				$elm$json$Json$Encode$int(seg.end)),
+				_Utils_Tuple2(
+				'type',
+				$elm$json$Json$Encode$string(seg.segType))
+			]));
+};
+var $elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				$elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var $author$project$Project$encode = function (data) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'version',
+				$elm$json$Json$Encode$int(data.version)),
+				_Utils_Tuple2(
+				'fileName',
+				$elm$json$Json$Encode$string(data.fileName)),
+				_Utils_Tuple2(
+				'loadAddress',
+				$elm$json$Json$Encode$int(data.loadAddress)),
+				_Utils_Tuple2(
+				'comments',
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodeComment, data.comments)),
+				_Utils_Tuple2(
+				'labels',
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodeLabel, data.labels)),
+				_Utils_Tuple2(
+				'segments',
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodeSegment, data.segments))
+			]));
+};
+var $elm$core$String$endsWith = _String_endsWith;
 var $elm$time$Time$Posix = function (a) {
 	return {$: 'Posix', a: a};
 };
@@ -6332,6 +6519,34 @@ var $elm$core$Array$fromList = function (list) {
 		return A3($elm$core$Array$fromListHelp, list, _List_Nil, 0);
 	}
 };
+var $author$project$Project$segmentTypeToString = function (st) {
+	switch (st.$) {
+		case 'Code':
+			return 'code';
+		case 'Data':
+			return 'data';
+		default:
+			return 'unknown';
+	}
+};
+var $author$project$Project$segmentToSave = function (seg) {
+	return {
+		end: seg.end,
+		name: seg.name,
+		segType: $author$project$Project$segmentTypeToString(seg.segType),
+		start: seg.start
+	};
+};
+var $author$project$Project$fromModel = function (model) {
+	return {
+		comments: $elm$core$Dict$toList(model.comments),
+		fileName: model.fileName,
+		labels: $elm$core$Dict$toList(model.labels),
+		loadAddress: model.loadAddress,
+		segments: A2($elm$core$List$map, $author$project$Project$segmentToSave, model.segments),
+		version: $author$project$Project$currentVersion
+	};
+};
 var $elm$core$Basics$ge = _Utils_ge;
 var $elm$core$Dict$get = F2(
 	function (targetKey, dict) {
@@ -6383,10 +6598,6 @@ var $elm$core$List$isEmpty = function (xs) {
 var $elm$file$File$name = _File_name;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$Basics$not = _Basics_not;
-var $elm$core$Tuple$pair = F2(
-	function (a, b) {
-		return _Utils_Tuple2(a, b);
-	});
 var $author$project$Main$hexDigitValue = function (c) {
 	switch (c.valueOf()) {
 		case '0':
@@ -6844,6 +7055,13 @@ var $elm$core$Tuple$second = function (_v0) {
 	return y;
 };
 var $elm$core$List$sortBy = _List_sortBy;
+var $elm$file$File$Download$string = F3(
+	function (name, mime, content) {
+		return A2(
+			$elm$core$Task$perform,
+			$elm$core$Basics$never,
+			A3(_File_download, name, mime, content));
+	});
 var $elm$file$File$toBytes = _File_toBytes;
 var $elm$core$String$cons = _String_cons;
 var $elm$core$String$fromChar = function (_char) {
@@ -6921,6 +7139,39 @@ var $author$project$Main$toHex = F2(
 			hex);
 		return $elm$core$String$toUpper(padded);
 	});
+var $author$project$Types$Data = {$: 'Data'};
+var $author$project$Types$Unknown = {$: 'Unknown'};
+var $author$project$Project$stringToSegmentType = function (str) {
+	switch (str) {
+		case 'code':
+			return $author$project$Types$Code;
+		case 'data':
+			return $author$project$Types$Data;
+		default:
+			return $author$project$Types$Unknown;
+	}
+};
+var $author$project$Project$segmentFromSave = function (seg) {
+	return {
+		end: seg.end,
+		name: seg.name,
+		segType: $author$project$Project$stringToSegmentType(seg.segType),
+		start: seg.start
+	};
+};
+var $author$project$Project$toModel = F2(
+	function (data, model) {
+		return _Utils_update(
+			model,
+			{
+				comments: $elm$core$Dict$fromList(data.comments),
+				fileName: data.fileName,
+				labels: $elm$core$Dict$fromList(data.labels),
+				loadAddress: data.loadAddress,
+				segments: A2($elm$core$List$map, $author$project$Project$segmentFromSave, data.segments)
+			});
+	});
+var $elm$file$File$toString = _File_toString;
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		update:
@@ -7250,12 +7501,51 @@ var $author$project$Main$update = F2(
 							model,
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
+				case 'SaveProject':
+					var saveData = $author$project$Project$fromModel(model);
+					var json = A2(
+						$elm$json$Json$Encode$encode,
+						2,
+						$author$project$Project$encode(saveData));
+					var fileName = $elm$core$String$isEmpty(model.fileName) ? 'untitled.cdis' : function (n) {
+						return A2($elm$core$String$endsWith, '.cdis', n) ? n : (n + '.cdis');
+					}(
+						A3($elm$core$String$replace, '.prg', '.cdis', model.fileName));
+					return _Utils_Tuple2(
+						model,
+						A3($elm$file$File$Download$string, fileName, 'application/json', json));
+				case 'LoadProjectRequested':
+					return _Utils_Tuple2(
+						model,
+						A2(
+							$elm$file$File$Select$file,
+							_List_fromArray(
+								['application/json', '.cdis']),
+							$author$project$Main$LoadProjectSelected));
+				case 'LoadProjectSelected':
+					var file = msg.a;
+					return _Utils_Tuple2(
+						model,
+						A2(
+							$elm$core$Task$perform,
+							$author$project$Main$LoadProjectLoaded,
+							$elm$file$File$toString(file)));
+				case 'LoadProjectLoaded':
+					var jsonString = msg.a;
+					var _v16 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
+					if (_v16.$ === 'Ok') {
+						var saveData = _v16.a;
+						return _Utils_Tuple2(
+							A2($author$project$Project$toModel, saveData, model),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				default:
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			}
 		}
 	});
-var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -8180,8 +8470,6 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
 var $author$project$Main$CancelEditComment = {$: 'CancelEditComment'};
-var $elm$json$Json$Decode$andThen = _Json_andThen;
-var $elm$json$Json$Decode$fail = _Json_fail;
 var $author$project$Main$onKeyDownComment = A2(
 	$elm$html$Html$Events$on,
 	'keydown',
@@ -8919,6 +9207,9 @@ var $author$project$Main$JumpToAddress = {$: 'JumpToAddress'};
 var $author$project$Main$JumpToInputChanged = function (a) {
 	return {$: 'JumpToInputChanged', a: a};
 };
+var $author$project$Main$LoadProjectRequested = {$: 'LoadProjectRequested'};
+var $author$project$Main$SaveProject = {$: 'SaveProject'};
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
 var $elm$html$Html$label = _VirtualDom_node('label');
 var $elm$html$Html$Attributes$maxlength = function (n) {
 	return A2(
@@ -8955,6 +9246,28 @@ var $author$project$Main$viewToolbar = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Load PRG')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$SaveProject),
+						$elm$html$Html$Attributes$disabled(
+						$elm$core$Array$isEmpty(model.bytes))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Save')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$LoadProjectRequested)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Open')
 					])),
 				A2(
 				$elm$html$Html$span,
