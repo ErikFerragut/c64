@@ -11,6 +11,8 @@ type alias Model =
     , comments : Dict Int String
     , labels : Dict Int String
     , segments : List Segment
+    , activeSegment : Maybe Int
+    , segmentNameInput : String
     , viewStart : Int
     , viewLines : Int
     , selectedOffset : Maybe Int
@@ -18,6 +20,7 @@ type alias Model =
     , fileName : String
     , jumpToInput : String
     , editingComment : Maybe ( Int, String )
+    , markingSegmentStart : Maybe Int
     }
 
 
@@ -76,6 +79,8 @@ initModel =
     , comments = Dict.empty
     , labels = Dict.empty
     , segments = []
+    , activeSegment = Nothing
+    , segmentNameInput = ""
     , viewStart = 0
     , viewLines = 40
     , selectedOffset = Nothing
@@ -83,4 +88,5 @@ initModel =
     , fileName = ""
     , jumpToInput = ""
     , editingComment = Nothing
+    , markingSegmentStart = Nothing
     }

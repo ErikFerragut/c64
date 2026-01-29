@@ -5558,7 +5558,7 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 40, viewStart: 0};
+var $author$project$Types$initModel = {activeSegment: $elm$core$Maybe$Nothing, bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, markingSegmentStart: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, segmentNameInput: '', segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 40, viewStart: 0};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
@@ -5987,16 +5987,46 @@ var $elm$browser$Browser$Events$onKeyDown = A2($elm$browser$Browser$Events$on, $
 var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$browser$Browser$Events$onKeyDown($author$project$Main$keyDecoder);
 };
+var $author$project$Types$Code = {$: 'Code'};
 var $author$project$Main$FileLoaded = function (a) {
 	return {$: 'FileLoaded', a: a};
 };
 var $author$project$Main$FileSelected = function (a) {
 	return {$: 'FileSelected', a: a};
 };
+var $author$project$Main$MarkSegmentStart = {$: 'MarkSegmentStart'};
+var $author$project$Main$NextSegment = {$: 'NextSegment'};
+var $author$project$Main$PrevSegment = {$: 'PrevSegment'};
+var $author$project$Main$SelectSegment = function (a) {
+	return {$: 'SelectSegment', a: a};
+};
 var $elm$core$Basics$clamp = F3(
 	function (low, high, number) {
 		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
 	});
+var $elm$core$Array$length = function (_v0) {
+	var len = _v0.a;
+	return len;
+};
+var $author$project$Main$centerSelectedLine = function (model) {
+	var _v0 = model.selectedOffset;
+	if (_v0.$ === 'Just') {
+		var offset = _v0.a;
+		var targetStart = offset - ((model.viewLines / 2) | 0);
+		var maxOffset = A2(
+			$elm$core$Basics$max,
+			0,
+			$elm$core$Array$length(model.bytes) - model.viewLines);
+		var newStart = A3($elm$core$Basics$clamp, 0, maxOffset, targetStart);
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{viewStart: newStart}),
+			$elm$core$Platform$Cmd$none);
+	} else {
+		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+	}
+};
 var $elm$bytes$Bytes$Decode$Done = function (a) {
 	return {$: 'Done', a: a};
 };
@@ -6255,6 +6285,17 @@ var $elm$file$File$Select$file = F2(
 			toMsg,
 			_File_uploadOne(mimes));
 	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
 var $elm$core$Array$fromListHelp = F3(
 	function (list, nodeList, nodeListSize) {
 		fromListHelp:
@@ -6331,12 +6372,19 @@ var $elm$core$List$head = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
-var $elm$core$Array$length = function (_v0) {
-	var len = _v0.a;
-	return len;
+var $elm$core$List$isEmpty = function (xs) {
+	if (!xs.b) {
+		return true;
+	} else {
+		return false;
+	}
 };
 var $elm$file$File$name = _File_name;
 var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
 var $author$project$Main$hexDigitValue = function (c) {
 	switch (c.valueOf()) {
 		case '0':
@@ -6789,195 +6837,12 @@ var $elm$core$Dict$remove = F2(
 			return x;
 		}
 	});
-var $elm$file$File$toBytes = _File_toBytes;
-var $author$project$Main$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'FileRequested':
-				return _Utils_Tuple2(
-					model,
-					A2(
-						$elm$file$File$Select$file,
-						_List_fromArray(
-							['application/octet-stream', '.prg']),
-						$author$project$Main$FileSelected));
-			case 'FileSelected':
-				var file = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							fileName: $elm$file$File$name(file)
-						}),
-					A2(
-						$elm$core$Task$perform,
-						$author$project$Main$FileLoaded,
-						$elm$file$File$toBytes(file)));
-			case 'FileLoaded':
-				var bytes = msg.a;
-				var decoded = $author$project$Main$decodeBytes(bytes);
-				var loadAddr = A2(
-					$elm$core$Maybe$withDefault,
-					0,
-					$elm$core$List$head(decoded)) + (A2(
-					$elm$core$Maybe$withDefault,
-					0,
-					$elm$core$List$head(
-						A2($elm$core$List$drop, 1, decoded))) * 256);
-				var programBytes = A2($elm$core$List$drop, 2, decoded);
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							bytes: $elm$core$Array$fromList(programBytes),
-							loadAddress: loadAddr,
-							viewStart: 0
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'Scroll':
-				var delta = msg.a;
-				var maxOffset = A2(
-					$elm$core$Basics$max,
-					0,
-					$elm$core$Array$length(model.bytes) - model.viewLines);
-				var newStart = A3($elm$core$Basics$clamp, 0, maxOffset, model.viewStart + delta);
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{viewStart: newStart}),
-					$elm$core$Platform$Cmd$none);
-			case 'JumpToAddress':
-				var _v1 = $author$project$Main$parseHex(model.jumpToInput);
-				if (_v1.$ === 'Just') {
-					var addr = _v1.a;
-					var offset = addr - model.loadAddress;
-					return ((offset >= 0) && (_Utils_cmp(
-						offset,
-						$elm$core$Array$length(model.bytes)) < 0)) ? _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{jumpToInput: '', viewStart: offset}),
-						$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'JumpToInputChanged':
-				var str = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{jumpToInput: str}),
-					$elm$core$Platform$Cmd$none);
-			case 'SelectLine':
-				var offset = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							selectedOffset: $elm$core$Maybe$Just(offset)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'StartEditComment':
-				var offset = msg.a;
-				var existingComment = A2(
-					$elm$core$Maybe$withDefault,
-					'',
-					A2($elm$core$Dict$get, offset, model.comments));
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							editingComment: $elm$core$Maybe$Just(
-								_Utils_Tuple2(offset, existingComment))
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'UpdateEditComment':
-				var text = msg.a;
-				var _v2 = model.editingComment;
-				if (_v2.$ === 'Just') {
-					var _v3 = _v2.a;
-					var offset = _v3.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								editingComment: $elm$core$Maybe$Just(
-									_Utils_Tuple2(offset, text))
-							}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'SaveComment':
-				var _v4 = model.editingComment;
-				if (_v4.$ === 'Just') {
-					var _v5 = _v4.a;
-					var offset = _v5.a;
-					var text = _v5.b;
-					var newComments = $elm$core$String$isEmpty(
-						$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.comments) : A3($elm$core$Dict$insert, offset, text, model.comments);
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{comments: newComments, editingComment: $elm$core$Maybe$Nothing}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'CancelEditComment':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{editingComment: $elm$core$Maybe$Nothing}),
-					$elm$core$Platform$Cmd$none);
-			case 'SetRestartPoint':
-				var offset = msg.a;
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			case 'KeyPressed':
-				var event = msg.a;
-				if (!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					var _v6 = event.key;
-					if (_v6 === 'l') {
-						var _v7 = model.selectedOffset;
-						if (_v7.$ === 'Just') {
-							var offset = _v7.a;
-							var targetStart = offset - ((model.viewLines / 2) | 0);
-							var maxOffset = A2(
-								$elm$core$Basics$max,
-								0,
-								$elm$core$Array$length(model.bytes) - model.viewLines);
-							var newStart = A3($elm$core$Basics$clamp, 0, maxOffset, targetStart);
-							return _Utils_Tuple2(
-								_Utils_update(
-									model,
-									{viewStart: newStart}),
-								$elm$core$Platform$Cmd$none);
-						} else {
-							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-						}
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				}
-			default:
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-		}
-	});
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
-var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $elm$html$Html$div = _VirtualDom_node('div');
-var $author$project$Main$Scroll = function (a) {
-	return {$: 'Scroll', a: a};
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
 };
+var $elm$core$List$sortBy = _List_sortBy;
+var $elm$file$File$toBytes = _File_toBytes;
 var $elm$core$String$cons = _String_cons;
 var $elm$core$String$fromChar = function (_char) {
 	return A2($elm$core$String$cons, _char, '');
@@ -7007,6 +6872,389 @@ var $elm$core$String$padLeft = F3(
 	});
 var $elm$core$Basics$modBy = _Basics_modBy;
 var $elm$core$Basics$not = _Basics_not;
+var $author$project$Main$toHexHelper = F2(
+	function (n, acc) {
+		toHexHelper:
+		while (true) {
+			if ((!n) && (!$elm$core$String$isEmpty(acc))) {
+				return acc;
+			} else {
+				if (!n) {
+					return '0';
+				} else {
+					var digit = A2($elm$core$Basics$modBy, 16, n);
+					var _char = function () {
+						switch (digit) {
+							case 10:
+								return 'A';
+							case 11:
+								return 'B';
+							case 12:
+								return 'C';
+							case 13:
+								return 'D';
+							case 14:
+								return 'E';
+							case 15:
+								return 'F';
+							default:
+								return $elm$core$String$fromInt(digit);
+						}
+					}();
+					var $temp$n = (n / 16) | 0,
+						$temp$acc = _Utils_ap(_char, acc);
+					n = $temp$n;
+					acc = $temp$acc;
+					continue toHexHelper;
+				}
+			}
+		}
+	});
+var $author$project$Main$toHex = F2(
+	function (width, n) {
+		var hex = A2($author$project$Main$toHexHelper, n, '');
+		var padded = A3(
+			$elm$core$String$padLeft,
+			width,
+			_Utils_chr('0'),
+			hex);
+		return $elm$core$String$toUpper(padded);
+	});
+var $author$project$Main$update = F2(
+	function (msg, model) {
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'FileRequested':
+					return _Utils_Tuple2(
+						model,
+						A2(
+							$elm$file$File$Select$file,
+							_List_fromArray(
+								['application/octet-stream', '.prg']),
+							$author$project$Main$FileSelected));
+				case 'FileSelected':
+					var file = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								fileName: $elm$file$File$name(file)
+							}),
+						A2(
+							$elm$core$Task$perform,
+							$author$project$Main$FileLoaded,
+							$elm$file$File$toBytes(file)));
+				case 'FileLoaded':
+					var bytes = msg.a;
+					var decoded = $author$project$Main$decodeBytes(bytes);
+					var loadAddr = A2(
+						$elm$core$Maybe$withDefault,
+						0,
+						$elm$core$List$head(decoded)) + (A2(
+						$elm$core$Maybe$withDefault,
+						0,
+						$elm$core$List$head(
+							A2($elm$core$List$drop, 1, decoded))) * 256);
+					var programBytes = A2($elm$core$List$drop, 2, decoded);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								bytes: $elm$core$Array$fromList(programBytes),
+								loadAddress: loadAddr,
+								viewStart: 0
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'Scroll':
+					var delta = msg.a;
+					var maxOffset = A2(
+						$elm$core$Basics$max,
+						0,
+						$elm$core$Array$length(model.bytes) - model.viewLines);
+					var newStart = A3($elm$core$Basics$clamp, 0, maxOffset, model.viewStart + delta);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{viewStart: newStart}),
+						$elm$core$Platform$Cmd$none);
+				case 'JumpToAddress':
+					var _v1 = $author$project$Main$parseHex(model.jumpToInput);
+					if (_v1.$ === 'Just') {
+						var addr = _v1.a;
+						var offset = addr - model.loadAddress;
+						return ((offset >= 0) && (_Utils_cmp(
+							offset,
+							$elm$core$Array$length(model.bytes)) < 0)) ? _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{jumpToInput: '', viewStart: offset}),
+							$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'JumpToInputChanged':
+					var str = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{jumpToInput: str}),
+						$elm$core$Platform$Cmd$none);
+				case 'SelectLine':
+					var offset = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								selectedOffset: $elm$core$Maybe$Just(offset)
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'StartEditComment':
+					var offset = msg.a;
+					var existingComment = A2(
+						$elm$core$Maybe$withDefault,
+						'',
+						A2($elm$core$Dict$get, offset, model.comments));
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								editingComment: $elm$core$Maybe$Just(
+									_Utils_Tuple2(offset, existingComment))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'UpdateEditComment':
+					var text = msg.a;
+					var _v2 = model.editingComment;
+					if (_v2.$ === 'Just') {
+						var _v3 = _v2.a;
+						var offset = _v3.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									editingComment: $elm$core$Maybe$Just(
+										_Utils_Tuple2(offset, text))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'SaveComment':
+					var _v4 = model.editingComment;
+					if (_v4.$ === 'Just') {
+						var _v5 = _v4.a;
+						var offset = _v5.a;
+						var text = _v5.b;
+						var newComments = $elm$core$String$isEmpty(
+							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.comments) : A3($elm$core$Dict$insert, offset, text, model.comments);
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{comments: newComments, editingComment: $elm$core$Maybe$Nothing}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CancelEditComment':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{editingComment: $elm$core$Maybe$Nothing}),
+						$elm$core$Platform$Cmd$none);
+				case 'SetRestartPoint':
+					var offset = msg.a;
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				case 'KeyPressed':
+					var event = msg.a;
+					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.markingSegmentStart, $elm$core$Maybe$Nothing))) {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					} else {
+						var _v6 = event.key;
+						switch (_v6) {
+							case 'l':
+								return $author$project$Main$centerSelectedLine(model);
+							case '[':
+								var $temp$msg = $author$project$Main$PrevSegment,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case ']':
+								var $temp$msg = $author$project$Main$NextSegment,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case 's':
+								var $temp$msg = $author$project$Main$MarkSegmentStart,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case 'Escape':
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{markingSegmentStart: $elm$core$Maybe$Nothing}),
+									$elm$core$Platform$Cmd$none);
+							default:
+								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					}
+				case 'SelectSegment':
+					var maybeIndex = msg.a;
+					if (maybeIndex.$ === 'Just') {
+						var index = maybeIndex.a;
+						var _v8 = $elm$core$List$head(
+							A2($elm$core$List$drop, index, model.segments));
+						if (_v8.$ === 'Just') {
+							var segment = _v8.a;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{activeSegment: maybeIndex, viewStart: segment.start}),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{activeSegment: $elm$core$Maybe$Nothing}),
+							$elm$core$Platform$Cmd$none);
+					}
+				case 'NextSegment':
+					var nextIndex = function () {
+						var _v9 = model.activeSegment;
+						if (_v9.$ === 'Nothing') {
+							return $elm$core$List$isEmpty(model.segments) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(0);
+						} else {
+							var i = _v9.a;
+							return (_Utils_cmp(
+								i + 1,
+								$elm$core$List$length(model.segments)) < 0) ? $elm$core$Maybe$Just(i + 1) : $elm$core$Maybe$Just(i);
+						}
+					}();
+					var $temp$msg = $author$project$Main$SelectSegment(nextIndex),
+						$temp$model = model;
+					msg = $temp$msg;
+					model = $temp$model;
+					continue update;
+				case 'PrevSegment':
+					var prevIndex = function () {
+						var _v10 = model.activeSegment;
+						if (_v10.$ === 'Nothing') {
+							return $elm$core$Maybe$Nothing;
+						} else {
+							var i = _v10.a;
+							return (i > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Nothing;
+						}
+					}();
+					var $temp$msg = $author$project$Main$SelectSegment(prevIndex),
+						$temp$model = model;
+					msg = $temp$msg;
+					model = $temp$model;
+					continue update;
+				case 'MarkSegmentStart':
+					var _v11 = model.selectedOffset;
+					if (_v11.$ === 'Just') {
+						var offset = _v11.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									markingSegmentStart: $elm$core$Maybe$Just(offset)
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CreateSegment':
+					var _v12 = _Utils_Tuple2(model.markingSegmentStart, model.selectedOffset);
+					if ((_v12.a.$ === 'Just') && (_v12.b.$ === 'Just')) {
+						var startOffset = _v12.a.a;
+						var endOffset = _v12.b.a;
+						var _v13 = (_Utils_cmp(startOffset, endOffset) < 1) ? _Utils_Tuple2(startOffset, endOffset) : _Utils_Tuple2(endOffset, startOffset);
+						var actualStart = _v13.a;
+						var actualEnd = _v13.b;
+						var segmentName = $elm$core$String$isEmpty(model.segmentNameInput) ? ('$' + A2($author$project$Main$toHex, 4, model.loadAddress + actualStart)) : model.segmentNameInput;
+						var newSegment = {end: actualEnd, name: segmentName, segType: $author$project$Types$Code, start: actualStart};
+						var newSegments = A2(
+							$elm$core$List$sortBy,
+							function ($) {
+								return $.start;
+							},
+							_Utils_ap(
+								model.segments,
+								_List_fromArray(
+									[newSegment])));
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{markingSegmentStart: $elm$core$Maybe$Nothing, segmentNameInput: '', segments: newSegments}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'UpdateSegmentName':
+					var name = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{segmentNameInput: name}),
+						$elm$core$Platform$Cmd$none);
+				case 'CancelSegmentCreate':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{markingSegmentStart: $elm$core$Maybe$Nothing, segmentNameInput: ''}),
+						$elm$core$Platform$Cmd$none);
+				case 'DeleteSegment':
+					var index = msg.a;
+					var newSegments = A2(
+						$elm$core$List$map,
+						$elm$core$Tuple$second,
+						A2(
+							$elm$core$List$filter,
+							function (_v15) {
+								var i = _v15.a;
+								return !_Utils_eq(i, index);
+							},
+							A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, model.segments)));
+					var newActiveSegment = function () {
+						var _v14 = model.activeSegment;
+						if (_v14.$ === 'Just') {
+							var i = _v14.a;
+							return _Utils_eq(i, index) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(i, index) > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Just(i));
+						} else {
+							return $elm$core$Maybe$Nothing;
+						}
+					}();
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{activeSegment: newActiveSegment, segments: newSegments}),
+						$elm$core$Platform$Cmd$none);
+				default:
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			}
+		}
+	});
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $elm$html$Html$div = _VirtualDom_node('div');
+var $author$project$Main$Scroll = function (a) {
+	return {$: 'Scroll', a: a};
+};
 var $author$project$Disassembler$toHexHelper = F2(
 	function (n, acc) {
 		toHexHelper:
@@ -7845,54 +8093,6 @@ var $author$project$Main$SelectLine = function (a) {
 var $author$project$Main$StartEditComment = function (a) {
 	return {$: 'StartEditComment', a: a};
 };
-var $author$project$Main$toHexHelper = F2(
-	function (n, acc) {
-		toHexHelper:
-		while (true) {
-			if ((!n) && (!$elm$core$String$isEmpty(acc))) {
-				return acc;
-			} else {
-				if (!n) {
-					return '0';
-				} else {
-					var digit = A2($elm$core$Basics$modBy, 16, n);
-					var _char = function () {
-						switch (digit) {
-							case 10:
-								return 'A';
-							case 11:
-								return 'B';
-							case 12:
-								return 'C';
-							case 13:
-								return 'D';
-							case 14:
-								return 'E';
-							case 15:
-								return 'F';
-							default:
-								return $elm$core$String$fromInt(digit);
-						}
-					}();
-					var $temp$n = (n / 16) | 0,
-						$temp$acc = _Utils_ap(_char, acc);
-					n = $temp$n;
-					acc = $temp$acc;
-					continue toHexHelper;
-				}
-			}
-		}
-	});
-var $author$project$Main$toHex = F2(
-	function (width, n) {
-		var hex = A2($author$project$Main$toHexHelper, n, '');
-		var padded = A3(
-			$elm$core$String$padLeft,
-			width,
-			_Utils_chr('0'),
-			hex);
-		return $elm$core$String$toUpper(padded);
-	});
 var $author$project$Main$formatBytes = function (bytes) {
 	return A2(
 		$elm$core$String$join,
@@ -8165,7 +8365,9 @@ var $author$project$Main$viewFooter = function (model) {
 						$elm$html$Html$text('Scroll: Mouse wheel | '),
 						$elm$html$Html$text('Select: Click | '),
 						$elm$html$Html$text('Comment: Double-click | '),
-						$elm$html$Html$text('L: Center selection')
+						$elm$html$Html$text('L: Center | '),
+						$elm$html$Html$text('S: Mark segment start | '),
+						$elm$html$Html$text('[ ]: Prev/Next segment')
 					]))
 			]));
 };
@@ -8209,12 +8411,169 @@ var $author$project$Main$viewHeader = function (model) {
 					]))
 			]));
 };
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $author$project$Main$DeleteSegment = function (a) {
+	return {$: 'DeleteSegment', a: a};
+};
+var $elm$html$Html$Attributes$title = $elm$html$Html$Attributes$stringProperty('title');
+var $author$project$Main$viewSegmentTab = F3(
+	function (model, index, segment) {
+		var isActive = _Utils_eq(
+			model.activeSegment,
+			$elm$core$Maybe$Just(index));
+		var addrStr = '$' + A2($author$project$Main$toHex, 4, model.loadAddress + segment.start);
+		return A2(
+			$elm$html$Html$span,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('segment-tab-wrapper')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class(
+							isActive ? 'segment-tab active' : 'segment-tab'),
+							$elm$html$Html$Events$onClick(
+							$author$project$Main$SelectSegment(
+								$elm$core$Maybe$Just(index)))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(segment.name + (' ' + addrStr))
+						])),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('segment-delete'),
+							$elm$html$Html$Events$onClick(
+							$author$project$Main$DeleteSegment(index)),
+							$elm$html$Html$Attributes$title('Delete segment')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('x')
+						]))
+				]));
+	});
+var $author$project$Main$viewSegmentBar = function (model) {
+	return $elm$core$Array$isEmpty(model.bytes) ? $elm$html$Html$text('') : A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('segment-bar')
+			]),
+		_Utils_ap(
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class(
+							_Utils_eq(model.activeSegment, $elm$core$Maybe$Nothing) ? 'segment-tab active' : 'segment-tab'),
+							$elm$html$Html$Events$onClick(
+							$author$project$Main$SelectSegment($elm$core$Maybe$Nothing))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('All')
+						]))
+				]),
+			A2(
+				$elm$core$List$indexedMap,
+				$author$project$Main$viewSegmentTab(model),
+				model.segments)));
+};
+var $author$project$Main$CancelSegmentCreate = {$: 'CancelSegmentCreate'};
+var $author$project$Main$CreateSegment = {$: 'CreateSegment'};
+var $author$project$Main$UpdateSegmentName = function (a) {
+	return {$: 'UpdateSegmentName', a: a};
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $author$project$Main$viewSegmentCreateBar = function (model) {
+	var _v0 = model.markingSegmentStart;
+	if (_v0.$ === 'Nothing') {
+		return $elm$html$Html$text('');
+	} else {
+		var startOffset = _v0.a;
+		var startAddr = '$' + A2($author$project$Main$toHex, 4, model.loadAddress + startOffset);
+		var endAddr = function () {
+			var _v1 = model.selectedOffset;
+			if (_v1.$ === 'Just') {
+				var endOffset = _v1.a;
+				return '$' + A2($author$project$Main$toHex, 4, model.loadAddress + endOffset);
+			} else {
+				return '...';
+			}
+		}();
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('segment-create-bar')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Creating segment: ' + (startAddr + (' to ' + endAddr)))
+						])),
+					A2(
+					$elm$html$Html$input,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$type_('text'),
+							$elm$html$Html$Attributes$placeholder('Segment name'),
+							$elm$html$Html$Attributes$value(model.segmentNameInput),
+							$elm$html$Html$Events$onInput($author$project$Main$UpdateSegmentName),
+							$elm$html$Html$Attributes$class('segment-name-input')
+						]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onClick($author$project$Main$CreateSegment)
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Create')
+						])),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onClick($author$project$Main$CancelSegmentCreate)
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Cancel')
+						])),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('hint')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('(select end line, then click Create)')
+						]))
+				]));
+	}
+};
 var $author$project$Main$FileRequested = {$: 'FileRequested'};
 var $author$project$Main$JumpToAddress = {$: 'JumpToAddress'};
 var $author$project$Main$JumpToInputChanged = function (a) {
 	return {$: 'JumpToInputChanged', a: a};
 };
-var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$label = _VirtualDom_node('label');
 var $elm$html$Html$Attributes$maxlength = function (n) {
 	return A2(
@@ -8233,7 +8592,6 @@ var $author$project$Main$onKeyDown = function (msg) {
 			},
 			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 };
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
 var $author$project$Main$viewToolbar = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -8324,6 +8682,8 @@ var $author$project$Main$view = function (model) {
 			[
 				$author$project$Main$viewHeader(model),
 				$author$project$Main$viewToolbar(model),
+				$author$project$Main$viewSegmentBar(model),
+				$author$project$Main$viewSegmentCreateBar(model),
 				$author$project$Main$viewDisassembly(model),
 				$author$project$Main$viewFooter(model)
 			]));

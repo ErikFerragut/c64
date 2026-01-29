@@ -66,6 +66,14 @@ type Msg
     | CancelEditComment
     | SetRestartPoint Int
     | KeyPressed KeyEvent
+    | SelectSegment (Maybe Int)
+    | NextSegment
+    | PrevSegment
+    | MarkSegmentStart
+    | CreateSegment
+    | UpdateSegmentName String
+    | CancelSegmentCreate
+    | DeleteSegment Int
     | NoOp
 
 
@@ -182,35 +190,183 @@ update msg model =
             ( model, Cmd.none )
 
         KeyPressed event ->
-            -- Ignore keypresses while editing a comment
-            if model.editingComment /= Nothing then
+            -- Ignore keypresses while editing a comment or naming a segment
+            if model.editingComment /= Nothing || model.markingSegmentStart /= Nothing then
                 ( model, Cmd.none )
 
             else
                 case event.key of
                     "l" ->
                         -- l: center selected line on screen
-                        case model.selectedOffset of
-                            Just offset ->
-                                let
-                                    targetStart =
-                                        offset - (model.viewLines // 2)
+                        centerSelectedLine model
 
-                                    maxOffset =
-                                        Basics.max 0 (Array.length model.bytes - model.viewLines)
+                    "[" ->
+                        -- [: previous segment
+                        update PrevSegment model
 
-                                    newStart =
-                                        clamp 0 maxOffset targetStart
-                                in
-                                ( { model | viewStart = newStart }, Cmd.none )
+                    "]" ->
+                        -- ]: next segment
+                        update NextSegment model
 
-                            Nothing ->
-                                ( model, Cmd.none )
+                    "s" ->
+                        -- s: mark segment start at selected line
+                        update MarkSegmentStart model
+
+                    "Escape" ->
+                        -- Escape: clear segment marking
+                        ( { model | markingSegmentStart = Nothing }, Cmd.none )
 
                     _ ->
                         ( model, Cmd.none )
 
+        SelectSegment maybeIndex ->
+            case maybeIndex of
+                Just index ->
+                    case List.drop index model.segments |> List.head of
+                        Just segment ->
+                            ( { model
+                                | activeSegment = maybeIndex
+                                , viewStart = segment.start
+                              }
+                            , Cmd.none
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Nothing ->
+                    -- "All" selected
+                    ( { model | activeSegment = Nothing }, Cmd.none )
+
+        NextSegment ->
+            let
+                nextIndex =
+                    case model.activeSegment of
+                        Nothing ->
+                            if List.isEmpty model.segments then
+                                Nothing
+                            else
+                                Just 0
+
+                        Just i ->
+                            if i + 1 < List.length model.segments then
+                                Just (i + 1)
+                            else
+                                Just i
+            in
+            update (SelectSegment nextIndex) model
+
+        PrevSegment ->
+            let
+                prevIndex =
+                    case model.activeSegment of
+                        Nothing ->
+                            Nothing
+
+                        Just i ->
+                            if i > 0 then
+                                Just (i - 1)
+                            else
+                                Nothing
+            in
+            update (SelectSegment prevIndex) model
+
+        MarkSegmentStart ->
+            case model.selectedOffset of
+                Just offset ->
+                    ( { model | markingSegmentStart = Just offset }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        CreateSegment ->
+            case ( model.markingSegmentStart, model.selectedOffset ) of
+                ( Just startOffset, Just endOffset ) ->
+                    let
+                        ( actualStart, actualEnd ) =
+                            if startOffset <= endOffset then
+                                ( startOffset, endOffset )
+                            else
+                                ( endOffset, startOffset )
+
+                        segmentName =
+                            if String.isEmpty model.segmentNameInput then
+                                "$" ++ toHex 4 (model.loadAddress + actualStart)
+                            else
+                                model.segmentNameInput
+
+                        newSegment =
+                            { name = segmentName
+                            , start = actualStart
+                            , end = actualEnd
+                            , segType = Code
+                            }
+
+                        newSegments =
+                            model.segments
+                                ++ [ newSegment ]
+                                |> List.sortBy .start
+                    in
+                    ( { model
+                        | segments = newSegments
+                        , markingSegmentStart = Nothing
+                        , segmentNameInput = ""
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        UpdateSegmentName name ->
+            ( { model | segmentNameInput = name }, Cmd.none )
+
+        CancelSegmentCreate ->
+            ( { model | markingSegmentStart = Nothing, segmentNameInput = "" }, Cmd.none )
+
+        DeleteSegment index ->
+            let
+                newSegments =
+                    List.indexedMap Tuple.pair model.segments
+                        |> List.filter (\( i, _ ) -> i /= index)
+                        |> List.map Tuple.second
+
+                newActiveSegment =
+                    case model.activeSegment of
+                        Just i ->
+                            if i == index then
+                                Nothing
+                            else if i > index then
+                                Just (i - 1)
+                            else
+                                Just i
+
+                        Nothing ->
+                            Nothing
+            in
+            ( { model | segments = newSegments, activeSegment = newActiveSegment }, Cmd.none )
+
         NoOp ->
+            ( model, Cmd.none )
+
+
+centerSelectedLine : Model -> ( Model, Cmd Msg )
+centerSelectedLine model =
+    case model.selectedOffset of
+        Just offset ->
+            let
+                targetStart =
+                    offset - (model.viewLines // 2)
+
+                maxOffset =
+                    Basics.max 0 (Array.length model.bytes - model.viewLines)
+
+                newStart =
+                    clamp 0 maxOffset targetStart
+            in
+            ( { model | viewStart = newStart }, Cmd.none )
+
+        Nothing ->
             ( model, Cmd.none )
 
 
@@ -242,6 +398,8 @@ view model =
     div [ class "cdis-app" ]
         [ viewHeader model
         , viewToolbar model
+        , viewSegmentBar model
+        , viewSegmentCreateBar model
         , viewDisassembly model
         , viewFooter model
         ]
@@ -285,6 +443,94 @@ viewToolbar model =
             , text (" | Size: " ++ String.fromInt (Array.length model.bytes) ++ " bytes")
             ]
         ]
+
+
+viewSegmentBar : Model -> Html Msg
+viewSegmentBar model =
+    if Array.isEmpty model.bytes then
+        text ""
+
+    else
+        div [ class "segment-bar" ]
+            ([ button
+                [ class
+                    (if model.activeSegment == Nothing then
+                        "segment-tab active"
+
+                     else
+                        "segment-tab"
+                    )
+                , onClick (SelectSegment Nothing)
+                ]
+                [ text "All" ]
+             ]
+                ++ List.indexedMap (viewSegmentTab model) model.segments
+            )
+
+
+viewSegmentTab : Model -> Int -> Segment -> Html Msg
+viewSegmentTab model index segment =
+    let
+        isActive =
+            model.activeSegment == Just index
+
+        addrStr =
+            "$" ++ toHex 4 (model.loadAddress + segment.start)
+    in
+    span [ class "segment-tab-wrapper" ]
+        [ button
+            [ class
+                (if isActive then
+                    "segment-tab active"
+
+                 else
+                    "segment-tab"
+                )
+            , onClick (SelectSegment (Just index))
+            ]
+            [ text (segment.name ++ " " ++ addrStr) ]
+        , button
+            [ class "segment-delete"
+            , onClick (DeleteSegment index)
+            , title "Delete segment"
+            ]
+            [ text "x" ]
+        ]
+
+
+viewSegmentCreateBar : Model -> Html Msg
+viewSegmentCreateBar model =
+    case model.markingSegmentStart of
+        Nothing ->
+            text ""
+
+        Just startOffset ->
+            let
+                startAddr =
+                    "$" ++ toHex 4 (model.loadAddress + startOffset)
+
+                endAddr =
+                    case model.selectedOffset of
+                        Just endOffset ->
+                            "$" ++ toHex 4 (model.loadAddress + endOffset)
+
+                        Nothing ->
+                            "..."
+            in
+            div [ class "segment-create-bar" ]
+                [ span [] [ text ("Creating segment: " ++ startAddr ++ " to " ++ endAddr) ]
+                , input
+                    [ type_ "text"
+                    , placeholder "Segment name"
+                    , value model.segmentNameInput
+                    , onInput UpdateSegmentName
+                    , class "segment-name-input"
+                    ]
+                    []
+                , button [ onClick CreateSegment ] [ text "Create" ]
+                , button [ onClick CancelSegmentCreate ] [ text "Cancel" ]
+                , span [ class "hint" ] [ text "(select end line, then click Create)" ]
+                ]
 
 
 viewDisassembly : Model -> Html Msg
@@ -387,7 +633,9 @@ viewFooter model =
             [ text "Scroll: Mouse wheel | "
             , text "Select: Click | "
             , text "Comment: Double-click | "
-            , text "L: Center selection"
+            , text "L: Center | "
+            , text "S: Mark segment start | "
+            , text "[ ]: Prev/Next segment"
             ]
         ]
 
