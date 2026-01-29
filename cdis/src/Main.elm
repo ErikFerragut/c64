@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Array exposing (Array)
 import Browser
+import Browser.Events as Events
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Dict exposing (Dict)
@@ -14,6 +15,14 @@ import Html.Events exposing (..)
 import Json.Decode as JD
 import Task
 import Types exposing (..)
+
+
+type alias KeyEvent =
+    { key : String
+    , ctrl : Bool
+    , alt : Bool
+    , shift : Bool
+    }
 
 
 
@@ -56,6 +65,7 @@ type Msg
     | SaveComment
     | CancelEditComment
     | SetRestartPoint Int
+    | KeyPressed KeyEvent
     | NoOp
 
 
@@ -171,6 +181,35 @@ update msg model =
         SetRestartPoint offset ->
             ( model, Cmd.none )
 
+        KeyPressed event ->
+            -- Ignore keypresses while editing a comment
+            if model.editingComment /= Nothing then
+                ( model, Cmd.none )
+
+            else
+                case event.key of
+                    "l" ->
+                        -- l: center selected line on screen
+                        case model.selectedOffset of
+                            Just offset ->
+                                let
+                                    targetStart =
+                                        offset - (model.viewLines // 2)
+
+                                    maxOffset =
+                                        Basics.max 0 (Array.length model.bytes - model.viewLines)
+
+                                    newStart =
+                                        clamp 0 maxOffset targetStart
+                                in
+                                ( { model | viewStart = newStart }, Cmd.none )
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                    _ ->
+                        ( model, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -181,7 +220,17 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Events.onKeyDown keyDecoder
+
+
+keyDecoder : JD.Decoder Msg
+keyDecoder =
+    JD.map4 KeyEvent
+        (JD.field "key" JD.string)
+        (JD.field "ctrlKey" JD.bool)
+        (JD.field "altKey" JD.bool)
+        (JD.field "shiftKey" JD.bool)
+        |> JD.map KeyPressed
 
 
 
@@ -337,7 +386,8 @@ viewFooter model =
         [ span []
             [ text "Scroll: Mouse wheel | "
             , text "Select: Click | "
-            , text "Comment: Double-click"
+            , text "Comment: Double-click | "
+            , text "L: Center selection"
             ]
         ]
 
