@@ -7727,13 +7727,13 @@ var $author$project$Main$update = F2(
 								msg = $temp$msg;
 								model = $temp$model;
 								continue update;
-							case 'j':
+							case 'ArrowDown':
 								var $temp$msg = $author$project$Main$SelectNextLine,
 									$temp$model = model;
 								msg = $temp$msg;
 								model = $temp$model;
 								continue update;
-							case 'k':
+							case 'ArrowUp':
 								var $temp$msg = $author$project$Main$SelectPrevLine,
 									$temp$model = model;
 								msg = $temp$msg;
@@ -8822,9 +8822,9 @@ var $author$project$Main$viewFooter = function (model) {
 											]),
 										_List_fromArray(
 											[
-												$elm$html$Html$text('J / K')
+												$elm$html$Html$text('↑ / ↓')
 											])),
-										$elm$html$Html$text('Next/Prev line')
+										$elm$html$Html$text('Prev/Next line')
 									])),
 								A2(
 								$elm$html$Html$div,

@@ -236,12 +236,12 @@ update msg model =
                         -- o: open PRG file
                         update FileRequested model
 
-                    "j" ->
-                        -- j: next line
+                    "ArrowDown" ->
+                        -- Down arrow: next line
                         update SelectNextLine model
 
-                    "k" ->
-                        -- k: previous line
+                    "ArrowUp" ->
+                        -- Up arrow: previous line
                         update SelectPrevLine model
 
                     _ ->
@@ -829,7 +829,7 @@ viewFooter model =
             [ div [ class "help-grid" ]
                 [ div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Navigation" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "J / K" ], text "Next/Prev line" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "↑ / ↓" ], text "Prev/Next line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "L" ], text "Center selected line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "[ ]" ], text "Prev/Next segment" ]
