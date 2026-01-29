@@ -5558,434 +5558,16 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {activeSegment: $elm$core$Maybe$Nothing, bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, markingSegmentStart: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, segmentNameInput: '', segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 40, viewStart: 0};
+var $author$project$Types$initModel = {activeSegment: $elm$core$Maybe$Nothing, bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, markingSegmentStart: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, segmentNameInput: '', segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2($author$project$Types$initModel, $elm$core$Platform$Cmd$none);
 };
-var $author$project$Main$KeyEvent = F4(
-	function (key, ctrl, alt, shift) {
-		return {alt: alt, ctrl: ctrl, key: key, shift: shift};
-	});
-var $author$project$Main$KeyPressed = function (a) {
-	return {$: 'KeyPressed', a: a};
-};
-var $elm$json$Json$Decode$bool = _Json_decodeBool;
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$map4 = _Json_map4;
-var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Main$keyDecoder = A2(
-	$elm$json$Json$Decode$map,
-	$author$project$Main$KeyPressed,
-	A5(
-		$elm$json$Json$Decode$map4,
-		$author$project$Main$KeyEvent,
-		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string),
-		A2($elm$json$Json$Decode$field, 'ctrlKey', $elm$json$Json$Decode$bool),
-		A2($elm$json$Json$Decode$field, 'altKey', $elm$json$Json$Decode$bool),
-		A2($elm$json$Json$Decode$field, 'shiftKey', $elm$json$Json$Decode$bool)));
-var $elm$browser$Browser$Events$Document = {$: 'Document'};
-var $elm$browser$Browser$Events$MySub = F3(
-	function (a, b, c) {
-		return {$: 'MySub', a: a, b: b, c: c};
-	});
-var $elm$browser$Browser$Events$State = F2(
-	function (subs, pids) {
-		return {pids: pids, subs: subs};
-	});
-var $elm$browser$Browser$Events$init = $elm$core$Task$succeed(
-	A2($elm$browser$Browser$Events$State, _List_Nil, $elm$core$Dict$empty));
-var $elm$browser$Browser$Events$nodeToKey = function (node) {
-	if (node.$ === 'Document') {
-		return 'd_';
-	} else {
-		return 'w_';
-	}
-};
-var $elm$browser$Browser$Events$addKey = function (sub) {
-	var node = sub.a;
-	var name = sub.b;
-	return _Utils_Tuple2(
-		_Utils_ap(
-			$elm$browser$Browser$Events$nodeToKey(node),
-			name),
-		sub);
-};
-var $elm$core$Dict$Black = {$: 'Black'};
-var $elm$core$Dict$RBNode_elm_builtin = F5(
-	function (a, b, c, d, e) {
-		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
-	});
-var $elm$core$Dict$Red = {$: 'Red'};
-var $elm$core$Dict$balance = F5(
-	function (color, key, value, left, right) {
-		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
-			var _v1 = right.a;
-			var rK = right.b;
-			var rV = right.c;
-			var rLeft = right.d;
-			var rRight = right.e;
-			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
-				var _v3 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var lLeft = left.d;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					key,
-					value,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					color,
-					rK,
-					rV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
-					rRight);
-			}
-		} else {
-			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
-				var _v5 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var _v6 = left.d;
-				var _v7 = _v6.a;
-				var llK = _v6.b;
-				var llV = _v6.c;
-				var llLeft = _v6.d;
-				var llRight = _v6.e;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					lK,
-					lV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
-			} else {
-				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
-			}
-		}
-	});
-var $elm$core$Basics$compare = _Utils_compare;
-var $elm$core$Dict$insertHelp = F3(
-	function (key, value, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
-		} else {
-			var nColor = dict.a;
-			var nKey = dict.b;
-			var nValue = dict.c;
-			var nLeft = dict.d;
-			var nRight = dict.e;
-			var _v1 = A2($elm$core$Basics$compare, key, nKey);
-			switch (_v1.$) {
-				case 'LT':
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						A3($elm$core$Dict$insertHelp, key, value, nLeft),
-						nRight);
-				case 'EQ':
-					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
-				default:
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						nLeft,
-						A3($elm$core$Dict$insertHelp, key, value, nRight));
-			}
-		}
-	});
-var $elm$core$Dict$insert = F3(
-	function (key, value, dict) {
-		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
-		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
-			var _v1 = _v0.a;
-			var k = _v0.b;
-			var v = _v0.c;
-			var l = _v0.d;
-			var r = _v0.e;
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
-		} else {
-			var x = _v0;
-			return x;
-		}
-	});
-var $elm$core$Dict$fromList = function (assocs) {
-	return A3(
-		$elm$core$List$foldl,
-		F2(
-			function (_v0, dict) {
-				var key = _v0.a;
-				var value = _v0.b;
-				return A3($elm$core$Dict$insert, key, value, dict);
-			}),
-		$elm$core$Dict$empty,
-		assocs);
-};
-var $elm$core$Process$kill = _Scheduler_kill;
-var $elm$core$Dict$foldl = F3(
-	function (func, acc, dict) {
-		foldl:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return acc;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var $temp$func = func,
-					$temp$acc = A3(
-					func,
-					key,
-					value,
-					A3($elm$core$Dict$foldl, func, acc, left)),
-					$temp$dict = right;
-				func = $temp$func;
-				acc = $temp$acc;
-				dict = $temp$dict;
-				continue foldl;
-			}
-		}
-	});
-var $elm$core$Dict$merge = F6(
-	function (leftStep, bothStep, rightStep, leftDict, rightDict, initialResult) {
-		var stepState = F3(
-			function (rKey, rValue, _v0) {
-				stepState:
-				while (true) {
-					var list = _v0.a;
-					var result = _v0.b;
-					if (!list.b) {
-						return _Utils_Tuple2(
-							list,
-							A3(rightStep, rKey, rValue, result));
-					} else {
-						var _v2 = list.a;
-						var lKey = _v2.a;
-						var lValue = _v2.b;
-						var rest = list.b;
-						if (_Utils_cmp(lKey, rKey) < 0) {
-							var $temp$rKey = rKey,
-								$temp$rValue = rValue,
-								$temp$_v0 = _Utils_Tuple2(
-								rest,
-								A3(leftStep, lKey, lValue, result));
-							rKey = $temp$rKey;
-							rValue = $temp$rValue;
-							_v0 = $temp$_v0;
-							continue stepState;
-						} else {
-							if (_Utils_cmp(lKey, rKey) > 0) {
-								return _Utils_Tuple2(
-									list,
-									A3(rightStep, rKey, rValue, result));
-							} else {
-								return _Utils_Tuple2(
-									rest,
-									A4(bothStep, lKey, lValue, rValue, result));
-							}
-						}
-					}
-				}
-			});
-		var _v3 = A3(
-			$elm$core$Dict$foldl,
-			stepState,
-			_Utils_Tuple2(
-				$elm$core$Dict$toList(leftDict),
-				initialResult),
-			rightDict);
-		var leftovers = _v3.a;
-		var intermediateResult = _v3.b;
-		return A3(
-			$elm$core$List$foldl,
-			F2(
-				function (_v4, result) {
-					var k = _v4.a;
-					var v = _v4.b;
-					return A3(leftStep, k, v, result);
-				}),
-			intermediateResult,
-			leftovers);
-	});
-var $elm$browser$Browser$Events$Event = F2(
-	function (key, event) {
-		return {event: event, key: key};
-	});
-var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
-var $elm$browser$Browser$Events$spawn = F3(
-	function (router, key, _v0) {
-		var node = _v0.a;
-		var name = _v0.b;
-		var actualNode = function () {
-			if (node.$ === 'Document') {
-				return _Browser_doc;
-			} else {
-				return _Browser_window;
-			}
-		}();
-		return A2(
-			$elm$core$Task$map,
-			function (value) {
-				return _Utils_Tuple2(key, value);
-			},
-			A3(
-				_Browser_on,
-				actualNode,
-				name,
-				function (event) {
-					return A2(
-						$elm$core$Platform$sendToSelf,
-						router,
-						A2($elm$browser$Browser$Events$Event, key, event));
-				}));
-	});
-var $elm$core$Dict$union = F2(
-	function (t1, t2) {
-		return A3($elm$core$Dict$foldl, $elm$core$Dict$insert, t2, t1);
-	});
-var $elm$browser$Browser$Events$onEffects = F3(
-	function (router, subs, state) {
-		var stepRight = F3(
-			function (key, sub, _v6) {
-				var deads = _v6.a;
-				var lives = _v6.b;
-				var news = _v6.c;
-				return _Utils_Tuple3(
-					deads,
-					lives,
-					A2(
-						$elm$core$List$cons,
-						A3($elm$browser$Browser$Events$spawn, router, key, sub),
-						news));
-			});
-		var stepLeft = F3(
-			function (_v4, pid, _v5) {
-				var deads = _v5.a;
-				var lives = _v5.b;
-				var news = _v5.c;
-				return _Utils_Tuple3(
-					A2($elm$core$List$cons, pid, deads),
-					lives,
-					news);
-			});
-		var stepBoth = F4(
-			function (key, pid, _v2, _v3) {
-				var deads = _v3.a;
-				var lives = _v3.b;
-				var news = _v3.c;
-				return _Utils_Tuple3(
-					deads,
-					A3($elm$core$Dict$insert, key, pid, lives),
-					news);
-			});
-		var newSubs = A2($elm$core$List$map, $elm$browser$Browser$Events$addKey, subs);
-		var _v0 = A6(
-			$elm$core$Dict$merge,
-			stepLeft,
-			stepBoth,
-			stepRight,
-			state.pids,
-			$elm$core$Dict$fromList(newSubs),
-			_Utils_Tuple3(_List_Nil, $elm$core$Dict$empty, _List_Nil));
-		var deadPids = _v0.a;
-		var livePids = _v0.b;
-		var makeNewPids = _v0.c;
-		return A2(
-			$elm$core$Task$andThen,
-			function (pids) {
-				return $elm$core$Task$succeed(
-					A2(
-						$elm$browser$Browser$Events$State,
-						newSubs,
-						A2(
-							$elm$core$Dict$union,
-							livePids,
-							$elm$core$Dict$fromList(pids))));
-			},
-			A2(
-				$elm$core$Task$andThen,
-				function (_v1) {
-					return $elm$core$Task$sequence(makeNewPids);
-				},
-				$elm$core$Task$sequence(
-					A2($elm$core$List$map, $elm$core$Process$kill, deadPids))));
-	});
-var $elm$core$List$maybeCons = F3(
-	function (f, mx, xs) {
-		var _v0 = f(mx);
-		if (_v0.$ === 'Just') {
-			var x = _v0.a;
-			return A2($elm$core$List$cons, x, xs);
-		} else {
-			return xs;
-		}
-	});
-var $elm$core$List$filterMap = F2(
-	function (f, xs) {
-		return A3(
-			$elm$core$List$foldr,
-			$elm$core$List$maybeCons(f),
-			_List_Nil,
-			xs);
-	});
-var $elm$browser$Browser$Events$onSelfMsg = F3(
-	function (router, _v0, state) {
-		var key = _v0.key;
-		var event = _v0.event;
-		var toMessage = function (_v2) {
-			var subKey = _v2.a;
-			var _v3 = _v2.b;
-			var node = _v3.a;
-			var name = _v3.b;
-			var decoder = _v3.c;
-			return _Utils_eq(subKey, key) ? A2(_Browser_decodeEvent, decoder, event) : $elm$core$Maybe$Nothing;
-		};
-		var messages = A2($elm$core$List$filterMap, toMessage, state.subs);
-		return A2(
-			$elm$core$Task$andThen,
-			function (_v1) {
-				return $elm$core$Task$succeed(state);
-			},
-			$elm$core$Task$sequence(
-				A2(
-					$elm$core$List$map,
-					$elm$core$Platform$sendToApp(router),
-					messages)));
-	});
-var $elm$browser$Browser$Events$subMap = F2(
-	function (func, _v0) {
-		var node = _v0.a;
-		var name = _v0.b;
-		var decoder = _v0.c;
-		return A3(
-			$elm$browser$Browser$Events$MySub,
-			node,
-			name,
-			A2($elm$json$Json$Decode$map, func, decoder));
-	});
-_Platform_effectManagers['Browser.Events'] = _Platform_createManager($elm$browser$Browser$Events$init, $elm$browser$Browser$Events$onEffects, $elm$browser$Browser$Events$onSelfMsg, 0, $elm$browser$Browser$Events$subMap);
-var $elm$browser$Browser$Events$subscription = _Platform_leaf('Browser.Events');
-var $elm$browser$Browser$Events$on = F3(
-	function (node, name, decoder) {
-		return $elm$browser$Browser$Events$subscription(
-			A3($elm$browser$Browser$Events$MySub, node, name, decoder));
-	});
-var $elm$browser$Browser$Events$onKeyDown = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'keydown');
+var $elm$core$Platform$Sub$batch = _Platform_batch;
+var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$browser$Browser$Events$onKeyDown($author$project$Main$keyDecoder);
+	return $elm$core$Platform$Sub$none;
 };
 var $author$project$Types$Code = {$: 'Code'};
 var $author$project$Main$FileLoaded = function (a) {
@@ -5995,6 +5577,7 @@ var $author$project$Main$FileRequested = {$: 'FileRequested'};
 var $author$project$Main$FileSelected = function (a) {
 	return {$: 'FileSelected', a: a};
 };
+var $author$project$Main$FocusResult = {$: 'FocusResult'};
 var $author$project$Main$LoadProjectLoaded = function (a) {
 	return {$: 'LoadProjectLoaded', a: a};
 };
@@ -6298,11 +5881,13 @@ var $author$project$Project$SaveData = F6(
 		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, segments: segments, version: version};
 	});
 var $author$project$Project$currentVersion = 1;
+var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
 	});
+var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Project$decodeComment = A3(
 	$elm$json$Json$Decode$map2,
 	$elm$core$Tuple$pair,
@@ -6317,6 +5902,7 @@ var $author$project$Project$SegmentSave = F4(
 	function (name, start, end, segType) {
 		return {end: end, name: name, segType: segType, start: start};
 	});
+var $elm$json$Json$Decode$map4 = _Json_map4;
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
 var $elm$json$Json$Decode$maybe = function (decoder) {
 	return $elm$json$Json$Decode$oneOf(
@@ -6962,6 +6548,7 @@ var $author$project$Project$fromModel = function (model) {
 		version: $author$project$Project$currentVersion
 	};
 };
+var $elm$core$Basics$compare = _Utils_compare;
 var $elm$core$Dict$get = F2(
 	function (targetKey, dict) {
 		get:
@@ -7002,6 +6589,114 @@ var $elm$core$List$head = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
+var $elm$core$Dict$Black = {$: 'Black'};
+var $elm$core$Dict$RBNode_elm_builtin = F5(
+	function (a, b, c, d, e) {
+		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
+	});
+var $elm$core$Dict$Red = {$: 'Red'};
+var $elm$core$Dict$balance = F5(
+	function (color, key, value, left, right) {
+		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
+			var _v1 = right.a;
+			var rK = right.b;
+			var rV = right.c;
+			var rLeft = right.d;
+			var rRight = right.e;
+			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+				var _v3 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var lLeft = left.d;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					key,
+					value,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					color,
+					rK,
+					rV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
+					rRight);
+			}
+		} else {
+			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
+				var _v5 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var _v6 = left.d;
+				var _v7 = _v6.a;
+				var llK = _v6.b;
+				var llV = _v6.c;
+				var llLeft = _v6.d;
+				var llRight = _v6.e;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					lK,
+					lV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
+			} else {
+				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
+			}
+		}
+	});
+var $elm$core$Dict$insertHelp = F3(
+	function (key, value, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
+		} else {
+			var nColor = dict.a;
+			var nKey = dict.b;
+			var nValue = dict.c;
+			var nLeft = dict.d;
+			var nRight = dict.e;
+			var _v1 = A2($elm$core$Basics$compare, key, nKey);
+			switch (_v1.$) {
+				case 'LT':
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						A3($elm$core$Dict$insertHelp, key, value, nLeft),
+						nRight);
+				case 'EQ':
+					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
+				default:
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						nLeft,
+						A3($elm$core$Dict$insertHelp, key, value, nRight));
+			}
+		}
+	});
+var $elm$core$Dict$insert = F3(
+	function (key, value, dict) {
+		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
+		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
+			var _v1 = _v0.a;
+			var k = _v0.b;
+			var v = _v0.c;
+			var l = _v0.d;
+			var r = _v0.e;
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _v0;
+			return x;
+		}
+	});
 var $elm$core$Array$isEmpty = function (_v0) {
 	var len = _v0.a;
 	return !len;
@@ -7556,6 +7251,18 @@ var $author$project$Main$toHex = F2(
 			hex);
 		return $elm$core$String$toUpper(padded);
 	});
+var $elm$core$Dict$fromList = function (assocs) {
+	return A3(
+		$elm$core$List$foldl,
+		F2(
+			function (_v0, dict) {
+				var key = _v0.a;
+				var value = _v0.b;
+				return A3($elm$core$Dict$insert, key, value, dict);
+			}),
+		$elm$core$Dict$empty,
+		assocs);
+};
 var $author$project$Types$Data = {$: 'Data'};
 var $author$project$Types$Unknown = {$: 'Unknown'};
 var $author$project$Project$stringToSegmentType = function (str) {
@@ -7638,7 +7345,12 @@ var $author$project$Main$update = F2(
 									selectedOffset: $elm$core$Maybe$Just(0),
 									viewStart: 0
 								})),
-						$elm$core$Platform$Cmd$none);
+						A2(
+							$elm$core$Task$attempt,
+							function (_v1) {
+								return $author$project$Main$FocusResult;
+							},
+							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'Scroll':
 					var delta = msg.a;
 					var maxOffset = A2(
@@ -7652,9 +7364,9 @@ var $author$project$Main$update = F2(
 							{viewStart: newStart}),
 						$elm$core$Platform$Cmd$none);
 				case 'JumpToAddress':
-					var _v1 = $author$project$Main$parseHex(model.jumpToInput);
-					if (_v1.$ === 'Just') {
-						var addr = _v1.a;
+					var _v2 = $author$project$Main$parseHex(model.jumpToInput);
+					if (_v2.$ === 'Just') {
+						var addr = _v2.a;
 						var offset = addr - model.loadAddress;
 						return ((offset >= 0) && (_Utils_cmp(
 							offset,
@@ -7698,16 +7410,16 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v2) {
+							function (_v3) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('comment-input')));
 				case 'UpdateEditComment':
 					var text = msg.a;
-					var _v3 = model.editingComment;
-					if (_v3.$ === 'Just') {
-						var _v4 = _v3.a;
-						var offset = _v4.a;
+					var _v4 = model.editingComment;
+					if (_v4.$ === 'Just') {
+						var _v5 = _v4.a;
+						var offset = _v5.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7720,11 +7432,11 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveComment':
-					var _v5 = model.editingComment;
-					if (_v5.$ === 'Just') {
-						var _v6 = _v5.a;
-						var offset = _v6.a;
-						var text = _v6.b;
+					var _v6 = model.editingComment;
+					if (_v6.$ === 'Just') {
+						var _v7 = _v6.a;
+						var offset = _v7.a;
+						var text = _v7.b;
 						var newComments = $elm$core$String$isEmpty(
 							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.comments) : A3($elm$core$Dict$insert, offset, text, model.comments);
 						return _Utils_Tuple2(
@@ -7749,8 +7461,8 @@ var $author$project$Main$update = F2(
 					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.markingSegmentStart, $elm$core$Maybe$Nothing))) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var _v7 = event.key;
-						switch (_v7) {
+						var _v8 = event.key;
+						switch (_v8) {
 							case 'l':
 								return $author$project$Main$centerSelectedLine(model);
 							case '[':
@@ -7772,9 +7484,9 @@ var $author$project$Main$update = F2(
 								model = $temp$model;
 								continue update;
 							case 'c':
-								var _v8 = model.selectedOffset;
-								if (_v8.$ === 'Just') {
-									var offset = _v8.a;
+								var _v9 = model.selectedOffset;
+								if (_v9.$ === 'Just') {
+									var offset = _v9.a;
 									var $temp$msg = $author$project$Main$StartEditComment(offset),
 										$temp$model = model;
 									msg = $temp$msg;
@@ -7825,10 +7537,10 @@ var $author$project$Main$update = F2(
 					var maybeIndex = msg.a;
 					if (maybeIndex.$ === 'Just') {
 						var index = maybeIndex.a;
-						var _v10 = $elm$core$List$head(
+						var _v11 = $elm$core$List$head(
 							A2($elm$core$List$drop, index, model.segments));
-						if (_v10.$ === 'Just') {
-							var segment = _v10.a;
+						if (_v11.$ === 'Just') {
+							var segment = _v11.a;
 							return _Utils_Tuple2(
 								_Utils_update(
 									model,
@@ -7846,11 +7558,11 @@ var $author$project$Main$update = F2(
 					}
 				case 'NextSegment':
 					var nextIndex = function () {
-						var _v11 = model.activeSegment;
-						if (_v11.$ === 'Nothing') {
+						var _v12 = model.activeSegment;
+						if (_v12.$ === 'Nothing') {
 							return $elm$core$List$isEmpty(model.segments) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(0);
 						} else {
-							var i = _v11.a;
+							var i = _v12.a;
 							return (_Utils_cmp(
 								i + 1,
 								$elm$core$List$length(model.segments)) < 0) ? $elm$core$Maybe$Just(i + 1) : $elm$core$Maybe$Just(i);
@@ -7863,11 +7575,11 @@ var $author$project$Main$update = F2(
 					continue update;
 				case 'PrevSegment':
 					var prevIndex = function () {
-						var _v12 = model.activeSegment;
-						if (_v12.$ === 'Nothing') {
+						var _v13 = model.activeSegment;
+						if (_v13.$ === 'Nothing') {
 							return $elm$core$Maybe$Nothing;
 						} else {
-							var i = _v12.a;
+							var i = _v13.a;
 							return (i > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Nothing;
 						}
 					}();
@@ -7877,9 +7589,9 @@ var $author$project$Main$update = F2(
 					model = $temp$model;
 					continue update;
 				case 'MarkSegmentStart':
-					var _v13 = model.selectedOffset;
-					if (_v13.$ === 'Just') {
-						var offset = _v13.a;
+					var _v14 = model.selectedOffset;
+					if (_v14.$ === 'Just') {
+						var offset = _v14.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7891,13 +7603,13 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'CreateSegment':
-					var _v14 = _Utils_Tuple2(model.markingSegmentStart, model.selectedOffset);
-					if ((_v14.a.$ === 'Just') && (_v14.b.$ === 'Just')) {
-						var startOffset = _v14.a.a;
-						var endOffset = _v14.b.a;
-						var _v15 = (_Utils_cmp(startOffset, endOffset) < 1) ? _Utils_Tuple2(startOffset, endOffset) : _Utils_Tuple2(endOffset, startOffset);
-						var actualStart = _v15.a;
-						var actualEnd = _v15.b;
+					var _v15 = _Utils_Tuple2(model.markingSegmentStart, model.selectedOffset);
+					if ((_v15.a.$ === 'Just') && (_v15.b.$ === 'Just')) {
+						var startOffset = _v15.a.a;
+						var endOffset = _v15.b.a;
+						var _v16 = (_Utils_cmp(startOffset, endOffset) < 1) ? _Utils_Tuple2(startOffset, endOffset) : _Utils_Tuple2(endOffset, startOffset);
+						var actualStart = _v16.a;
+						var actualEnd = _v16.b;
 						var segmentName = $elm$core$String$isEmpty(model.segmentNameInput) ? ('$' + A2($author$project$Main$toHex, 4, model.loadAddress + actualStart)) : model.segmentNameInput;
 						var newSegment = {end: actualEnd, name: segmentName, segType: $author$project$Types$Code, start: actualStart};
 						var newSegments = A2(
@@ -7937,15 +7649,15 @@ var $author$project$Main$update = F2(
 						$elm$core$Tuple$second,
 						A2(
 							$elm$core$List$filter,
-							function (_v17) {
-								var i = _v17.a;
+							function (_v18) {
+								var i = _v18.a;
 								return !_Utils_eq(i, index);
 							},
 							A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, model.segments)));
 					var newActiveSegment = function () {
-						var _v16 = model.activeSegment;
-						if (_v16.$ === 'Just') {
-							var i = _v16.a;
+						var _v17 = model.activeSegment;
+						if (_v17.$ === 'Just') {
+							var i = _v17.a;
 							return _Utils_eq(i, index) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(i, index) > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Just(i));
 						} else {
 							return $elm$core$Maybe$Nothing;
@@ -7963,9 +7675,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v18 = model.selectedOffset;
-					if (_v18.$ === 'Just') {
-						var offset = _v18.a;
+					var _v19 = model.selectedOffset;
+					if (_v19.$ === 'Just') {
+						var offset = _v19.a;
 						var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 						var instrLen = A2(
 							$elm$core$Maybe$withDefault,
@@ -7994,9 +7706,9 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v19 = model.selectedOffset;
-					if (_v19.$ === 'Just') {
-						var offset = _v19.a;
+					var _v20 = model.selectedOffset;
+					if (_v20.$ === 'Just') {
+						var offset = _v20.a;
 						if (offset > 0) {
 							var newOffset = A2($author$project$Main$findPrevInstructionStart, model.bytes, offset - 1);
 							return _Utils_Tuple2(
@@ -8051,16 +7763,16 @@ var $author$project$Main$update = F2(
 							$elm$file$File$toString(file)));
 				case 'LoadProjectLoaded':
 					var jsonString = msg.a;
-					var _v20 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
-					if (_v20.$ === 'Ok') {
-						var saveData = _v20.a;
+					var _v21 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
+					if (_v21.$ === 'Ok') {
+						var saveData = _v21.a;
 						var newModel = A2($author$project$Project$toModel, saveData, model);
 						var withSelection = function () {
 							if ($elm$core$Array$isEmpty(newModel.bytes)) {
 								return newModel;
 							} else {
-								var _v21 = newModel.selectedOffset;
-								if (_v21.$ === 'Nothing') {
+								var _v22 = newModel.selectedOffset;
+								if (_v22.$ === 'Nothing') {
 									return _Utils_update(
 										newModel,
 										{
@@ -8091,6 +7803,90 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $author$project$Main$KeyEvent = F4(
+	function (key, ctrl, alt, shift) {
+		return {alt: alt, ctrl: ctrl, key: key, shift: shift};
+	});
+var $author$project$Main$KeyPressed = function (a) {
+	return {$: 'KeyPressed', a: a};
+};
+var $elm$json$Json$Decode$bool = _Json_decodeBool;
+var $author$project$Main$keyDecoder = A2(
+	$elm$json$Json$Decode$map,
+	$author$project$Main$KeyPressed,
+	A5(
+		$elm$json$Json$Decode$map4,
+		$author$project$Main$KeyEvent,
+		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string),
+		A2($elm$json$Json$Decode$field, 'ctrlKey', $elm$json$Json$Decode$bool),
+		A2($elm$json$Json$Decode$field, 'altKey', $elm$json$Json$Decode$bool),
+		A2($elm$json$Json$Decode$field, 'shiftKey', $elm$json$Json$Decode$bool)));
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var $author$project$Main$onKeyDownPreventDefault = function () {
+	var decoder = A2(
+		$elm$json$Json$Decode$map,
+		function (msg) {
+			if (msg.$ === 'KeyPressed') {
+				var event = msg.a;
+				return A2(
+					$elm$core$List$member,
+					event.key,
+					_List_fromArray(
+						['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])) ? _Utils_Tuple2(msg, true) : _Utils_Tuple2(msg, false);
+			} else {
+				return _Utils_Tuple2(msg, false);
+			}
+		},
+		$author$project$Main$keyDecoder);
+	return A2($elm$html$Html$Events$preventDefaultOn, 'keydown', decoder);
+}();
+var $elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		$elm$core$String$fromInt(n));
+};
 var $author$project$Main$Scroll = function (a) {
 	return {$: 'Scroll', a: a};
 };
@@ -8426,6 +8222,24 @@ var $author$project$Disassembler$formatInstruction = F3(
 		var mnemonic = info.undocumented ? ('*' + info.mnemonic) : info.mnemonic;
 		return $elm$core$String$isEmpty(operandStr) ? mnemonic : (mnemonic + (' ' + operandStr));
 	});
+var $elm$core$List$maybeCons = F3(
+	function (f, mx, xs) {
+		var _v0 = f(mx);
+		if (_v0.$ === 'Just') {
+			var x = _v0.a;
+			return A2($elm$core$List$cons, x, xs);
+		} else {
+			return xs;
+		}
+	});
+var $elm$core$List$filterMap = F2(
+	function (f, xs) {
+		return A3(
+			$elm$core$List$foldr,
+			$elm$core$List$maybeCons(f),
+			_List_Nil,
+			xs);
+	});
 var $author$project$Disassembler$getInstructionBytes = F3(
 	function (offset, numBytes, bytes) {
 		return A2(
@@ -8526,7 +8340,6 @@ var $elm$core$Basics$negate = function (n) {
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
 var $elm$html$Html$Events$on = F2(
 	function (event, decoder) {
 		return A2(
@@ -8635,7 +8448,6 @@ var $elm$html$Html$Attributes$boolProperty = F2(
 			$elm$json$Json$Encode$bool(bool));
 	});
 var $elm$html$Html$Attributes$autofocus = $elm$html$Html$Attributes$boolProperty('autofocus');
-var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$html$Html$Events$onBlur = function (msg) {
 	return A2(
@@ -9014,6 +8826,26 @@ var $author$project$Main$viewFooter = function (model) {
 											]),
 										_List_fromArray(
 											[
+												$elm$html$Html$text('C')
+											])),
+										$elm$html$Html$text('Edit comment')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
 												$elm$html$Html$text('Double-click')
 											])),
 										$elm$html$Html$text('Edit comment')
@@ -9232,10 +9064,10 @@ var $author$project$Main$viewFooter = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('?: Help | '),
-						$elm$html$Html$text('Scroll: Wheel | '),
+						$elm$html$Html$text('↑↓: Navigate | '),
+						$elm$html$Html$text('C: Comment | '),
 						$elm$html$Html$text('L: Center | '),
-						$elm$html$Html$text('S: Segment | '),
-						$elm$html$Html$text('[ ]: Nav')
+						$elm$html$Html$text('S: Segment')
 					]))
 			]));
 };
@@ -9568,7 +9400,10 @@ var $author$project$Main$view = function (model) {
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('cdis-app')
+				$elm$html$Html$Attributes$class('cdis-app'),
+				$elm$html$Html$Attributes$tabindex(0),
+				$elm$html$Html$Attributes$id('cdis-main'),
+				$author$project$Main$onKeyDownPreventDefault
 			]),
 		_List_fromArray(
 			[

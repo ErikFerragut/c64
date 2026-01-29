@@ -130,7 +130,7 @@ update msg model =
                     , viewStart = 0
                     , selectedOffset = Just 0
                 }
-            , Cmd.none
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
             )
 
         Scroll delta ->
@@ -601,7 +601,7 @@ findPrevInstructionStart bytes targetOffset =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Events.onKeyDown keyDecoder
+    Sub.none
 
 
 keyDecoder : JD.Decoder Msg
@@ -614,13 +614,41 @@ keyDecoder =
         |> JD.map KeyPressed
 
 
+{-| Keyboard handler that prevents default for arrow keys
+-}
+onKeyDownPreventDefault : Attribute Msg
+onKeyDownPreventDefault =
+    let
+        decoder =
+            keyDecoder
+                |> JD.map
+                    (\msg ->
+                        case msg of
+                            KeyPressed event ->
+                                if List.member event.key [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] then
+                                    ( msg, True )  -- prevent default
+                                else
+                                    ( msg, False )  -- allow default
+
+                            _ ->
+                                ( msg, False )
+                    )
+    in
+    preventDefaultOn "keydown" decoder
+
+
 
 -- VIEW
 
 
 view : Model -> Html Msg
 view model =
-    div [ class "cdis-app" ]
+    div
+        [ class "cdis-app"
+        , tabindex 0
+        , id "cdis-main"
+        , onKeyDownPreventDefault
+        ]
         [ viewHeader model
         , viewToolbar model
         , viewSegmentBar model
@@ -872,6 +900,7 @@ viewFooter model =
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Selection" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Click" ], text "Select line" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "C" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Double-click" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel" ]
@@ -895,10 +924,10 @@ viewFooter model =
         footer [ class "cdis-footer" ]
             [ span []
                 [ text "?: Help | "
-                , text "Scroll: Wheel | "
+                , text "↑↓: Navigate | "
+                , text "C: Comment | "
                 , text "L: Center | "
-                , text "S: Segment | "
-                , text "[ ]: Nav"
+                , text "S: Segment"
                 ]
             ]
 
