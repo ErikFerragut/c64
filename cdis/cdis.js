@@ -6465,6 +6465,35 @@ var $author$project$Project$encode = function (data) {
 			]));
 };
 var $elm$core$String$endsWith = _String_endsWith;
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $author$project$Main$ensureSelectionVisible = function (model) {
+	var _v0 = model.selectedOffset;
+	if (_v0.$ === 'Just') {
+		var offset = _v0.a;
+		var maxViewStart = A2(
+			$elm$core$Basics$max,
+			0,
+			$elm$core$Array$length(model.bytes) - model.viewLines);
+		var margin = 2;
+		var tooHigh = _Utils_cmp(offset, model.viewStart + margin) < 0;
+		var tooLow = _Utils_cmp(offset, (model.viewStart + model.viewLines) - margin) > -1;
+		return tooHigh ? _Utils_update(
+			model,
+			{
+				viewStart: A2($elm$core$Basics$max, 0, offset - margin)
+			}) : (tooLow ? _Utils_update(
+			model,
+			{
+				viewStart: A2($elm$core$Basics$min, maxViewStart, ((offset - model.viewLines) + margin) + 1)
+			}) : model);
+	} else {
+		return model;
+	}
+};
 var $elm$time$Time$Posix = function (a) {
 	return {$: 'Posix', a: a};
 };
@@ -6487,7 +6516,6 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $elm$core$Basics$ge = _Utils_ge;
 var $elm$core$Bitwise$and = _Bitwise_and;
 var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
 var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
@@ -6956,10 +6984,6 @@ var $elm$core$List$isEmpty = function (xs) {
 		return false;
 	}
 };
-var $elm$core$Basics$min = F2(
-	function (x, y) {
-		return (_Utils_cmp(x, y) < 0) ? x : y;
-	});
 var $elm$file$File$name = _File_name;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$Basics$not = _Basics_not;
@@ -7574,14 +7598,15 @@ var $author$project$Main$update = F2(
 							A2($elm$core$List$drop, 1, decoded))) * 256);
 					var programBytes = A2($elm$core$List$drop, 2, decoded);
 					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								bytes: $elm$core$Array$fromList(programBytes),
-								loadAddress: loadAddr,
-								selectedOffset: $elm$core$Maybe$Just(0),
-								viewStart: 0
-							}),
+						$author$project$Main$ensureSelectionVisible(
+							_Utils_update(
+								model,
+								{
+									bytes: $elm$core$Array$fromList(programBytes),
+									loadAddress: loadAddr,
+									selectedOffset: $elm$core$Maybe$Just(0),
+									viewStart: 0
+								})),
 						$elm$core$Platform$Cmd$none);
 				case 'Scroll':
 					var delta = msg.a;
@@ -7620,11 +7645,12 @@ var $author$project$Main$update = F2(
 				case 'SelectLine':
 					var offset = msg.a;
 					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								selectedOffset: $elm$core$Maybe$Just(offset)
-							}),
+						$author$project$Main$ensureSelectionVisible(
+							_Utils_update(
+								model,
+								{
+									selectedOffset: $elm$core$Maybe$Just(offset)
+								})),
 						$elm$core$Platform$Cmd$none);
 				case 'StartEditComment':
 					var offset = msg.a;
@@ -7897,26 +7923,22 @@ var $author$project$Main$update = F2(
 								$author$project$Opcodes$opcodeBytes,
 								A2($elm$core$Array$get, offset, model.bytes)));
 						var newOffset = offset + instrLen;
-						if (_Utils_cmp(newOffset, maxOffset) < 1) {
-							var newViewStart = (_Utils_cmp(newOffset, (model.viewStart + model.viewLines) - 2) > -1) ? A2($elm$core$Basics$min, (maxOffset - model.viewLines) + 1, model.viewStart + 3) : model.viewStart;
-							return _Utils_Tuple2(
+						return (_Utils_cmp(newOffset, maxOffset) < 1) ? _Utils_Tuple2(
+							$author$project$Main$ensureSelectionVisible(
 								_Utils_update(
 									model,
 									{
-										selectedOffset: $elm$core$Maybe$Just(newOffset),
-										viewStart: A2($elm$core$Basics$max, 0, newViewStart)
-									}),
-								$elm$core$Platform$Cmd$none);
-						} else {
-							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-						}
+										selectedOffset: $elm$core$Maybe$Just(newOffset)
+									})),
+							$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
 						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									selectedOffset: $elm$core$Maybe$Just(0)
-								}),
+							$author$project$Main$ensureSelectionVisible(
+								_Utils_update(
+									model,
+									{
+										selectedOffset: $elm$core$Maybe$Just(0)
+									})),
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
@@ -7925,25 +7947,25 @@ var $author$project$Main$update = F2(
 						var offset = _v17.a;
 						if (offset > 0) {
 							var newOffset = A2($author$project$Main$findPrevInstructionStart, model.bytes, offset - 1);
-							var newViewStart = (_Utils_cmp(newOffset, model.viewStart + 2) < 0) ? A2($elm$core$Basics$max, 0, model.viewStart - 3) : model.viewStart;
 							return _Utils_Tuple2(
-								_Utils_update(
-									model,
-									{
-										selectedOffset: $elm$core$Maybe$Just(newOffset),
-										viewStart: newViewStart
-									}),
+								$author$project$Main$ensureSelectionVisible(
+									_Utils_update(
+										model,
+										{
+											selectedOffset: $elm$core$Maybe$Just(newOffset)
+										})),
 								$elm$core$Platform$Cmd$none);
 						} else {
 							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 						}
 					} else {
 						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									selectedOffset: $elm$core$Maybe$Just(0)
-								}),
+							$author$project$Main$ensureSelectionVisible(
+								_Utils_update(
+									model,
+									{
+										selectedOffset: $elm$core$Maybe$Just(0)
+									})),
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SaveProject':
@@ -7997,7 +8019,9 @@ var $author$project$Main$update = F2(
 								}
 							}
 						}();
-						return _Utils_Tuple2(withSelection, $elm$core$Platform$Cmd$none);
+						return _Utils_Tuple2(
+							$author$project$Main$ensureSelectionVisible(withSelection),
+							$elm$core$Platform$Cmd$none);
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}

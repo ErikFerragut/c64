@@ -118,12 +118,13 @@ update msg model =
                 programBytes =
                     List.drop 2 decoded
             in
-            ( { model
-                | bytes = Array.fromList programBytes
-                , loadAddress = loadAddr
-                , viewStart = 0
-                , selectedOffset = Just 0
-              }
+            ( ensureSelectionVisible
+                { model
+                    | bytes = Array.fromList programBytes
+                    , loadAddress = loadAddr
+                    , viewStart = 0
+                    , selectedOffset = Just 0
+                }
             , Cmd.none
             )
 
@@ -157,7 +158,7 @@ update msg model =
             ( { model | jumpToInput = str }, Cmd.none )
 
         SelectLine offset ->
-            ( { model | selectedOffset = Just offset }, Cmd.none )
+            ( ensureSelectionVisible { model | selectedOffset = Just offset }, Cmd.none )
 
         StartEditComment offset ->
             let
@@ -381,7 +382,6 @@ update msg model =
             case model.selectedOffset of
                 Just offset ->
                     let
-                        -- Get instruction length at current offset
                         instrLen =
                             Array.get offset model.bytes
                                 |> Maybe.map opcodeBytes
@@ -394,18 +394,7 @@ update msg model =
                             Array.length model.bytes - 1
                     in
                     if newOffset <= maxOffset then
-                        let
-                            -- Auto-scroll if selection goes below visible area
-                            newViewStart =
-                                if newOffset >= model.viewStart + model.viewLines - 2 then
-                                    Basics.min (maxOffset - model.viewLines + 1) (model.viewStart + 3)
-                                else
-                                    model.viewStart
-                        in
-                        ( { model
-                            | selectedOffset = Just newOffset
-                            , viewStart = Basics.max 0 newViewStart
-                          }
+                        ( ensureSelectionVisible { model | selectedOffset = Just newOffset }
                         , Cmd.none
                         )
 
@@ -413,29 +402,17 @@ update msg model =
                         ( model, Cmd.none )
 
                 Nothing ->
-                    ( { model | selectedOffset = Just 0 }, Cmd.none )
+                    ( ensureSelectionVisible { model | selectedOffset = Just 0 }, Cmd.none )
 
         SelectPrevLine ->
             case model.selectedOffset of
                 Just offset ->
                     if offset > 0 then
                         let
-                            -- Find previous instruction start by scanning backwards
-                            -- This is approximate - scan back and find an instruction that lands here
                             newOffset =
                                 findPrevInstructionStart model.bytes (offset - 1)
-
-                            -- Auto-scroll if selection goes above visible area
-                            newViewStart =
-                                if newOffset < model.viewStart + 2 then
-                                    Basics.max 0 (model.viewStart - 3)
-                                else
-                                    model.viewStart
                         in
-                        ( { model
-                            | selectedOffset = Just newOffset
-                            , viewStart = newViewStart
-                          }
+                        ( ensureSelectionVisible { model | selectedOffset = Just newOffset }
                         , Cmd.none
                         )
 
@@ -443,7 +420,7 @@ update msg model =
                         ( model, Cmd.none )
 
                 Nothing ->
-                    ( { model | selectedOffset = Just 0 }, Cmd.none )
+                    ( ensureSelectionVisible { model | selectedOffset = Just 0 }, Cmd.none )
 
         SaveProject ->
             let
@@ -487,6 +464,7 @@ update msg model =
                         withSelection =
                             if Array.isEmpty newModel.bytes then
                                 newModel
+
                             else
                                 case newModel.selectedOffset of
                                     Nothing ->
@@ -495,7 +473,7 @@ update msg model =
                                     Just _ ->
                                         newModel
                     in
-                    ( withSelection, Cmd.none )
+                    ( ensureSelectionVisible withSelection, Cmd.none )
 
                 Err _ ->
                     -- TODO: show error to user
@@ -523,6 +501,40 @@ centerSelectedLine model =
 
         Nothing ->
             ( model, Cmd.none )
+
+
+{-| Ensure the selected line is visible in the view.
+    Returns adjusted viewStart if needed.
+-}
+ensureSelectionVisible : Model -> Model
+ensureSelectionVisible model =
+    case model.selectedOffset of
+        Just offset ->
+            let
+                -- Leave some margin at top and bottom
+                margin =
+                    2
+
+                tooHigh =
+                    offset < model.viewStart + margin
+
+                tooLow =
+                    offset >= model.viewStart + model.viewLines - margin
+
+                maxViewStart =
+                    Basics.max 0 (Array.length model.bytes - model.viewLines)
+            in
+            if tooHigh then
+                { model | viewStart = Basics.max 0 (offset - margin) }
+
+            else if tooLow then
+                { model | viewStart = Basics.min maxViewStart (offset - model.viewLines + margin + 1) }
+
+            else
+                model
+
+        Nothing ->
+            model
 
 
 {-| Find the start of the previous instruction.
