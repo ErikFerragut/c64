@@ -228,6 +228,10 @@ update msg model =
                         -- ?: toggle help
                         update ToggleHelp model
 
+                    "o" ->
+                        -- o: open PRG file
+                        update FileRequested model
+
                     _ ->
                         ( model, Cmd.none )
 
@@ -476,7 +480,7 @@ viewHeader model =
 viewToolbar : Model -> Html Msg
 viewToolbar model =
     div [ class "toolbar" ]
-        [ button [ onClick FileRequested ] [ text "Load PRG" ]
+        [ button [ onClick FileRequested ] [ text "Open PRG" ]
         , button
             [ onClick SaveProject
             , disabled (Array.isEmpty model.bytes)
@@ -599,7 +603,7 @@ viewDisassembly model =
     if Array.isEmpty model.bytes then
         div [ class "disassembly empty" ]
             [ p [] [ text "No file loaded." ]
-            , p [] [ text "Click 'Load PRG' to open a C64 program file." ]
+            , p [] [ text "Click 'Open PRG' or press O to open a C64 program file." ]
             ]
 
     else
@@ -713,6 +717,7 @@ viewFooter model =
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Other" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "O" ], text "Open PRG file" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Go to $" ], text "Jump to address" ]
                     ]

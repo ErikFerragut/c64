@@ -5991,6 +5991,7 @@ var $author$project$Types$Code = {$: 'Code'};
 var $author$project$Main$FileLoaded = function (a) {
 	return {$: 'FileLoaded', a: a};
 };
+var $author$project$Main$FileRequested = {$: 'FileRequested'};
 var $author$project$Main$FileSelected = function (a) {
 	return {$: 'FileSelected', a: a};
 };
@@ -7356,6 +7357,12 @@ var $author$project$Main$update = F2(
 								msg = $temp$msg;
 								model = $temp$model;
 								continue update;
+							case 'o':
+								var $temp$msg = $author$project$Main$FileRequested,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
 							default:
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 						}
@@ -8620,7 +8627,7 @@ var $author$project$Main$viewDisassembly = function (model) {
 					_List_Nil,
 					_List_fromArray(
 						[
-							$elm$html$Html$text('Click \'Load PRG\' to open a C64 program file.')
+							$elm$html$Html$text('Click \'Open PRG\' or press O to open a C64 program file.')
 						]))
 				]));
 	} else {
@@ -8957,6 +8964,26 @@ var $author$project$Main$viewFooter = function (model) {
 											]),
 										_List_fromArray(
 											[
+												$elm$html$Html$text('O')
+											])),
+										$elm$html$Html$text('Open PRG file')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
 												$elm$html$Html$text('?')
 											])),
 										$elm$html$Html$text('Toggle this help')
@@ -9202,7 +9229,6 @@ var $author$project$Main$viewSegmentCreateBar = function (model) {
 				]));
 	}
 };
-var $author$project$Main$FileRequested = {$: 'FileRequested'};
 var $author$project$Main$JumpToAddress = {$: 'JumpToAddress'};
 var $author$project$Main$JumpToInputChanged = function (a) {
 	return {$: 'JumpToInputChanged', a: a};
@@ -9245,7 +9271,7 @@ var $author$project$Main$viewToolbar = function (model) {
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Load PRG')
+						$elm$html$Html$text('Open PRG')
 					])),
 				A2(
 				$elm$html$Html$button,
