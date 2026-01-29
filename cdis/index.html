@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDis - C64 Disassembler</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-bg: #16213e;
+            --text-color: #eee;
+            --accent-color: #0f3460;
+            --highlight-color: #e94560;
+            --comment-color: #7ec8e3;
+            --address-color: #f0a500;
+            --bytes-color: #888;
+            --mnemonic-color: #fff;
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .cdis-app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .cdis-header {
+            background: var(--accent-color);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid var(--highlight-color);
+        }
+
+        .cdis-header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--highlight-color);
+        }
+
+        .cdis-header .subtitle {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .cdis-header .filename {
+            color: var(--comment-color);
+            margin-left: auto;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: var(--panel-bg);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toolbar button {
+            background: var(--accent-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        .toolbar button:hover {
+            background: var(--highlight-color);
+        }
+
+        .toolbar .separator {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+        }
+
+        .toolbar label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #aaa;
+        }
+
+        .toolbar .address-input {
+            width: 60px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--address-color);
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .toolbar .info {
+            margin-left: auto;
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Disassembly */
+        .disassembly {
+            flex: 1;
+            overflow: hidden;
+            background: var(--bg-color);
+            padding: 0 20px;
+        }
+
+        .disassembly.empty {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+        }
+
+        .disassembly.empty p {
+            margin: 5px 0;
+        }
+
+        .disasm-header {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .lines {
+            overflow-y: auto;
+            height: calc(100% - 40px);
+        }
+
+        .line {
+            display: flex;
+            padding: 2px 0;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+        }
+
+        .line:hover {
+            background: var(--panel-bg);
+        }
+
+        .line.selected {
+            background: var(--accent-color);
+            border-bottom: 1px solid var(--highlight-color);
+        }
+
+        .col-address {
+            width: 80px;
+            color: var(--address-color);
+            flex-shrink: 0;
+        }
+
+        .col-bytes {
+            width: 100px;
+            color: var(--bytes-color);
+            flex-shrink: 0;
+        }
+
+        .col-disasm {
+            width: 200px;
+            color: var(--mnemonic-color);
+            flex-shrink: 0;
+        }
+
+        .col-comment {
+            flex: 1;
+            color: var(--comment-color);
+            min-width: 0;
+        }
+
+        .col-comment.editing input {
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--highlight-color);
+            color: var(--comment-color);
+            padding: 2px 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .cdis-footer {
+            background: var(--panel-bg);
+            padding: 8px 20px;
+            border-top: 1px solid var(--border-color);
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--highlight-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script src="cdis.js"></script>
+    <script>
+        var app = Elm.Main.init({
+            node: document.getElementById('app')
+        });
+    </script>
+</body>
+</html>
