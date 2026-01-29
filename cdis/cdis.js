@@ -6004,6 +6004,8 @@ var $author$project$Main$LoadProjectSelected = function (a) {
 var $author$project$Main$MarkSegmentStart = {$: 'MarkSegmentStart'};
 var $author$project$Main$NextSegment = {$: 'NextSegment'};
 var $author$project$Main$PrevSegment = {$: 'PrevSegment'};
+var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
+var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
 var $author$project$Main$SelectSegment = function (a) {
 	return {$: 'SelectSegment', a: a};
 };
@@ -6485,6 +6487,75 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$Bitwise$and = _Bitwise_and;
+var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
+var $elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var $elm$core$Array$getHelp = F3(
+	function (shift, index, tree) {
+		getHelp:
+		while (true) {
+			var pos = $elm$core$Array$bitMask & (index >>> shift);
+			var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_v0.$ === 'SubTree') {
+				var subTree = _v0.a;
+				var $temp$shift = shift - $elm$core$Array$shiftStep,
+					$temp$index = index,
+					$temp$tree = subTree;
+				shift = $temp$shift;
+				index = $temp$index;
+				tree = $temp$tree;
+				continue getHelp;
+			} else {
+				var values = _v0.a;
+				return A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, values);
+			}
+		}
+	});
+var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var $elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
+};
+var $elm$core$Array$get = F2(
+	function (index, _v0) {
+		var len = _v0.a;
+		var startShift = _v0.b;
+		var tree = _v0.c;
+		var tail = _v0.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(
+			index,
+			$elm$core$Array$tailIndex(len)) > -1) ? $elm$core$Maybe$Just(
+			A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, tail)) : $elm$core$Maybe$Just(
+			A3($elm$core$Array$getHelp, startShift, index, tree)));
+	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Types$Absolute = {$: 'Absolute'};
+var $author$project$Types$AbsoluteX = {$: 'AbsoluteX'};
+var $author$project$Types$AbsoluteY = {$: 'AbsoluteY'};
+var $author$project$Types$Accumulator = {$: 'Accumulator'};
+var $author$project$Types$Immediate = {$: 'Immediate'};
+var $author$project$Types$Implied = {$: 'Implied'};
+var $author$project$Types$Indirect = {$: 'Indirect'};
+var $author$project$Types$IndirectX = {$: 'IndirectX'};
+var $author$project$Types$IndirectY = {$: 'IndirectY'};
+var $author$project$Types$OpcodeInfo = F5(
+	function (mnemonic, mode, bytes, cycles, undocumented) {
+		return {bytes: bytes, cycles: cycles, mnemonic: mnemonic, mode: mode, undocumented: undocumented};
+	});
+var $author$project$Types$Relative = {$: 'Relative'};
+var $author$project$Types$ZeroPage = {$: 'ZeroPage'};
+var $author$project$Types$ZeroPageX = {$: 'ZeroPageX'};
+var $author$project$Types$ZeroPageY = {$: 'ZeroPageY'};
 var $elm$core$Array$fromListHelp = F3(
 	function (list, nodeList, nodeListSize) {
 		fromListHelp:
@@ -6520,6 +6591,292 @@ var $elm$core$Array$fromList = function (list) {
 		return A3($elm$core$Array$fromListHelp, list, _List_Nil, 0);
 	}
 };
+var $author$project$Opcodes$opcodeTable = $elm$core$Array$fromList(
+	_List_fromArray(
+		[
+			A5($author$project$Types$OpcodeInfo, 'BRK', $author$project$Types$Implied, 1, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$IndirectX, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPage, 2, 3, true),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$ZeroPage, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$ZeroPage, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'PHP', $author$project$Types$Implied, 1, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$Accumulator, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ANC', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Absolute, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$Absolute, 3, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'BPL', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$IndirectY, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$ZeroPageX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$ZeroPageX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'CLC', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$AbsoluteY, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$AbsoluteX, 3, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$AbsoluteX, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'JSR', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$IndirectX, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'BIT', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$ZeroPage, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$ZeroPage, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'PLP', $author$project$Types$Implied, 1, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$Accumulator, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ANC', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'BIT', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$Absolute, 3, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'BMI', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$IndirectY, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$ZeroPageX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$ZeroPageX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'SEC', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$AbsoluteY, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$AbsoluteX, 3, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$AbsoluteX, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'RTI', $author$project$Types$Implied, 1, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$IndirectX, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPage, 2, 3, true),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$ZeroPage, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$ZeroPage, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'PHA', $author$project$Types$Implied, 1, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$Accumulator, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ALR', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'JMP', $author$project$Types$Absolute, 3, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$Absolute, 3, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'BVC', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$IndirectY, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$ZeroPageX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$ZeroPageX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'CLI', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$AbsoluteY, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$AbsoluteX, 3, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$AbsoluteX, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'RTS', $author$project$Types$Implied, 1, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$IndirectX, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPage, 2, 3, true),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$ZeroPage, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$ZeroPage, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'PLA', $author$project$Types$Implied, 1, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$Accumulator, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ARR', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'JMP', $author$project$Types$Indirect, 3, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$Absolute, 3, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'BVS', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$IndirectY, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$ZeroPageX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$ZeroPageX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'SEI', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$AbsoluteY, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$AbsoluteX, 3, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$AbsoluteX, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$IndirectX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'STY', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'STX', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$ZeroPage, 2, 3, true),
+			A5($author$project$Types$OpcodeInfo, 'DEY', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'TXA', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'ANE', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'STY', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'STX', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$Absolute, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'BCC', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$IndirectY, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'SHA', $author$project$Types$IndirectY, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'STY', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'STX', $author$project$Types$ZeroPageY, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$ZeroPageY, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'TYA', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$AbsoluteY, 3, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'TXS', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'TAS', $author$project$Types$AbsoluteY, 3, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'SHY', $author$project$Types$AbsoluteX, 3, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$AbsoluteX, 3, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'SHX', $author$project$Types$AbsoluteY, 3, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'SHA', $author$project$Types$AbsoluteY, 3, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$IndirectX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$ZeroPage, 2, 3, true),
+			A5($author$project$Types$OpcodeInfo, 'TAY', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'TAX', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LXA', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$Absolute, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'BCS', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$IndirectY, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$ZeroPageY, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$ZeroPageY, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'CLV', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'TSX', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'LAS', $author$project$Types$AbsoluteY, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$AbsoluteY, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'CPY', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$IndirectX, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'CPY', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$ZeroPage, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$ZeroPage, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'INY', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'DEX', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'SBX', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'CPY', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$Absolute, 3, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'BNE', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$IndirectY, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$ZeroPageX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$ZeroPageX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'CLD', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$AbsoluteY, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$AbsoluteX, 3, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$AbsoluteX, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'CPX', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$IndirectX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$IndirectX, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'CPX', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$ZeroPage, 2, 3, false),
+			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$ZeroPage, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$ZeroPage, 2, 5, true),
+			A5($author$project$Types$OpcodeInfo, 'INX', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$Immediate, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$Immediate, 2, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'CPX', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$Absolute, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$Absolute, 3, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$Absolute, 3, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'BEQ', $author$project$Types$Relative, 2, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$IndirectY, 2, 5, false),
+			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$IndirectY, 2, 8, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$ZeroPageX, 2, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$ZeroPageX, 2, 6, false),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$ZeroPageX, 2, 6, true),
+			A5($author$project$Types$OpcodeInfo, 'SED', $author$project$Types$Implied, 1, 2, false),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$AbsoluteY, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$AbsoluteY, 3, 7, true),
+			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
+			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$AbsoluteX, 3, 4, false),
+			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$AbsoluteX, 3, 7, false),
+			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$AbsoluteX, 3, 7, true)
+		]));
+var $author$project$Opcodes$unknownOpcode = A5($author$project$Types$OpcodeInfo, '???', $author$project$Types$Implied, 1, 2, true);
+var $author$project$Opcodes$getOpcode = function (_byte) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		$author$project$Opcodes$unknownOpcode,
+		A2($elm$core$Array$get, _byte, $author$project$Opcodes$opcodeTable));
+};
+var $author$project$Opcodes$opcodeBytes = function (_byte) {
+	return $author$project$Opcodes$getOpcode(_byte).bytes;
+};
+var $author$project$Main$findPrevInstructionStart = F2(
+	function (bytes, targetOffset) {
+		var try3 = targetOffset - 2;
+		var try2 = targetOffset - 1;
+		var try1 = targetOffset;
+		var lenAt = function (off) {
+			return A2(
+				$elm$core$Maybe$withDefault,
+				1,
+				A2(
+					$elm$core$Maybe$map,
+					$author$project$Opcodes$opcodeBytes,
+					A2($elm$core$Array$get, off, bytes)));
+		};
+		return ((try3 >= 0) && (lenAt(try3) === 3)) ? try3 : (((try2 >= 0) && (lenAt(try2) === 2)) ? try2 : ((try1 >= 0) ? try1 : 0));
+	});
 var $author$project$Project$segmentTypeToString = function (st) {
 	switch (st.$) {
 		case 'Code':
@@ -6548,7 +6905,6 @@ var $author$project$Project$fromModel = function (model) {
 		version: $author$project$Project$currentVersion
 	};
 };
-var $elm$core$Basics$ge = _Utils_ge;
 var $elm$core$Dict$get = F2(
 	function (targetKey, dict) {
 		get:
@@ -6589,6 +6945,10 @@ var $elm$core$List$head = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
+var $elm$core$Array$isEmpty = function (_v0) {
+	var len = _v0.a;
+	return !len;
+};
 var $elm$core$List$isEmpty = function (xs) {
 	if (!xs.b) {
 		return true;
@@ -6596,6 +6956,10 @@ var $elm$core$List$isEmpty = function (xs) {
 		return false;
 	}
 };
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
 var $elm$file$File$name = _File_name;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$Basics$not = _Basics_not;
@@ -7068,7 +7432,6 @@ var $elm$core$String$cons = _String_cons;
 var $elm$core$String$fromChar = function (_char) {
 	return A2($elm$core$String$cons, _char, '');
 };
-var $elm$core$Bitwise$and = _Bitwise_and;
 var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
 var $elm$core$String$repeatHelp = F3(
 	function (n, chunk, result) {
@@ -7216,6 +7579,7 @@ var $author$project$Main$update = F2(
 							{
 								bytes: $elm$core$Array$fromList(programBytes),
 								loadAddress: loadAddr,
+								selectedOffset: $elm$core$Maybe$Just(0),
 								viewStart: 0
 							}),
 						$elm$core$Platform$Cmd$none);
@@ -7359,6 +7723,18 @@ var $author$project$Main$update = F2(
 								continue update;
 							case 'o':
 								var $temp$msg = $author$project$Main$FileRequested,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case 'j':
+								var $temp$msg = $author$project$Main$SelectNextLine,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case 'k':
+								var $temp$msg = $author$project$Main$SelectPrevLine,
 									$temp$model = model;
 								msg = $temp$msg;
 								model = $temp$model;
@@ -7508,6 +7884,68 @@ var $author$project$Main$update = F2(
 							model,
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
+				case 'SelectNextLine':
+					var _v16 = model.selectedOffset;
+					if (_v16.$ === 'Just') {
+						var offset = _v16.a;
+						var maxOffset = $elm$core$Array$length(model.bytes) - 1;
+						var instrLen = A2(
+							$elm$core$Maybe$withDefault,
+							1,
+							A2(
+								$elm$core$Maybe$map,
+								$author$project$Opcodes$opcodeBytes,
+								A2($elm$core$Array$get, offset, model.bytes)));
+						var newOffset = offset + instrLen;
+						if (_Utils_cmp(newOffset, maxOffset) < 1) {
+							var newViewStart = (_Utils_cmp(newOffset, (model.viewStart + model.viewLines) - 2) > -1) ? A2($elm$core$Basics$min, (maxOffset - model.viewLines) + 1, model.viewStart + 3) : model.viewStart;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										selectedOffset: $elm$core$Maybe$Just(newOffset),
+										viewStart: A2($elm$core$Basics$max, 0, newViewStart)
+									}),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									selectedOffset: $elm$core$Maybe$Just(0)
+								}),
+							$elm$core$Platform$Cmd$none);
+					}
+				case 'SelectPrevLine':
+					var _v17 = model.selectedOffset;
+					if (_v17.$ === 'Just') {
+						var offset = _v17.a;
+						if (offset > 0) {
+							var newOffset = A2($author$project$Main$findPrevInstructionStart, model.bytes, offset - 1);
+							var newViewStart = (_Utils_cmp(newOffset, model.viewStart + 2) < 0) ? A2($elm$core$Basics$max, 0, model.viewStart - 3) : model.viewStart;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										selectedOffset: $elm$core$Maybe$Just(newOffset),
+										viewStart: newViewStart
+									}),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									selectedOffset: $elm$core$Maybe$Just(0)
+								}),
+							$elm$core$Platform$Cmd$none);
+					}
 				case 'SaveProject':
 					var saveData = $author$project$Project$fromModel(model);
 					var json = A2(
@@ -7539,12 +7977,27 @@ var $author$project$Main$update = F2(
 							$elm$file$File$toString(file)));
 				case 'LoadProjectLoaded':
 					var jsonString = msg.a;
-					var _v16 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
-					if (_v16.$ === 'Ok') {
-						var saveData = _v16.a;
-						return _Utils_Tuple2(
-							A2($author$project$Project$toModel, saveData, model),
-							$elm$core$Platform$Cmd$none);
+					var _v18 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
+					if (_v18.$ === 'Ok') {
+						var saveData = _v18.a;
+						var newModel = A2($author$project$Project$toModel, saveData, model);
+						var withSelection = function () {
+							if ($elm$core$Array$isEmpty(newModel.bytes)) {
+								return newModel;
+							} else {
+								var _v19 = newModel.selectedOffset;
+								if (_v19.$ === 'Nothing') {
+									return _Utils_update(
+										newModel,
+										{
+											selectedOffset: $elm$core$Maybe$Just(0)
+										});
+								} else {
+									return newModel;
+								}
+							}
+						}();
+						return _Utils_Tuple2(withSelection, $elm$core$Platform$Cmd$none);
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
@@ -7897,46 +8350,6 @@ var $author$project$Disassembler$formatInstruction = F3(
 		var mnemonic = info.undocumented ? ('*' + info.mnemonic) : info.mnemonic;
 		return $elm$core$String$isEmpty(operandStr) ? mnemonic : (mnemonic + (' ' + operandStr));
 	});
-var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
-var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
-var $elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
-var $elm$core$Array$getHelp = F3(
-	function (shift, index, tree) {
-		getHelp:
-		while (true) {
-			var pos = $elm$core$Array$bitMask & (index >>> shift);
-			var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
-			if (_v0.$ === 'SubTree') {
-				var subTree = _v0.a;
-				var $temp$shift = shift - $elm$core$Array$shiftStep,
-					$temp$index = index,
-					$temp$tree = subTree;
-				shift = $temp$shift;
-				index = $temp$index;
-				tree = $temp$tree;
-				continue getHelp;
-			} else {
-				var values = _v0.a;
-				return A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, values);
-			}
-		}
-	});
-var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
-var $elm$core$Array$tailIndex = function (len) {
-	return (len >>> 5) << 5;
-};
-var $elm$core$Array$get = F2(
-	function (index, _v0) {
-		var len = _v0.a;
-		var startShift = _v0.b;
-		var tree = _v0.c;
-		var tail = _v0.d;
-		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(
-			index,
-			$elm$core$Array$tailIndex(len)) > -1) ? $elm$core$Maybe$Just(
-			A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, tail)) : $elm$core$Maybe$Just(
-			A3($elm$core$Array$getHelp, startShift, index, tree)));
-	});
 var $author$project$Disassembler$getInstructionBytes = F3(
 	function (offset, numBytes, bytes) {
 		return A2(
@@ -7946,290 +8359,6 @@ var $author$project$Disassembler$getInstructionBytes = F3(
 			},
 			A2($elm$core$List$range, offset, (offset + numBytes) - 1));
 	});
-var $author$project$Types$Absolute = {$: 'Absolute'};
-var $author$project$Types$AbsoluteX = {$: 'AbsoluteX'};
-var $author$project$Types$AbsoluteY = {$: 'AbsoluteY'};
-var $author$project$Types$Accumulator = {$: 'Accumulator'};
-var $author$project$Types$Immediate = {$: 'Immediate'};
-var $author$project$Types$Implied = {$: 'Implied'};
-var $author$project$Types$Indirect = {$: 'Indirect'};
-var $author$project$Types$IndirectX = {$: 'IndirectX'};
-var $author$project$Types$IndirectY = {$: 'IndirectY'};
-var $author$project$Types$OpcodeInfo = F5(
-	function (mnemonic, mode, bytes, cycles, undocumented) {
-		return {bytes: bytes, cycles: cycles, mnemonic: mnemonic, mode: mode, undocumented: undocumented};
-	});
-var $author$project$Types$Relative = {$: 'Relative'};
-var $author$project$Types$ZeroPage = {$: 'ZeroPage'};
-var $author$project$Types$ZeroPageX = {$: 'ZeroPageX'};
-var $author$project$Types$ZeroPageY = {$: 'ZeroPageY'};
-var $author$project$Opcodes$opcodeTable = $elm$core$Array$fromList(
-	_List_fromArray(
-		[
-			A5($author$project$Types$OpcodeInfo, 'BRK', $author$project$Types$Implied, 1, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$IndirectX, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPage, 2, 3, true),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$ZeroPage, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$ZeroPage, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'PHP', $author$project$Types$Implied, 1, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$Accumulator, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ANC', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Absolute, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$Absolute, 3, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'BPL', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$IndirectY, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$ZeroPageX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$ZeroPageX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'CLC', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$AbsoluteY, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'ORA', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ASL', $author$project$Types$AbsoluteX, 3, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'SLO', $author$project$Types$AbsoluteX, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'JSR', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$IndirectX, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'BIT', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$ZeroPage, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$ZeroPage, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'PLP', $author$project$Types$Implied, 1, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$Accumulator, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ANC', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'BIT', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$Absolute, 3, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'BMI', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$IndirectY, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$ZeroPageX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$ZeroPageX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'SEC', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$AbsoluteY, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'AND', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ROL', $author$project$Types$AbsoluteX, 3, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'RLA', $author$project$Types$AbsoluteX, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'RTI', $author$project$Types$Implied, 1, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$IndirectX, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPage, 2, 3, true),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$ZeroPage, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$ZeroPage, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'PHA', $author$project$Types$Implied, 1, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$Accumulator, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ALR', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'JMP', $author$project$Types$Absolute, 3, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$Absolute, 3, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'BVC', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$IndirectY, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$ZeroPageX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$ZeroPageX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'CLI', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$AbsoluteY, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'EOR', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LSR', $author$project$Types$AbsoluteX, 3, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'SRE', $author$project$Types$AbsoluteX, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'RTS', $author$project$Types$Implied, 1, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$IndirectX, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPage, 2, 3, true),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$ZeroPage, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$ZeroPage, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'PLA', $author$project$Types$Implied, 1, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$Accumulator, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ARR', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'JMP', $author$project$Types$Indirect, 3, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$Absolute, 3, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'BVS', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$IndirectY, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$ZeroPageX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$ZeroPageX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'SEI', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$AbsoluteY, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'ADC', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'ROR', $author$project$Types$AbsoluteX, 3, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'RRA', $author$project$Types$AbsoluteX, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$IndirectX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'STY', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'STX', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$ZeroPage, 2, 3, true),
-			A5($author$project$Types$OpcodeInfo, 'DEY', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'TXA', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'ANE', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'STY', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'STX', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$Absolute, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'BCC', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$IndirectY, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'SHA', $author$project$Types$IndirectY, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'STY', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'STX', $author$project$Types$ZeroPageY, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'SAX', $author$project$Types$ZeroPageY, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'TYA', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$AbsoluteY, 3, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'TXS', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'TAS', $author$project$Types$AbsoluteY, 3, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'SHY', $author$project$Types$AbsoluteX, 3, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'STA', $author$project$Types$AbsoluteX, 3, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'SHX', $author$project$Types$AbsoluteY, 3, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'SHA', $author$project$Types$AbsoluteY, 3, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$IndirectX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$ZeroPage, 2, 3, true),
-			A5($author$project$Types$OpcodeInfo, 'TAY', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'TAX', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LXA', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$Absolute, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'BCS', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$IndirectY, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$ZeroPageY, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$ZeroPageY, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'CLV', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'TSX', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'LAS', $author$project$Types$AbsoluteY, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'LDY', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LDA', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LDX', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'LAX', $author$project$Types$AbsoluteY, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'CPY', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$IndirectX, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'CPY', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$ZeroPage, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$ZeroPage, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'INY', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'DEX', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'SBX', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'CPY', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$Absolute, 3, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'BNE', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$IndirectY, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$ZeroPageX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$ZeroPageX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'CLD', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$AbsoluteY, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'CMP', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'DEC', $author$project$Types$AbsoluteX, 3, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'DCP', $author$project$Types$AbsoluteX, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'CPX', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$IndirectX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$IndirectX, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'CPX', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$ZeroPage, 2, 3, false),
-			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$ZeroPage, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$ZeroPage, 2, 5, true),
-			A5($author$project$Types$OpcodeInfo, 'INX', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$Immediate, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$Immediate, 2, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'CPX', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$Absolute, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$Absolute, 3, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$Absolute, 3, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'BEQ', $author$project$Types$Relative, 2, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$IndirectY, 2, 5, false),
-			A5($author$project$Types$OpcodeInfo, 'JAM', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$IndirectY, 2, 8, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$ZeroPageX, 2, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$ZeroPageX, 2, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$ZeroPageX, 2, 6, false),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$ZeroPageX, 2, 6, true),
-			A5($author$project$Types$OpcodeInfo, 'SED', $author$project$Types$Implied, 1, 2, false),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$AbsoluteY, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$Implied, 1, 2, true),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$AbsoluteY, 3, 7, true),
-			A5($author$project$Types$OpcodeInfo, 'NOP', $author$project$Types$AbsoluteX, 3, 4, true),
-			A5($author$project$Types$OpcodeInfo, 'SBC', $author$project$Types$AbsoluteX, 3, 4, false),
-			A5($author$project$Types$OpcodeInfo, 'INC', $author$project$Types$AbsoluteX, 3, 7, false),
-			A5($author$project$Types$OpcodeInfo, 'ISC', $author$project$Types$AbsoluteX, 3, 7, true)
-		]));
-var $author$project$Opcodes$unknownOpcode = A5($author$project$Types$OpcodeInfo, '???', $author$project$Types$Implied, 1, 2, true);
-var $author$project$Opcodes$getOpcode = function (_byte) {
-	return A2(
-		$elm$core$Maybe$withDefault,
-		$author$project$Opcodes$unknownOpcode,
-		A2($elm$core$Array$get, _byte, $author$project$Opcodes$opcodeTable));
-};
 var $author$project$Disassembler$getOperandValue = function (instrBytes) {
 	_v0$2:
 	while (true) {
@@ -8314,10 +8443,6 @@ var $author$project$Disassembler$disassembleRange = F5(
 	function (loadAddress, startOffset, count, bytes, comments) {
 		return A6($author$project$Disassembler$disassembleHelper, loadAddress, startOffset, count, bytes, comments, _List_Nil);
 	});
-var $elm$core$Array$isEmpty = function (_v0) {
-	var len = _v0.a;
-	return !len;
-};
 var $elm$json$Json$Decode$float = _Json_decodeFloat;
 var $elm$core$Basics$negate = function (n) {
 	return -n;
@@ -8488,16 +8613,6 @@ var $author$project$Main$onKeyDownComment = A2(
 		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
-	});
 var $author$project$Main$viewCommentText = function (maybeComment) {
 	return A2(
 		$elm$html$Html$span,
@@ -8690,6 +8805,26 @@ var $author$project$Main$viewFooter = function (model) {
 								_List_fromArray(
 									[
 										$elm$html$Html$text('Navigation')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('J / K')
+											])),
+										$elm$html$Html$text('Next/Prev line')
 									])),
 								A2(
 								$elm$html$Html$div,

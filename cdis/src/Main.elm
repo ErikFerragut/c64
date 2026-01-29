@@ -7,6 +7,7 @@ import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Dict exposing (Dict)
 import Disassembler exposing (disassembleRange)
+import Opcodes exposing (opcodeBytes)
 import File exposing (File)
 import File.Download as Download
 import File.Select as Select
@@ -78,6 +79,8 @@ type Msg
     | CancelSegmentCreate
     | DeleteSegment Int
     | ToggleHelp
+    | SelectNextLine
+    | SelectPrevLine
     | SaveProject
     | LoadProjectRequested
     | LoadProjectSelected File
@@ -119,6 +122,7 @@ update msg model =
                 | bytes = Array.fromList programBytes
                 , loadAddress = loadAddr
                 , viewStart = 0
+                , selectedOffset = Just 0
               }
             , Cmd.none
             )
@@ -231,6 +235,14 @@ update msg model =
                     "o" ->
                         -- o: open PRG file
                         update FileRequested model
+
+                    "j" ->
+                        -- j: next line
+                        update SelectNextLine model
+
+                    "k" ->
+                        -- k: previous line
+                        update SelectPrevLine model
 
                     _ ->
                         ( model, Cmd.none )
@@ -365,6 +377,74 @@ update msg model =
         ToggleHelp ->
             ( { model | helpExpanded = not model.helpExpanded }, Cmd.none )
 
+        SelectNextLine ->
+            case model.selectedOffset of
+                Just offset ->
+                    let
+                        -- Get instruction length at current offset
+                        instrLen =
+                            Array.get offset model.bytes
+                                |> Maybe.map opcodeBytes
+                                |> Maybe.withDefault 1
+
+                        newOffset =
+                            offset + instrLen
+
+                        maxOffset =
+                            Array.length model.bytes - 1
+                    in
+                    if newOffset <= maxOffset then
+                        let
+                            -- Auto-scroll if selection goes below visible area
+                            newViewStart =
+                                if newOffset >= model.viewStart + model.viewLines - 2 then
+                                    Basics.min (maxOffset - model.viewLines + 1) (model.viewStart + 3)
+                                else
+                                    model.viewStart
+                        in
+                        ( { model
+                            | selectedOffset = Just newOffset
+                            , viewStart = Basics.max 0 newViewStart
+                          }
+                        , Cmd.none
+                        )
+
+                    else
+                        ( model, Cmd.none )
+
+                Nothing ->
+                    ( { model | selectedOffset = Just 0 }, Cmd.none )
+
+        SelectPrevLine ->
+            case model.selectedOffset of
+                Just offset ->
+                    if offset > 0 then
+                        let
+                            -- Find previous instruction start by scanning backwards
+                            -- This is approximate - scan back and find an instruction that lands here
+                            newOffset =
+                                findPrevInstructionStart model.bytes (offset - 1)
+
+                            -- Auto-scroll if selection goes above visible area
+                            newViewStart =
+                                if newOffset < model.viewStart + 2 then
+                                    Basics.max 0 (model.viewStart - 3)
+                                else
+                                    model.viewStart
+                        in
+                        ( { model
+                            | selectedOffset = Just newOffset
+                            , viewStart = newViewStart
+                          }
+                        , Cmd.none
+                        )
+
+                    else
+                        ( model, Cmd.none )
+
+                Nothing ->
+                    ( { model | selectedOffset = Just 0 }, Cmd.none )
+
         SaveProject ->
             let
                 saveData =
@@ -399,7 +479,23 @@ update msg model =
         LoadProjectLoaded jsonString ->
             case JD.decodeString Project.decoder jsonString of
                 Ok saveData ->
-                    ( Project.toModel saveData model, Cmd.none )
+                    let
+                        newModel =
+                            Project.toModel saveData model
+
+                        -- Ensure selection exists if we have bytes
+                        withSelection =
+                            if Array.isEmpty newModel.bytes then
+                                newModel
+                            else
+                                case newModel.selectedOffset of
+                                    Nothing ->
+                                        { newModel | selectedOffset = Just 0 }
+
+                                    Just _ ->
+                                        newModel
+                    in
+                    ( withSelection, Cmd.none )
 
                 Err _ ->
                     -- TODO: show error to user
@@ -427,6 +523,41 @@ centerSelectedLine model =
 
         Nothing ->
             ( model, Cmd.none )
+
+
+{-| Find the start of the previous instruction.
+    We scan backwards trying offsets until we find one whose instruction length
+    would land us at or past the target. This is imperfect but works for linear code.
+-}
+findPrevInstructionStart : Array Int -> Int -> Int
+findPrevInstructionStart bytes targetOffset =
+    -- Try 1, 2, 3 bytes back and see which one's instruction ends at target
+    let
+        try1 =
+            targetOffset
+
+        try2 =
+            targetOffset - 1
+
+        try3 =
+            targetOffset - 2
+
+        lenAt off =
+            Array.get off bytes
+                |> Maybe.map opcodeBytes
+                |> Maybe.withDefault 1
+    in
+    if try3 >= 0 && lenAt try3 == 3 then
+        try3
+
+    else if try2 >= 0 && lenAt try2 == 2 then
+        try2
+
+    else if try1 >= 0 then
+        try1
+
+    else
+        0
 
 
 
@@ -698,6 +829,7 @@ viewFooter model =
             [ div [ class "help-grid" ]
                 [ div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Navigation" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "J / K" ], text "Next/Prev line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "L" ], text "Center selected line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "[ ]" ], text "Prev/Next segment" ]
