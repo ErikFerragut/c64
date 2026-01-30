@@ -3,14 +3,6 @@ use std::fs;
 use std::path::PathBuf;
 
 #[tauri::command]
-async fn pick_and_load_prg() -> Result<PrgData, String> {
-    use tauri_plugin_dialog::DialogExt;
-
-    // This needs to be called from a window context
-    Err("Use pick_prg_file instead".to_string())
-}
-
-#[tauri::command]
 async fn read_prg_file(path: String) -> Result<PrgData, String> {
     let prg_path = PathBuf::from(&path);
 
