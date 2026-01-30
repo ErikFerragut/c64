@@ -39,6 +39,48 @@
             height: 100vh;
         }
 
+        .cdis-app.file-prompt {
+            justify-content: center;
+            align-items: center;
+        }
+
+        .prompt-content {
+            text-align: center;
+        }
+
+        .prompt-content h1 {
+            font-size: 48px;
+            color: var(--highlight-color);
+            margin: 0 0 10px 0;
+        }
+
+        .prompt-content p {
+            color: #888;
+            margin: 5px 0;
+        }
+
+        .prompt-content .hint {
+            color: #666;
+            font-style: italic;
+            margin-top: 30px;
+        }
+
+        .load-button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-family: inherit;
+            background: var(--highlight-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .load-button:hover {
+            background: #ff5a7a;
+        }
+
         /* Header */
         .cdis-header {
             background: var(--accent-color);
@@ -117,103 +159,6 @@
             margin-left: auto;
             color: #888;
             font-size: 12px;
-        }
-
-        /* Segment Bar */
-        .segment-bar {
-            background: var(--bg-color);
-            padding: 8px 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid var(--border-color);
-            flex-wrap: wrap;
-        }
-
-        .segment-tab-wrapper {
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .segment-tab {
-            background: var(--panel-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 4px 10px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 12px;
-            border-radius: 3px 0 0 3px;
-        }
-
-        .segment-tab:hover {
-            background: var(--accent-color);
-        }
-
-        .segment-tab.active {
-            background: var(--highlight-color);
-            border-color: var(--highlight-color);
-        }
-
-        .segment-delete {
-            background: var(--panel-bg);
-            color: #888;
-            border: 1px solid var(--border-color);
-            border-left: none;
-            padding: 4px 6px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 10px;
-            border-radius: 0 3px 3px 0;
-        }
-
-        .segment-delete:hover {
-            background: #a33;
-            color: white;
-        }
-
-        /* Segment Create Bar */
-        .segment-create-bar {
-            background: var(--accent-color);
-            padding: 8px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid var(--highlight-color);
-        }
-
-        .segment-create-bar span {
-            color: var(--text-color);
-            font-size: 13px;
-        }
-
-        .segment-create-bar .hint {
-            color: #888;
-            font-size: 11px;
-        }
-
-        .segment-name-input {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 4px 8px;
-            font-family: inherit;
-            font-size: 13px;
-            width: 150px;
-        }
-
-        .segment-create-bar button {
-            background: var(--panel-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 4px 10px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 12px;
-        }
-
-        .segment-create-bar button:hover {
-            background: var(--highlight-color);
         }
 
         /* Disassembly */
@@ -367,8 +312,127 @@
     <div id="app"></div>
     <script src="cdis.js"></script>
     <script>
+        // Current cdis path for saving
+        let currentCdisPath = null;
+
         var app = Elm.Main.init({
             node: document.getElementById('app')
+        });
+
+        // Get Tauri invoke function - debug what's available
+        console.log('window.__TAURI__:', window.__TAURI__);
+        console.log('window.__TAURI_INTERNALS__:', window.__TAURI_INTERNALS__);
+        console.log('All __TAURI keys:', Object.keys(window).filter(k => k.includes('TAURI')));
+
+        // Try different ways to get invoke
+        const invoke = window.__TAURI__?.core?.invoke
+            || window.__TAURI_INTERNALS__?.invoke
+            || window.__TAURI__?.invoke;
+        const runningInTauri = typeof invoke === 'function';
+        console.log('invoke function:', invoke);
+        console.log('Running in Tauri:', runningInTauri);
+
+        // Request PRG file
+        app.ports.requestPrgFile.subscribe(async function() {
+            console.log('requestPrgFile called!');
+
+            if (runningInTauri) {
+                try {
+                    // Use Tauri's dialog plugin to pick a file
+                    // Access the dialog through the plugin's exposed API
+                    const { open } = window.__TAURI_PLUGIN_DIALOG__ || {};
+
+                    if (!open) {
+                        // Try alternative access method
+                        console.log('Trying alternative dialog access...');
+                        const result = await invoke('plugin:dialog|open', {
+                            options: {
+                                multiple: false,
+                                filters: [{
+                                    name: 'C64 PRG',
+                                    extensions: ['prg', 'PRG']
+                                }]
+                            }
+                        });
+
+                        if (!result) {
+                            console.log('No file selected');
+                            return;
+                        }
+
+                        const filePath = typeof result === 'string' ? result : result.path;
+                        console.log('Selected file:', filePath);
+
+                        // Use our custom command to read the file
+                        const data = await invoke('read_prg_file', { path: filePath });
+                        console.log('Loaded PRG:', data.file_name, data.bytes.length, 'bytes');
+
+                        currentCdisPath = data.cdis_path;
+
+                        // Send to Elm
+                        app.ports.prgFileOpened.send({
+                            fileName: data.file_name,
+                            bytes: Array.from(data.bytes),
+                            cdisContent: data.cdis_content
+                        });
+                    } else {
+                        // Use the dialog API directly
+                        const selected = await open({
+                            multiple: false,
+                            filters: [{
+                                name: 'C64 PRG',
+                                extensions: ['prg', 'PRG']
+                            }]
+                        });
+
+                        if (!selected) {
+                            console.log('No file selected');
+                            return;
+                        }
+
+                        const filePath = typeof selected === 'string' ? selected : selected.path;
+                        console.log('Selected file:', filePath);
+
+                        // Use our custom command to read the file
+                        const data = await invoke('read_prg_file', { path: filePath });
+                        console.log('Loaded PRG:', data.file_name, data.bytes.length, 'bytes');
+
+                        currentCdisPath = data.cdis_path;
+
+                        // Send to Elm
+                        app.ports.prgFileOpened.send({
+                            fileName: data.file_name,
+                            bytes: Array.from(data.bytes),
+                            cdisContent: data.cdis_content
+                        });
+                    }
+
+                } catch (e) {
+                    console.error('Error opening file:', e);
+                    app.ports.showError.send('Failed to open file: ' + e.message);
+                }
+            } else {
+                alert('Please run this app with Tauri for full functionality.');
+            }
+        });
+
+        // Save CDIS file
+        app.ports.saveCdisFile.subscribe(async function(content) {
+            console.log('saveCdisFile called');
+
+            if (runningInTauri && currentCdisPath) {
+                try {
+                    await invoke('save_cdis_file', { path: currentCdisPath, content: content });
+                    console.log('Saved CDIS to:', currentCdisPath);
+                    app.ports.cdisSaved.send(null);
+                } catch (e) {
+                    console.error('Error saving file:', e);
+                    app.ports.showError.send('Failed to save: ' + e.message);
+                }
+            } else {
+                console.error('Cannot save: not in Tauri or no file path');
+                app.ports.showError.send('Cannot save: no file path set');
+            }
         });
     </script>
 </body>

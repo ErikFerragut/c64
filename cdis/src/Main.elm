@@ -1,16 +1,10 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Array exposing (Array)
 import Browser
 import Browser.Dom as Dom
-import Browser.Events as Events
-import Bytes exposing (Bytes)
-import Bytes.Decode as Decode
 import Dict exposing (Dict)
 import Disassembler exposing (disassembleRange)
-import File exposing (File)
-import File.Download as Download
-import File.Select as Select
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -20,6 +14,25 @@ import Opcodes exposing (opcodeBytes)
 import Project
 import Task
 import Types exposing (..)
+
+
+
+-- PORTS
+
+
+port requestPrgFile : () -> Cmd msg
+
+
+port prgFileOpened : (JE.Value -> msg) -> Sub msg
+
+
+port saveCdisFile : String -> Cmd msg
+
+
+port cdisSaved : (() -> msg) -> Sub msg
+
+
+port showError : (String -> msg) -> Sub msg
 
 
 type alias KeyEvent =
@@ -58,9 +71,8 @@ init _ =
 
 
 type Msg
-    = FileRequested
-    | FileSelected File
-    | FileLoaded Bytes
+    = RequestFile
+    | PrgFileOpened JE.Value
     | Scroll Int
     | JumpToAddress
     | JumpToInputChanged String
@@ -69,23 +81,13 @@ type Msg
     | UpdateEditComment String
     | SaveComment
     | CancelEditComment
-    | SetRestartPoint Int
     | KeyPressed KeyEvent
-    | SelectSegment (Maybe Int)
-    | NextSegment
-    | PrevSegment
-    | MarkSegmentStart
-    | CreateSegment
-    | UpdateSegmentName String
-    | CancelSegmentCreate
-    | DeleteSegment Int
     | ToggleHelp
     | SelectNextLine
     | SelectPrevLine
     | SaveProject
-    | LoadProjectRequested
-    | LoadProjectSelected File
-    | LoadProjectLoaded String
+    | CdisSaved
+    | ErrorOccurred String
     | FocusResult
     | NoOp
 
@@ -100,38 +102,48 @@ update msg model =
         FocusResult ->
             ( model, Cmd.none )
 
-        FileRequested ->
-            ( model
-            , Select.file [ "application/octet-stream", ".prg" ] FileSelected
-            )
+        RequestFile ->
+            ( model, requestPrgFile () )
 
-        FileSelected file ->
-            ( { model | fileName = File.name file }
-            , Task.perform FileLoaded (File.toBytes file)
-            )
+        PrgFileOpened value ->
+            case JD.decodeValue prgFileDecoder value of
+                Ok data ->
+                    let
+                        loadAddr =
+                            Maybe.withDefault 0 (List.head data.bytes)
+                                + (Maybe.withDefault 0 (List.head (List.drop 1 data.bytes)) * 256)
 
-        FileLoaded bytes ->
-            let
-                decoded =
-                    decodeBytes bytes
+                        programBytes =
+                            List.drop 2 data.bytes
 
-                loadAddr =
-                    Maybe.withDefault 0 (List.head decoded)
-                        + (Maybe.withDefault 0 (List.head (List.drop 1 decoded)) * 256)
+                        baseModel =
+                            { initModel
+                                | bytes = Array.fromList programBytes
+                                , loadAddress = loadAddr
+                                , fileName = data.fileName
+                                , viewStart = 0
+                                , selectedOffset = Just 0
+                            }
 
-                -- Skip the 2-byte load address header
-                programBytes =
-                    List.drop 2 decoded
-            in
-            ( ensureSelectionVisible
-                { model
-                    | bytes = Array.fromList programBytes
-                    , loadAddress = loadAddr
-                    , viewStart = 0
-                    , selectedOffset = Just 0
-                }
-            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
-            )
+                        finalModel =
+                            case data.cdisContent of
+                                Just jsonStr ->
+                                    case JD.decodeString Project.decoder jsonStr of
+                                        Ok saveData ->
+                                            Project.toModel saveData baseModel
+
+                                        Err _ ->
+                                            baseModel
+
+                                Nothing ->
+                                    baseModel
+                    in
+                    ( ensureSelectionVisible finalModel
+                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                    )
+
+                Err _ ->
+                    ( model, Cmd.none )
 
         Scroll delta ->
             let
@@ -196,6 +208,7 @@ update msg model =
                     ( { model
                         | comments = newComments
                         , editingComment = Nothing
+                        , dirty = True
                       }
                     , Cmd.none
                     )
@@ -206,197 +219,40 @@ update msg model =
         CancelEditComment ->
             ( { model | editingComment = Nothing }, Cmd.none )
 
-        SetRestartPoint offset ->
-            ( model, Cmd.none )
-
         KeyPressed event ->
-            -- Ignore keypresses while editing a comment or naming a segment
-            if model.editingComment /= Nothing || model.markingSegmentStart /= Nothing then
+            if model.editingComment /= Nothing then
                 ( model, Cmd.none )
 
             else
                 case event.key of
                     "l" ->
-                        -- l: center selected line on screen
                         centerSelectedLine model
 
-                    "[" ->
-                        -- [: previous segment
-                        update PrevSegment model
-
-                    "]" ->
-                        -- ]: next segment
-                        update NextSegment model
-
-                    "s" ->
-                        -- s: mark segment start at selected line
-                        update MarkSegmentStart model
-
                     "c" ->
-                        -- c: edit the comment
                         case model.selectedOffset of
                             Just offset ->
                                 update (StartEditComment offset) model
 
                             Nothing ->
-                                update NoOp model
+                                ( model, Cmd.none )
+
+                    "s" ->
+                        update SaveProject model
 
                     "Escape" ->
-                        -- Escape: clear segment marking
-                        ( { model | markingSegmentStart = Nothing }, Cmd.none )
+                        ( model, Cmd.none )
 
                     "?" ->
-                        -- ?: toggle help
                         update ToggleHelp model
 
-                    "o" ->
-                        -- o: open PRG file
-                        update FileRequested model
-
                     "ArrowDown" ->
-                        -- Down arrow: next line
                         update SelectNextLine model
 
                     "ArrowUp" ->
-                        -- Up arrow: previous line
                         update SelectPrevLine model
 
                     _ ->
                         ( model, Cmd.none )
-
-        SelectSegment maybeIndex ->
-            case maybeIndex of
-                Just index ->
-                    case List.drop index model.segments |> List.head of
-                        Just segment ->
-                            ( { model
-                                | activeSegment = maybeIndex
-                                , viewStart = segment.start
-                              }
-                            , Cmd.none
-                            )
-
-                        Nothing ->
-                            ( model, Cmd.none )
-
-                Nothing ->
-                    -- "All" selected
-                    ( { model | activeSegment = Nothing }, Cmd.none )
-
-        NextSegment ->
-            let
-                nextIndex =
-                    case model.activeSegment of
-                        Nothing ->
-                            if List.isEmpty model.segments then
-                                Nothing
-
-                            else
-                                Just 0
-
-                        Just i ->
-                            if i + 1 < List.length model.segments then
-                                Just (i + 1)
-
-                            else
-                                Just i
-            in
-            update (SelectSegment nextIndex) model
-
-        PrevSegment ->
-            let
-                prevIndex =
-                    case model.activeSegment of
-                        Nothing ->
-                            Nothing
-
-                        Just i ->
-                            if i > 0 then
-                                Just (i - 1)
-
-                            else
-                                Nothing
-            in
-            update (SelectSegment prevIndex) model
-
-        MarkSegmentStart ->
-            case model.selectedOffset of
-                Just offset ->
-                    ( { model | markingSegmentStart = Just offset }, Cmd.none )
-
-                Nothing ->
-                    ( model, Cmd.none )
-
-        CreateSegment ->
-            case ( model.markingSegmentStart, model.selectedOffset ) of
-                ( Just startOffset, Just endOffset ) ->
-                    let
-                        ( actualStart, actualEnd ) =
-                            if startOffset <= endOffset then
-                                ( startOffset, endOffset )
-
-                            else
-                                ( endOffset, startOffset )
-
-                        segmentName =
-                            if String.isEmpty model.segmentNameInput then
-                                "$" ++ toHex 4 (model.loadAddress + actualStart)
-
-                            else
-                                model.segmentNameInput
-
-                        newSegment =
-                            { name = segmentName
-                            , start = actualStart
-                            , end = actualEnd
-                            , segType = Code
-                            }
-
-                        newSegments =
-                            model.segments
-                                ++ [ newSegment ]
-                                |> List.sortBy .start
-                    in
-                    ( { model
-                        | segments = newSegments
-                        , markingSegmentStart = Nothing
-                        , segmentNameInput = ""
-                      }
-                    , Cmd.none
-                    )
-
-                _ ->
-                    ( model, Cmd.none )
-
-        UpdateSegmentName name ->
-            ( { model | segmentNameInput = name }, Cmd.none )
-
-        CancelSegmentCreate ->
-            ( { model | markingSegmentStart = Nothing, segmentNameInput = "" }, Cmd.none )
-
-        DeleteSegment index ->
-            let
-                newSegments =
-                    List.indexedMap Tuple.pair model.segments
-                        |> List.filter (\( i, _ ) -> i /= index)
-                        |> List.map Tuple.second
-
-                newActiveSegment =
-                    case model.activeSegment of
-                        Just i ->
-                            if i == index then
-                                Nothing
-
-                            else if i > index then
-                                Just (i - 1)
-
-                            else
-                                Just i
-
-                        Nothing ->
-                            Nothing
-            in
-            ( { model | segments = newSegments, activeSegment = newActiveSegment }, Cmd.none )
 
         ToggleHelp ->
             ( { model | helpExpanded = not model.helpExpanded }, Cmd.none )
@@ -446,64 +302,44 @@ update msg model =
                     ( ensureSelectionVisible { model | selectedOffset = Just 0 }, Cmd.none )
 
         SaveProject ->
-            let
-                saveData =
-                    Project.fromModel model
+            if Array.isEmpty model.bytes then
+                ( model, Cmd.none )
 
-                json =
-                    Project.encode saveData
-                        |> JE.encode 2
+            else
+                let
+                    saveData =
+                        Project.fromModel model
 
-                fileName =
-                    if String.isEmpty model.fileName then
-                        "untitled.cdis"
+                    json =
+                        Project.encode saveData
+                            |> JE.encode 2
+                in
+                ( model, saveCdisFile json )
 
-                    else
-                        String.replace ".prg" ".cdis" model.fileName
-                            |> (\n ->
-                                    if String.endsWith ".cdis" n then
-                                        n
+        CdisSaved ->
+            ( { model | dirty = False }, Cmd.none )
 
-                                    else
-                                        n ++ ".cdis"
-                               )
-            in
-            ( model, Download.string fileName "application/json" json )
-
-        LoadProjectRequested ->
-            ( model, Select.file [ "application/json", ".cdis" ] LoadProjectSelected )
-
-        LoadProjectSelected file ->
-            ( model, Task.perform LoadProjectLoaded (File.toString file) )
-
-        LoadProjectLoaded jsonString ->
-            case JD.decodeString Project.decoder jsonString of
-                Ok saveData ->
-                    let
-                        newModel =
-                            Project.toModel saveData model
-
-                        -- Ensure selection exists if we have bytes
-                        withSelection =
-                            if Array.isEmpty newModel.bytes then
-                                newModel
-
-                            else
-                                case newModel.selectedOffset of
-                                    Nothing ->
-                                        { newModel | selectedOffset = Just 0 }
-
-                                    Just _ ->
-                                        newModel
-                    in
-                    ( ensureSelectionVisible withSelection, Cmd.none )
-
-                Err _ ->
-                    -- TODO: show error to user
-                    ( model, Cmd.none )
+        ErrorOccurred errorMsg ->
+            -- For now just log to console via the port
+            ( model, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
+
+
+type alias PrgFileData =
+    { fileName : String
+    , bytes : List Int
+    , cdisContent : Maybe String
+    }
+
+
+prgFileDecoder : JD.Decoder PrgFileData
+prgFileDecoder =
+    JD.map3 PrgFileData
+        (JD.field "fileName" JD.string)
+        (JD.field "bytes" (JD.list JD.int))
+        (JD.field "cdisContent" (JD.nullable JD.string))
 
 
 centerSelectedLine : Model -> ( Model, Cmd Msg )
@@ -526,15 +362,11 @@ centerSelectedLine model =
             ( model, Cmd.none )
 
 
-{-| Ensure the selected line is visible in the view.
-Returns adjusted viewStart if needed.
--}
 ensureSelectionVisible : Model -> Model
 ensureSelectionVisible model =
     case model.selectedOffset of
         Just offset ->
             let
-                -- Leave some margin at top and bottom
                 margin =
                     2
 
@@ -560,13 +392,8 @@ ensureSelectionVisible model =
             model
 
 
-{-| Find the start of the previous instruction.
-We scan backwards trying offsets until we find one whose instruction length
-would land us at or past the target. This is imperfect but works for linear code.
--}
 findPrevInstructionStart : Array Int -> Int -> Int
 findPrevInstructionStart bytes targetOffset =
-    -- Try 1, 2, 3 bytes back and see which one's instruction ends at target
     let
         try1 =
             targetOffset
@@ -601,7 +428,11 @@ findPrevInstructionStart bytes targetOffset =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Sub.batch
+        [ prgFileOpened PrgFileOpened
+        , cdisSaved (\_ -> CdisSaved)
+        , showError ErrorOccurred
+        ]
 
 
 keyDecoder : JD.Decoder Msg
@@ -614,8 +445,6 @@ keyDecoder =
         |> JD.map KeyPressed
 
 
-{-| Keyboard handler that prevents default for arrow keys
--}
 onKeyDownPreventDefault : Attribute Msg
 onKeyDownPreventDefault =
     let
@@ -626,9 +455,10 @@ onKeyDownPreventDefault =
                         case msg of
                             KeyPressed event ->
                                 if List.member event.key [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] then
-                                    ( msg, True )  -- prevent default
+                                    ( msg, True )
+
                                 else
-                                    ( msg, False )  -- allow default
+                                    ( msg, False )
 
                             _ ->
                                 ( msg, False )
@@ -643,23 +473,44 @@ onKeyDownPreventDefault =
 
 view : Model -> Html Msg
 view model =
-    div
-        [ class "cdis-app"
-        , tabindex 0
-        , id "cdis-main"
-        , onKeyDownPreventDefault
-        ]
-        [ viewHeader model
-        , viewToolbar model
-        , viewSegmentBar model
-        , viewSegmentCreateBar model
-        , viewDisassembly model
-        , viewFooter model
+    if Array.isEmpty model.bytes then
+        viewFilePrompt
+
+    else
+        div
+            [ class "cdis-app"
+            , tabindex 0
+            , id "cdis-main"
+            , onKeyDownPreventDefault
+            ]
+            [ viewHeader model
+            , viewToolbar model
+            , viewDisassembly model
+            , viewFooter model
+            ]
+
+
+viewFilePrompt : Html Msg
+viewFilePrompt =
+    div [ class "cdis-app file-prompt" ]
+        [ div [ class "prompt-content" ]
+            [ h1 [] [ text "CDis" ]
+            , p [] [ text "C64 Disassembler" ]
+            , button [ class "load-button", onClick RequestFile ] [ text "Open PRG File" ]
+            ]
         ]
 
 
 viewHeader : Model -> Html Msg
 viewHeader model =
+    let
+        dirtyIndicator =
+            if model.dirty then
+                " *"
+
+            else
+                ""
+    in
     header [ class "cdis-header" ]
         [ h1 [] [ text "CDis" ]
         , span [ class "subtitle" ] [ text "C64 Disassembler" ]
@@ -667,22 +518,14 @@ viewHeader model =
             text ""
 
           else
-            span [ class "filename" ] [ text (" - " ++ model.fileName) ]
+            span [ class "filename" ] [ text (" - " ++ model.fileName ++ dirtyIndicator) ]
         ]
 
 
 viewToolbar : Model -> Html Msg
 viewToolbar model =
     div [ class "toolbar" ]
-        [ button [ onClick FileRequested ] [ text "Open PRG" ]
-        , button
-            [ onClick SaveProject
-            , disabled (Array.isEmpty model.bytes)
-            ]
-            [ text "Save" ]
-        , button [ onClick LoadProjectRequested ] [ text "Open" ]
-        , span [ class "separator" ] []
-        , label []
+        [ label []
             [ text "Go to: $"
             , input
                 [ type_ "text"
@@ -704,119 +547,24 @@ viewToolbar model =
         ]
 
 
-viewSegmentBar : Model -> Html Msg
-viewSegmentBar model =
-    if Array.isEmpty model.bytes then
-        text ""
-
-    else
-        div [ class "segment-bar" ]
-            ([ button
-                [ class
-                    (if model.activeSegment == Nothing then
-                        "segment-tab active"
-
-                     else
-                        "segment-tab"
-                    )
-                , onClick (SelectSegment Nothing)
-                ]
-                [ text "All" ]
-             ]
-                ++ List.indexedMap (viewSegmentTab model) model.segments
-            )
-
-
-viewSegmentTab : Model -> Int -> Segment -> Html Msg
-viewSegmentTab model index segment =
-    let
-        isActive =
-            model.activeSegment == Just index
-
-        addrStr =
-            "$" ++ toHex 4 (model.loadAddress + segment.start)
-    in
-    span [ class "segment-tab-wrapper" ]
-        [ button
-            [ class
-                (if isActive then
-                    "segment-tab active"
-
-                 else
-                    "segment-tab"
-                )
-            , onClick (SelectSegment (Just index))
-            ]
-            [ text (segment.name ++ " " ++ addrStr) ]
-        , button
-            [ class "segment-delete"
-            , onClick (DeleteSegment index)
-            , title "Delete segment"
-            ]
-            [ text "x" ]
-        ]
-
-
-viewSegmentCreateBar : Model -> Html Msg
-viewSegmentCreateBar model =
-    case model.markingSegmentStart of
-        Nothing ->
-            text ""
-
-        Just startOffset ->
-            let
-                startAddr =
-                    "$" ++ toHex 4 (model.loadAddress + startOffset)
-
-                endAddr =
-                    case model.selectedOffset of
-                        Just endOffset ->
-                            "$" ++ toHex 4 (model.loadAddress + endOffset)
-
-                        Nothing ->
-                            "..."
-            in
-            div [ class "segment-create-bar" ]
-                [ span [] [ text ("Creating segment: " ++ startAddr ++ " to " ++ endAddr) ]
-                , input
-                    [ type_ "text"
-                    , placeholder "Segment name"
-                    , value model.segmentNameInput
-                    , onInput UpdateSegmentName
-                    , class "segment-name-input"
-                    ]
-                    []
-                , button [ onClick CreateSegment ] [ text "Create" ]
-                , button [ onClick CancelSegmentCreate ] [ text "Cancel" ]
-                , span [ class "hint" ] [ text "(select end line, then click Create)" ]
-                ]
-
-
 viewDisassembly : Model -> Html Msg
 viewDisassembly model =
-    if Array.isEmpty model.bytes then
-        div [ class "disassembly empty" ]
-            [ p [] [ text "No file loaded." ]
-            , p [] [ text "Click 'Open PRG' or press O to open a C64 program file." ]
-            ]
-
-    else
-        let
-            lines =
-                disassembleRange
-                    model.loadAddress
-                    model.viewStart
-                    model.viewLines
-                    model.bytes
-                    model.comments
-        in
-        div
-            [ class "disassembly"
-            , onWheel Scroll
-            ]
-            [ viewDisassemblyHeader
-            , div [ class "lines" ] (List.map (viewLine model) lines)
-            ]
+    let
+        lines =
+            disassembleRange
+                model.loadAddress
+                model.viewStart
+                model.viewLines
+                model.bytes
+                model.comments
+    in
+    div
+        [ class "disassembly"
+        , onWheel Scroll
+        ]
+        [ viewDisassemblyHeader
+        , div [ class "lines" ] (List.map (viewLine model) lines)
+        ]
 
 
 viewDisassemblyHeader : Html Msg
@@ -895,10 +643,9 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "↑ / ↓" ], text "Prev/Next line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "L" ], text "Center selected line" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "[ ]" ], text "Prev/Next segment" ]
                     ]
                 , div [ class "help-section" ]
-                    [ div [ class "help-title" ] [ text "Selection" ]
+                    [ div [ class "help-title" ] [ text "Editing" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Click" ], text "Select line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "C" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Double-click" ], text "Edit comment" ]
@@ -906,16 +653,9 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel" ]
                     ]
                 , div [ class "help-section" ]
-                    [ div [ class "help-title" ] [ text "Segments" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "S" ], text "Mark segment start" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel segment" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Tab click" ], text "Jump to segment" ]
-                    ]
-                , div [ class "help-section" ]
-                    [ div [ class "help-title" ] [ text "Other" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "O" ], text "Open PRG file" ]
+                    [ div [ class "help-title" ] [ text "File" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "S" ], text "Save project" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Go to $" ], text "Jump to address" ]
                     ]
                 ]
             ]
@@ -927,7 +667,7 @@ viewFooter model =
                 , text "↑↓: Navigate | "
                 , text "C: Comment | "
                 , text "L: Center | "
-                , text "S: Segment"
+                , text "S: Save"
                 ]
             ]
 
@@ -1079,30 +819,6 @@ hexDigitValue c =
 
         _ ->
             Nothing
-
-
-decodeBytes : Bytes -> List Int
-decodeBytes bytes =
-    let
-        len =
-            Bytes.width bytes
-
-        decoder =
-            Decode.loop ( len, [] ) bytesStep
-    in
-    Decode.decode decoder bytes
-        |> Maybe.withDefault []
-        |> List.reverse
-
-
-bytesStep : ( Int, List Int ) -> Decode.Decoder (Decode.Step ( Int, List Int ) (List Int))
-bytesStep ( remaining, acc ) =
-    if remaining <= 0 then
-        Decode.succeed (Decode.Done acc)
-
-    else
-        Decode.unsignedInt8
-            |> Decode.map (\b -> Decode.Loop ( remaining - 1, b :: acc ))
 
 
 

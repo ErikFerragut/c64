@@ -10,9 +10,6 @@ type alias Model =
     , loadAddress : Int
     , comments : Dict Int String
     , labels : Dict Int String
-    , segments : List Segment
-    , activeSegment : Maybe Int
-    , segmentNameInput : String
     , viewStart : Int
     , viewLines : Int
     , selectedOffset : Maybe Int
@@ -20,23 +17,9 @@ type alias Model =
     , fileName : String
     , jumpToInput : String
     , editingComment : Maybe ( Int, String )
-    , markingSegmentStart : Maybe Int
     , helpExpanded : Bool
+    , dirty : Bool
     }
-
-
-type alias Segment =
-    { name : String
-    , start : Int
-    , end : Int
-    , segType : SegmentType
-    }
-
-
-type SegmentType
-    = Code
-    | Data
-    | Unknown
 
 
 type alias Line =
@@ -79,9 +62,6 @@ initModel =
     , loadAddress = 0
     , comments = Dict.empty
     , labels = Dict.empty
-    , segments = []
-    , activeSegment = Nothing
-    , segmentNameInput = ""
     , viewStart = 0
     , viewLines = 25
     , selectedOffset = Nothing
@@ -89,6 +69,6 @@ initModel =
     , fileName = ""
     , jumpToInput = ""
     , editingComment = Nothing
-    , markingSegmentStart = Nothing
     , helpExpanded = False
+    , dirty = False
     }

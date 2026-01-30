@@ -4372,362 +4372,6 @@ function _Browser_load(url)
 }
 
 
-// BYTES
-
-function _Bytes_width(bytes)
-{
-	return bytes.byteLength;
-}
-
-var _Bytes_getHostEndianness = F2(function(le, be)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		callback(_Scheduler_succeed(new Uint8Array(new Uint32Array([1]))[0] === 1 ? le : be));
-	});
-});
-
-
-// ENCODERS
-
-function _Bytes_encode(encoder)
-{
-	var mutableBytes = new DataView(new ArrayBuffer($elm$bytes$Bytes$Encode$getWidth(encoder)));
-	$elm$bytes$Bytes$Encode$write(encoder)(mutableBytes)(0);
-	return mutableBytes;
-}
-
-
-// SIGNED INTEGERS
-
-var _Bytes_write_i8  = F3(function(mb, i, n) { mb.setInt8(i, n); return i + 1; });
-var _Bytes_write_i16 = F4(function(mb, i, n, isLE) { mb.setInt16(i, n, isLE); return i + 2; });
-var _Bytes_write_i32 = F4(function(mb, i, n, isLE) { mb.setInt32(i, n, isLE); return i + 4; });
-
-
-// UNSIGNED INTEGERS
-
-var _Bytes_write_u8  = F3(function(mb, i, n) { mb.setUint8(i, n); return i + 1 ;});
-var _Bytes_write_u16 = F4(function(mb, i, n, isLE) { mb.setUint16(i, n, isLE); return i + 2; });
-var _Bytes_write_u32 = F4(function(mb, i, n, isLE) { mb.setUint32(i, n, isLE); return i + 4; });
-
-
-// FLOATS
-
-var _Bytes_write_f32 = F4(function(mb, i, n, isLE) { mb.setFloat32(i, n, isLE); return i + 4; });
-var _Bytes_write_f64 = F4(function(mb, i, n, isLE) { mb.setFloat64(i, n, isLE); return i + 8; });
-
-
-// BYTES
-
-var _Bytes_write_bytes = F3(function(mb, offset, bytes)
-{
-	for (var i = 0, len = bytes.byteLength, limit = len - 4; i <= limit; i += 4)
-	{
-		mb.setUint32(offset + i, bytes.getUint32(i));
-	}
-	for (; i < len; i++)
-	{
-		mb.setUint8(offset + i, bytes.getUint8(i));
-	}
-	return offset + len;
-});
-
-
-// STRINGS
-
-function _Bytes_getStringWidth(string)
-{
-	for (var width = 0, i = 0; i < string.length; i++)
-	{
-		var code = string.charCodeAt(i);
-		width +=
-			(code < 0x80) ? 1 :
-			(code < 0x800) ? 2 :
-			(code < 0xD800 || 0xDBFF < code) ? 3 : (i++, 4);
-	}
-	return width;
-}
-
-var _Bytes_write_string = F3(function(mb, offset, string)
-{
-	for (var i = 0; i < string.length; i++)
-	{
-		var code = string.charCodeAt(i);
-		offset +=
-			(code < 0x80)
-				? (mb.setUint8(offset, code)
-				, 1
-				)
-				:
-			(code < 0x800)
-				? (mb.setUint16(offset, 0xC080 /* 0b1100000010000000 */
-					| (code >>> 6 & 0x1F /* 0b00011111 */) << 8
-					| code & 0x3F /* 0b00111111 */)
-				, 2
-				)
-				:
-			(code < 0xD800 || 0xDBFF < code)
-				? (mb.setUint16(offset, 0xE080 /* 0b1110000010000000 */
-					| (code >>> 12 & 0xF /* 0b00001111 */) << 8
-					| code >>> 6 & 0x3F /* 0b00111111 */)
-				, mb.setUint8(offset + 2, 0x80 /* 0b10000000 */
-					| code & 0x3F /* 0b00111111 */)
-				, 3
-				)
-				:
-			(code = (code - 0xD800) * 0x400 + string.charCodeAt(++i) - 0xDC00 + 0x10000
-			, mb.setUint32(offset, 0xF0808080 /* 0b11110000100000001000000010000000 */
-				| (code >>> 18 & 0x7 /* 0b00000111 */) << 24
-				| (code >>> 12 & 0x3F /* 0b00111111 */) << 16
-				| (code >>> 6 & 0x3F /* 0b00111111 */) << 8
-				| code & 0x3F /* 0b00111111 */)
-			, 4
-			);
-	}
-	return offset;
-});
-
-
-// DECODER
-
-var _Bytes_decode = F2(function(decoder, bytes)
-{
-	try {
-		return $elm$core$Maybe$Just(A2(decoder, bytes, 0).b);
-	} catch(e) {
-		return $elm$core$Maybe$Nothing;
-	}
-});
-
-var _Bytes_read_i8  = F2(function(      bytes, offset) { return _Utils_Tuple2(offset + 1, bytes.getInt8(offset)); });
-var _Bytes_read_i16 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 2, bytes.getInt16(offset, isLE)); });
-var _Bytes_read_i32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getInt32(offset, isLE)); });
-var _Bytes_read_u8  = F2(function(      bytes, offset) { return _Utils_Tuple2(offset + 1, bytes.getUint8(offset)); });
-var _Bytes_read_u16 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 2, bytes.getUint16(offset, isLE)); });
-var _Bytes_read_u32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getUint32(offset, isLE)); });
-var _Bytes_read_f32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getFloat32(offset, isLE)); });
-var _Bytes_read_f64 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 8, bytes.getFloat64(offset, isLE)); });
-
-var _Bytes_read_bytes = F3(function(len, bytes, offset)
-{
-	return _Utils_Tuple2(offset + len, new DataView(bytes.buffer, bytes.byteOffset + offset, len));
-});
-
-var _Bytes_read_string = F3(function(len, bytes, offset)
-{
-	var string = '';
-	var end = offset + len;
-	for (; offset < end;)
-	{
-		var byte = bytes.getUint8(offset++);
-		string +=
-			(byte < 128)
-				? String.fromCharCode(byte)
-				:
-			((byte & 0xE0 /* 0b11100000 */) === 0xC0 /* 0b11000000 */)
-				? String.fromCharCode((byte & 0x1F /* 0b00011111 */) << 6 | bytes.getUint8(offset++) & 0x3F /* 0b00111111 */)
-				:
-			((byte & 0xF0 /* 0b11110000 */) === 0xE0 /* 0b11100000 */)
-				? String.fromCharCode(
-					(byte & 0xF /* 0b00001111 */) << 12
-					| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 6
-					| bytes.getUint8(offset++) & 0x3F /* 0b00111111 */
-				)
-				:
-				(byte =
-					((byte & 0x7 /* 0b00000111 */) << 18
-						| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 12
-						| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 6
-						| bytes.getUint8(offset++) & 0x3F /* 0b00111111 */
-					) - 0x10000
-				, String.fromCharCode(Math.floor(byte / 0x400) + 0xD800, byte % 0x400 + 0xDC00)
-				);
-	}
-	return _Utils_Tuple2(offset, string);
-});
-
-var _Bytes_decodeFailure = F2(function() { throw 0; });
-
-
-
-// DECODER
-
-var _File_decoder = _Json_decodePrim(function(value) {
-	// NOTE: checks if `File` exists in case this is run on node
-	return (typeof File !== 'undefined' && value instanceof File)
-		? $elm$core$Result$Ok(value)
-		: _Json_expecting('a FILE', value);
-});
-
-
-// METADATA
-
-function _File_name(file) { return file.name; }
-function _File_mime(file) { return file.type; }
-function _File_size(file) { return file.size; }
-
-function _File_lastModified(file)
-{
-	return $elm$time$Time$millisToPosix(file.lastModified);
-}
-
-
-// DOWNLOAD
-
-var _File_downloadNode;
-
-function _File_getDownloadNode()
-{
-	return _File_downloadNode || (_File_downloadNode = document.createElement('a'));
-}
-
-var _File_download = F3(function(name, mime, content)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var blob = new Blob([content], {type: mime});
-
-		// for IE10+
-		if (navigator.msSaveOrOpenBlob)
-		{
-			navigator.msSaveOrOpenBlob(blob, name);
-			return;
-		}
-
-		// for HTML5
-		var node = _File_getDownloadNode();
-		var objectUrl = URL.createObjectURL(blob);
-		node.href = objectUrl;
-		node.download = name;
-		_File_click(node);
-		URL.revokeObjectURL(objectUrl);
-	});
-});
-
-function _File_downloadUrl(href)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var node = _File_getDownloadNode();
-		node.href = href;
-		node.download = '';
-		node.origin === location.origin || (node.target = '_blank');
-		_File_click(node);
-	});
-}
-
-
-// IE COMPATIBILITY
-
-function _File_makeBytesSafeForInternetExplorer(bytes)
-{
-	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/10
-	// all other browsers can just run `new Blob([bytes])` directly with no problem
-	//
-	return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-}
-
-function _File_click(node)
-{
-	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/11
-	// all other browsers have MouseEvent and do not need this conditional stuff
-	//
-	if (typeof MouseEvent === 'function')
-	{
-		node.dispatchEvent(new MouseEvent('click'));
-	}
-	else
-	{
-		var event = document.createEvent('MouseEvents');
-		event.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-		document.body.appendChild(node);
-		node.dispatchEvent(event);
-		document.body.removeChild(node);
-	}
-}
-
-
-// UPLOAD
-
-var _File_node;
-
-function _File_uploadOne(mimes)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		_File_node = document.createElement('input');
-		_File_node.type = 'file';
-		_File_node.accept = A2($elm$core$String$join, ',', mimes);
-		_File_node.addEventListener('change', function(event)
-		{
-			callback(_Scheduler_succeed(event.target.files[0]));
-		});
-		_File_click(_File_node);
-	});
-}
-
-function _File_uploadOneOrMore(mimes)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		_File_node = document.createElement('input');
-		_File_node.type = 'file';
-		_File_node.multiple = true;
-		_File_node.accept = A2($elm$core$String$join, ',', mimes);
-		_File_node.addEventListener('change', function(event)
-		{
-			var elmFiles = _List_fromArray(event.target.files);
-			callback(_Scheduler_succeed(_Utils_Tuple2(elmFiles.a, elmFiles.b)));
-		});
-		_File_click(_File_node);
-	});
-}
-
-
-// CONTENT
-
-function _File_toString(blob)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var reader = new FileReader();
-		reader.addEventListener('loadend', function() {
-			callback(_Scheduler_succeed(reader.result));
-		});
-		reader.readAsText(blob);
-		return function() { reader.abort(); };
-	});
-}
-
-function _File_toBytes(blob)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var reader = new FileReader();
-		reader.addEventListener('loadend', function() {
-			callback(_Scheduler_succeed(new DataView(reader.result)));
-		});
-		reader.readAsArrayBuffer(blob);
-		return function() { reader.abort(); };
-	});
-}
-
-function _File_toUrl(blob)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var reader = new FileReader();
-		reader.addEventListener('loadend', function() {
-			callback(_Scheduler_succeed(reader.result));
-		});
-		reader.readAsDataURL(blob);
-		return function() { reader.abort(); };
-	});
-}
-
-
-
 
 var _Bitwise_and = F2(function(a, b)
 {
@@ -5558,41 +5202,45 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {activeSegment: $elm$core$Maybe$Nothing, bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, editingComment: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, markingSegmentStart: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, segmentNameInput: '', segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
+var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, dirty: false, editingComment: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, restartPoints: $elm$core$Set$empty, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2($author$project$Types$initModel, $elm$core$Platform$Cmd$none);
 };
+var $author$project$Main$CdisSaved = {$: 'CdisSaved'};
+var $author$project$Main$ErrorOccurred = function (a) {
+	return {$: 'ErrorOccurred', a: a};
+};
+var $author$project$Main$PrgFileOpened = function (a) {
+	return {$: 'PrgFileOpened', a: a};
+};
 var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$json$Json$Decode$null = _Json_decodeNull;
+var $author$project$Main$cdisSaved = _Platform_incomingPort(
+	'cdisSaved',
+	$elm$json$Json$Decode$null(_Utils_Tuple0));
+var $elm$json$Json$Decode$value = _Json_decodeValue;
+var $author$project$Main$prgFileOpened = _Platform_incomingPort('prgFileOpened', $elm$json$Json$Decode$value);
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $author$project$Main$showError = _Platform_incomingPort('showError', $elm$json$Json$Decode$string);
 var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$core$Platform$Sub$none;
-};
-var $author$project$Types$Code = {$: 'Code'};
-var $author$project$Main$FileLoaded = function (a) {
-	return {$: 'FileLoaded', a: a};
-};
-var $author$project$Main$FileRequested = {$: 'FileRequested'};
-var $author$project$Main$FileSelected = function (a) {
-	return {$: 'FileSelected', a: a};
+	return $elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				$author$project$Main$prgFileOpened($author$project$Main$PrgFileOpened),
+				$author$project$Main$cdisSaved(
+				function (_v1) {
+					return $author$project$Main$CdisSaved;
+				}),
+				$author$project$Main$showError($author$project$Main$ErrorOccurred)
+			]));
 };
 var $author$project$Main$FocusResult = {$: 'FocusResult'};
-var $author$project$Main$LoadProjectLoaded = function (a) {
-	return {$: 'LoadProjectLoaded', a: a};
-};
-var $author$project$Main$LoadProjectSelected = function (a) {
-	return {$: 'LoadProjectSelected', a: a};
-};
-var $author$project$Main$MarkSegmentStart = {$: 'MarkSegmentStart'};
-var $author$project$Main$NextSegment = {$: 'NextSegment'};
 var $author$project$Main$NoOp = {$: 'NoOp'};
-var $author$project$Main$PrevSegment = {$: 'PrevSegment'};
+var $author$project$Main$SaveProject = {$: 'SaveProject'};
 var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
 var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
-var $author$project$Main$SelectSegment = function (a) {
-	return {$: 'SelectSegment', a: a};
-};
 var $author$project$Main$StartEditComment = function (a) {
 	return {$: 'StartEditComment', a: a};
 };
@@ -5648,246 +5296,20 @@ var $author$project$Main$centerSelectedLine = function (model) {
 		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 	}
 };
-var $elm$bytes$Bytes$Decode$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $elm$bytes$Bytes$Decode$Loop = function (a) {
-	return {$: 'Loop', a: a};
-};
-var $elm$bytes$Bytes$Decode$Decoder = function (a) {
-	return {$: 'Decoder', a: a};
-};
-var $elm$bytes$Bytes$Decode$map = F2(
-	function (func, _v0) {
-		var decodeA = _v0.a;
-		return $elm$bytes$Bytes$Decode$Decoder(
-			F2(
-				function (bites, offset) {
-					var _v1 = A2(decodeA, bites, offset);
-					var aOffset = _v1.a;
-					var a = _v1.b;
-					return _Utils_Tuple2(
-						aOffset,
-						func(a));
-				}));
-	});
-var $elm$bytes$Bytes$Decode$succeed = function (a) {
-	return $elm$bytes$Bytes$Decode$Decoder(
-		F2(
-			function (_v0, offset) {
-				return _Utils_Tuple2(offset, a);
-			}));
-};
-var $elm$bytes$Bytes$Encode$getWidth = function (builder) {
-	switch (builder.$) {
-		case 'I8':
-			return 1;
-		case 'I16':
-			return 2;
-		case 'I32':
-			return 4;
-		case 'U8':
-			return 1;
-		case 'U16':
-			return 2;
-		case 'U32':
-			return 4;
-		case 'F32':
-			return 4;
-		case 'F64':
-			return 8;
-		case 'Seq':
-			var w = builder.a;
-			return w;
-		case 'Utf8':
-			var w = builder.a;
-			return w;
-		default:
-			var bs = builder.a;
-			return _Bytes_width(bs);
-	}
-};
-var $elm$bytes$Bytes$LE = {$: 'LE'};
-var $elm$bytes$Bytes$Encode$write = F3(
-	function (builder, mb, offset) {
-		switch (builder.$) {
-			case 'I8':
-				var n = builder.a;
-				return A3(_Bytes_write_i8, mb, offset, n);
-			case 'I16':
-				var e = builder.a;
-				var n = builder.b;
-				return A4(
-					_Bytes_write_i16,
-					mb,
-					offset,
-					n,
-					_Utils_eq(e, $elm$bytes$Bytes$LE));
-			case 'I32':
-				var e = builder.a;
-				var n = builder.b;
-				return A4(
-					_Bytes_write_i32,
-					mb,
-					offset,
-					n,
-					_Utils_eq(e, $elm$bytes$Bytes$LE));
-			case 'U8':
-				var n = builder.a;
-				return A3(_Bytes_write_u8, mb, offset, n);
-			case 'U16':
-				var e = builder.a;
-				var n = builder.b;
-				return A4(
-					_Bytes_write_u16,
-					mb,
-					offset,
-					n,
-					_Utils_eq(e, $elm$bytes$Bytes$LE));
-			case 'U32':
-				var e = builder.a;
-				var n = builder.b;
-				return A4(
-					_Bytes_write_u32,
-					mb,
-					offset,
-					n,
-					_Utils_eq(e, $elm$bytes$Bytes$LE));
-			case 'F32':
-				var e = builder.a;
-				var n = builder.b;
-				return A4(
-					_Bytes_write_f32,
-					mb,
-					offset,
-					n,
-					_Utils_eq(e, $elm$bytes$Bytes$LE));
-			case 'F64':
-				var e = builder.a;
-				var n = builder.b;
-				return A4(
-					_Bytes_write_f64,
-					mb,
-					offset,
-					n,
-					_Utils_eq(e, $elm$bytes$Bytes$LE));
-			case 'Seq':
-				var bs = builder.b;
-				return A3($elm$bytes$Bytes$Encode$writeSequence, bs, mb, offset);
-			case 'Utf8':
-				var s = builder.b;
-				return A3(_Bytes_write_string, mb, offset, s);
-			default:
-				var bs = builder.a;
-				return A3(_Bytes_write_bytes, mb, offset, bs);
-		}
-	});
-var $elm$bytes$Bytes$Encode$writeSequence = F3(
-	function (builders, mb, offset) {
-		writeSequence:
-		while (true) {
-			if (!builders.b) {
-				return offset;
-			} else {
-				var b = builders.a;
-				var bs = builders.b;
-				var $temp$builders = bs,
-					$temp$mb = mb,
-					$temp$offset = A3($elm$bytes$Bytes$Encode$write, b, mb, offset);
-				builders = $temp$builders;
-				mb = $temp$mb;
-				offset = $temp$offset;
-				continue writeSequence;
-			}
-		}
-	});
-var $elm$bytes$Bytes$Decode$unsignedInt8 = $elm$bytes$Bytes$Decode$Decoder(_Bytes_read_u8);
-var $author$project$Main$bytesStep = function (_v0) {
-	var remaining = _v0.a;
-	var acc = _v0.b;
-	return (remaining <= 0) ? $elm$bytes$Bytes$Decode$succeed(
-		$elm$bytes$Bytes$Decode$Done(acc)) : A2(
-		$elm$bytes$Bytes$Decode$map,
-		function (b) {
-			return $elm$bytes$Bytes$Decode$Loop(
-				_Utils_Tuple2(
-					remaining - 1,
-					A2($elm$core$List$cons, b, acc)));
-		},
-		$elm$bytes$Bytes$Decode$unsignedInt8);
-};
-var $elm$bytes$Bytes$Decode$decode = F2(
-	function (_v0, bs) {
-		var decoder = _v0.a;
-		return A2(_Bytes_decode, decoder, bs);
-	});
-var $elm$bytes$Bytes$Decode$loopHelp = F4(
-	function (state, callback, bites, offset) {
-		loopHelp:
-		while (true) {
-			var _v0 = callback(state);
-			var decoder = _v0.a;
-			var _v1 = A2(decoder, bites, offset);
-			var newOffset = _v1.a;
-			var step = _v1.b;
-			if (step.$ === 'Loop') {
-				var newState = step.a;
-				var $temp$state = newState,
-					$temp$callback = callback,
-					$temp$bites = bites,
-					$temp$offset = newOffset;
-				state = $temp$state;
-				callback = $temp$callback;
-				bites = $temp$bites;
-				offset = $temp$offset;
-				continue loopHelp;
-			} else {
-				var result = step.a;
-				return _Utils_Tuple2(newOffset, result);
-			}
-		}
-	});
-var $elm$bytes$Bytes$Decode$loop = F2(
-	function (state, callback) {
-		return $elm$bytes$Bytes$Decode$Decoder(
-			A2($elm$bytes$Bytes$Decode$loopHelp, state, callback));
-	});
-var $elm$bytes$Bytes$width = _Bytes_width;
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var $author$project$Main$decodeBytes = function (bytes) {
-	var len = $elm$bytes$Bytes$width(bytes);
-	var decoder = A2(
-		$elm$bytes$Bytes$Decode$loop,
-		_Utils_Tuple2(len, _List_Nil),
-		$author$project$Main$bytesStep);
-	return $elm$core$List$reverse(
-		A2(
-			$elm$core$Maybe$withDefault,
-			_List_Nil,
-			A2($elm$bytes$Bytes$Decode$decode, decoder, bytes)));
-};
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $elm$json$Json$Decode$andThen = _Json_andThen;
-var $author$project$Project$SaveData = F6(
-	function (version, fileName, loadAddress, comments, labels, segments) {
-		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, segments: segments, version: version};
+var $author$project$Project$SaveData = F5(
+	function (version, fileName, loadAddress, comments, labels) {
+		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, version: version};
 	});
-var $author$project$Project$currentVersion = 1;
+var $author$project$Project$currentVersion = 2;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
 	});
-var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Project$decodeComment = A3(
 	$elm$json$Json$Decode$map2,
 	$elm$core$Tuple$pair,
@@ -5898,11 +5320,8 @@ var $author$project$Project$decodeLabel = A3(
 	$elm$core$Tuple$pair,
 	A2($elm$json$Json$Decode$field, 'address', $elm$json$Json$Decode$int),
 	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string));
-var $author$project$Project$SegmentSave = F4(
-	function (name, start, end, segType) {
-		return {end: end, name: name, segType: segType, start: start};
-	});
-var $elm$json$Json$Decode$map4 = _Json_map4;
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $elm$json$Json$Decode$map5 = _Json_map5;
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
 var $elm$json$Json$Decode$maybe = function (decoder) {
 	return $elm$json$Json$Decode$oneOf(
@@ -5912,6 +5331,15 @@ var $elm$json$Json$Decode$maybe = function (decoder) {
 				$elm$json$Json$Decode$succeed($elm$core$Maybe$Nothing)
 			]));
 };
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
 var $author$project$Project$optionalField = F3(
 	function (field, dec, _default) {
 		return A2(
@@ -5920,17 +5348,8 @@ var $author$project$Project$optionalField = F3(
 			$elm$json$Json$Decode$maybe(
 				A2($elm$json$Json$Decode$field, field, dec)));
 	});
-var $author$project$Project$decodeSegment = A5(
-	$elm$json$Json$Decode$map4,
-	$author$project$Project$SegmentSave,
-	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string),
-	A2($elm$json$Json$Decode$field, 'start', $elm$json$Json$Decode$int),
-	A2($elm$json$Json$Decode$field, 'end', $elm$json$Json$Decode$int),
-	A3($author$project$Project$optionalField, 'type', $elm$json$Json$Decode$string, 'code'));
-var $elm$json$Json$Decode$list = _Json_decodeList;
-var $elm$json$Json$Decode$map6 = _Json_map6;
-var $author$project$Project$decodeV1 = A7(
-	$elm$json$Json$Decode$map6,
+var $author$project$Project$decodeV1 = A6(
+	$elm$json$Json$Decode$map5,
 	$author$project$Project$SaveData,
 	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
 	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
@@ -5944,19 +5363,33 @@ var $author$project$Project$decodeV1 = A7(
 		$author$project$Project$optionalField,
 		'labels',
 		$elm$json$Json$Decode$list($author$project$Project$decodeLabel),
+		_List_Nil));
+var $author$project$Project$decodeV2 = A6(
+	$elm$json$Json$Decode$map5,
+	$author$project$Project$SaveData,
+	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
+	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
+	A3(
+		$author$project$Project$optionalField,
+		'comments',
+		$elm$json$Json$Decode$list($author$project$Project$decodeComment),
 		_List_Nil),
 	A3(
 		$author$project$Project$optionalField,
-		'segments',
-		$elm$json$Json$Decode$list($author$project$Project$decodeSegment),
+		'labels',
+		$elm$json$Json$Decode$list($author$project$Project$decodeLabel),
 		_List_Nil));
 var $elm$json$Json$Decode$fail = _Json_fail;
 var $author$project$Project$decoderForVersion = function (version) {
-	if (version === 1) {
-		return $author$project$Project$decodeV1;
-	} else {
-		return $elm$json$Json$Decode$fail(
-			'Unknown save file version: ' + $elm$core$String$fromInt(version));
+	switch (version) {
+		case 1:
+			return $author$project$Project$decodeV1;
+		case 2:
+			return $author$project$Project$decodeV2;
+		default:
+			return $elm$json$Json$Decode$fail(
+				'Unknown save file version: ' + $elm$core$String$fromInt(version));
 	}
 };
 var $author$project$Project$decoder = A2(
@@ -6027,24 +5460,6 @@ var $author$project$Project$encodeLabel = function (_v0) {
 				$elm$json$Json$Encode$string(name))
 			]));
 };
-var $author$project$Project$encodeSegment = function (seg) {
-	return $elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'name',
-				$elm$json$Json$Encode$string(seg.name)),
-				_Utils_Tuple2(
-				'start',
-				$elm$json$Json$Encode$int(seg.start)),
-				_Utils_Tuple2(
-				'end',
-				$elm$json$Json$Encode$int(seg.end)),
-				_Utils_Tuple2(
-				'type',
-				$elm$json$Json$Encode$string(seg.segType))
-			]));
-};
 var $elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -6072,13 +5487,9 @@ var $author$project$Project$encode = function (data) {
 				A2($elm$json$Json$Encode$list, $author$project$Project$encodeComment, data.comments)),
 				_Utils_Tuple2(
 				'labels',
-				A2($elm$json$Json$Encode$list, $author$project$Project$encodeLabel, data.labels)),
-				_Utils_Tuple2(
-				'segments',
-				A2($elm$json$Json$Encode$list, $author$project$Project$encodeSegment, data.segments))
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodeLabel, data.labels))
 			]));
 };
-var $elm$core$String$endsWith = _String_endsWith;
 var $elm$core$Basics$ge = _Utils_ge;
 var $elm$core$Basics$min = F2(
 	function (x, y) {
@@ -6108,28 +5519,6 @@ var $author$project$Main$ensureSelectionVisible = function (model) {
 		return model;
 	}
 };
-var $elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
-var $elm$file$File$Select$file = F2(
-	function (mimes, toMsg) {
-		return A2(
-			$elm$core$Task$perform,
-			toMsg,
-			_File_uploadOne(mimes));
-	});
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
-	});
 var $elm$core$Bitwise$and = _Bitwise_and;
 var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
 var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
@@ -6520,31 +5909,12 @@ var $author$project$Main$findPrevInstructionStart = F2(
 		return ((try3 >= 0) && (lenAt(try3) === 3)) ? try3 : (((try2 >= 0) && (lenAt(try2) === 2)) ? try2 : ((try1 >= 0) ? try1 : 0));
 	});
 var $elm$browser$Browser$Dom$focus = _Browser_call('focus');
-var $author$project$Project$segmentTypeToString = function (st) {
-	switch (st.$) {
-		case 'Code':
-			return 'code';
-		case 'Data':
-			return 'data';
-		default:
-			return 'unknown';
-	}
-};
-var $author$project$Project$segmentToSave = function (seg) {
-	return {
-		end: seg.end,
-		name: seg.name,
-		segType: $author$project$Project$segmentTypeToString(seg.segType),
-		start: seg.start
-	};
-};
 var $author$project$Project$fromModel = function (model) {
 	return {
 		comments: $elm$core$Dict$toList(model.comments),
 		fileName: model.fileName,
 		labels: $elm$core$Dict$toList(model.labels),
 		loadAddress: model.loadAddress,
-		segments: A2($elm$core$List$map, $author$project$Project$segmentToSave, model.segments),
 		version: $author$project$Project$currentVersion
 	};
 };
@@ -6701,14 +6071,6 @@ var $elm$core$Array$isEmpty = function (_v0) {
 	var len = _v0.a;
 	return !len;
 };
-var $elm$core$List$isEmpty = function (xs) {
-	if (!xs.b) {
-		return true;
-	} else {
-		return false;
-	}
-};
-var $elm$file$File$name = _File_name;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$Basics$not = _Basics_not;
 var $author$project$Main$hexDigitValue = function (c) {
@@ -6801,6 +6163,31 @@ var $author$project$Main$parseHex = function (str) {
 		$elm$core$String$toList(cleaned),
 		0);
 };
+var $author$project$Main$PrgFileData = F3(
+	function (fileName, bytes, cdisContent) {
+		return {bytes: bytes, cdisContent: cdisContent, fileName: fileName};
+	});
+var $elm$json$Json$Decode$map3 = _Json_map3;
+var $elm$json$Json$Decode$nullable = function (decoder) {
+	return $elm$json$Json$Decode$oneOf(
+		_List_fromArray(
+			[
+				$elm$json$Json$Decode$null($elm$core$Maybe$Nothing),
+				A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, decoder)
+			]));
+};
+var $author$project$Main$prgFileDecoder = A4(
+	$elm$json$Json$Decode$map3,
+	$author$project$Main$PrgFileData,
+	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
+	A2(
+		$elm$json$Json$Decode$field,
+		'bytes',
+		$elm$json$Json$Decode$list($elm$json$Json$Decode$int)),
+	A2(
+		$elm$json$Json$Decode$field,
+		'cdisContent',
+		$elm$json$Json$Decode$nullable($elm$json$Json$Decode$string)));
 var $elm$core$Dict$getMin = function (dict) {
 	getMin:
 	while (true) {
@@ -7163,94 +6550,13 @@ var $elm$core$Dict$remove = F2(
 			return x;
 		}
 	});
-var $elm$core$Tuple$second = function (_v0) {
-	var y = _v0.b;
-	return y;
-};
-var $elm$core$List$sortBy = _List_sortBy;
-var $elm$file$File$Download$string = F3(
-	function (name, mime, content) {
-		return A2(
-			$elm$core$Task$perform,
-			$elm$core$Basics$never,
-			A3(_File_download, name, mime, content));
+var $elm$json$Json$Encode$null = _Json_encodeNull;
+var $author$project$Main$requestPrgFile = _Platform_outgoingPort(
+	'requestPrgFile',
+	function ($) {
+		return $elm$json$Json$Encode$null;
 	});
-var $elm$file$File$toBytes = _File_toBytes;
-var $elm$core$String$cons = _String_cons;
-var $elm$core$String$fromChar = function (_char) {
-	return A2($elm$core$String$cons, _char, '');
-};
-var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
-var $elm$core$String$repeatHelp = F3(
-	function (n, chunk, result) {
-		return (n <= 0) ? result : A3(
-			$elm$core$String$repeatHelp,
-			n >> 1,
-			_Utils_ap(chunk, chunk),
-			(!(n & 1)) ? result : _Utils_ap(result, chunk));
-	});
-var $elm$core$String$repeat = F2(
-	function (n, chunk) {
-		return A3($elm$core$String$repeatHelp, n, chunk, '');
-	});
-var $elm$core$String$padLeft = F3(
-	function (n, _char, string) {
-		return _Utils_ap(
-			A2(
-				$elm$core$String$repeat,
-				n - $elm$core$String$length(string),
-				$elm$core$String$fromChar(_char)),
-			string);
-	});
-var $elm$core$Basics$modBy = _Basics_modBy;
-var $author$project$Main$toHexHelper = F2(
-	function (n, acc) {
-		toHexHelper:
-		while (true) {
-			if ((!n) && (!$elm$core$String$isEmpty(acc))) {
-				return acc;
-			} else {
-				if (!n) {
-					return '0';
-				} else {
-					var digit = A2($elm$core$Basics$modBy, 16, n);
-					var _char = function () {
-						switch (digit) {
-							case 10:
-								return 'A';
-							case 11:
-								return 'B';
-							case 12:
-								return 'C';
-							case 13:
-								return 'D';
-							case 14:
-								return 'E';
-							case 15:
-								return 'F';
-							default:
-								return $elm$core$String$fromInt(digit);
-						}
-					}();
-					var $temp$n = (n / 16) | 0,
-						$temp$acc = _Utils_ap(_char, acc);
-					n = $temp$n;
-					acc = $temp$acc;
-					continue toHexHelper;
-				}
-			}
-		}
-	});
-var $author$project$Main$toHex = F2(
-	function (width, n) {
-		var hex = A2($author$project$Main$toHexHelper, n, '');
-		var padded = A3(
-			$elm$core$String$padLeft,
-			width,
-			_Utils_chr('0'),
-			hex);
-		return $elm$core$String$toUpper(padded);
-	});
+var $author$project$Main$saveCdisFile = _Platform_outgoingPort('saveCdisFile', $elm$json$Json$Encode$string);
 var $elm$core$Dict$fromList = function (assocs) {
 	return A3(
 		$elm$core$List$foldl,
@@ -7263,26 +6569,6 @@ var $elm$core$Dict$fromList = function (assocs) {
 		$elm$core$Dict$empty,
 		assocs);
 };
-var $author$project$Types$Data = {$: 'Data'};
-var $author$project$Types$Unknown = {$: 'Unknown'};
-var $author$project$Project$stringToSegmentType = function (str) {
-	switch (str) {
-		case 'code':
-			return $author$project$Types$Code;
-		case 'data':
-			return $author$project$Types$Data;
-		default:
-			return $author$project$Types$Unknown;
-	}
-};
-var $author$project$Project$segmentFromSave = function (seg) {
-	return {
-		end: seg.end,
-		name: seg.name,
-		segType: $author$project$Project$stringToSegmentType(seg.segType),
-		start: seg.start
-	};
-};
 var $author$project$Project$toModel = F2(
 	function (data, model) {
 		return _Utils_update(
@@ -7291,11 +6577,9 @@ var $author$project$Project$toModel = F2(
 				comments: $elm$core$Dict$fromList(data.comments),
 				fileName: data.fileName,
 				labels: $elm$core$Dict$fromList(data.labels),
-				loadAddress: data.loadAddress,
-				segments: A2($elm$core$List$map, $author$project$Project$segmentFromSave, data.segments)
+				loadAddress: data.loadAddress
 			});
 	});
-var $elm$file$File$toString = _File_toString;
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		update:
@@ -7303,54 +6587,59 @@ var $author$project$Main$update = F2(
 			switch (msg.$) {
 				case 'FocusResult':
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				case 'FileRequested':
+				case 'RequestFile':
 					return _Utils_Tuple2(
 						model,
-						A2(
-							$elm$file$File$Select$file,
-							_List_fromArray(
-								['application/octet-stream', '.prg']),
-							$author$project$Main$FileSelected));
-				case 'FileSelected':
-					var file = msg.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
+						$author$project$Main$requestPrgFile(_Utils_Tuple0));
+				case 'PrgFileOpened':
+					var value = msg.a;
+					var _v1 = A2($elm$json$Json$Decode$decodeValue, $author$project$Main$prgFileDecoder, value);
+					if (_v1.$ === 'Ok') {
+						var data = _v1.a;
+						var programBytes = A2($elm$core$List$drop, 2, data.bytes);
+						var loadAddr = A2(
+							$elm$core$Maybe$withDefault,
+							0,
+							$elm$core$List$head(data.bytes)) + (A2(
+							$elm$core$Maybe$withDefault,
+							0,
+							$elm$core$List$head(
+								A2($elm$core$List$drop, 1, data.bytes))) * 256);
+						var baseModel = _Utils_update(
+							$author$project$Types$initModel,
 							{
-								fileName: $elm$file$File$name(file)
-							}),
-						A2(
-							$elm$core$Task$perform,
-							$author$project$Main$FileLoaded,
-							$elm$file$File$toBytes(file)));
-				case 'FileLoaded':
-					var bytes = msg.a;
-					var decoded = $author$project$Main$decodeBytes(bytes);
-					var loadAddr = A2(
-						$elm$core$Maybe$withDefault,
-						0,
-						$elm$core$List$head(decoded)) + (A2(
-						$elm$core$Maybe$withDefault,
-						0,
-						$elm$core$List$head(
-							A2($elm$core$List$drop, 1, decoded))) * 256);
-					var programBytes = A2($elm$core$List$drop, 2, decoded);
-					return _Utils_Tuple2(
-						$author$project$Main$ensureSelectionVisible(
-							_Utils_update(
-								model,
-								{
-									bytes: $elm$core$Array$fromList(programBytes),
-									loadAddress: loadAddr,
-									selectedOffset: $elm$core$Maybe$Just(0),
-									viewStart: 0
-								})),
-						A2(
-							$elm$core$Task$attempt,
-							function (_v1) {
-								return $author$project$Main$FocusResult;
-							},
-							$elm$browser$Browser$Dom$focus('cdis-main')));
+								bytes: $elm$core$Array$fromList(programBytes),
+								fileName: data.fileName,
+								loadAddress: loadAddr,
+								selectedOffset: $elm$core$Maybe$Just(0),
+								viewStart: 0
+							});
+						var finalModel = function () {
+							var _v3 = data.cdisContent;
+							if (_v3.$ === 'Just') {
+								var jsonStr = _v3.a;
+								var _v4 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonStr);
+								if (_v4.$ === 'Ok') {
+									var saveData = _v4.a;
+									return A2($author$project$Project$toModel, saveData, baseModel);
+								} else {
+									return baseModel;
+								}
+							} else {
+								return baseModel;
+							}
+						}();
+						return _Utils_Tuple2(
+							$author$project$Main$ensureSelectionVisible(finalModel),
+							A2(
+								$elm$core$Task$attempt,
+								function (_v2) {
+									return $author$project$Main$FocusResult;
+								},
+								$elm$browser$Browser$Dom$focus('cdis-main')));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				case 'Scroll':
 					var delta = msg.a;
 					var maxOffset = A2(
@@ -7364,9 +6653,9 @@ var $author$project$Main$update = F2(
 							{viewStart: newStart}),
 						$elm$core$Platform$Cmd$none);
 				case 'JumpToAddress':
-					var _v2 = $author$project$Main$parseHex(model.jumpToInput);
-					if (_v2.$ === 'Just') {
-						var addr = _v2.a;
+					var _v5 = $author$project$Main$parseHex(model.jumpToInput);
+					if (_v5.$ === 'Just') {
+						var addr = _v5.a;
 						var offset = addr - model.loadAddress;
 						return ((offset >= 0) && (_Utils_cmp(
 							offset,
@@ -7410,16 +6699,16 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v3) {
+							function (_v6) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('comment-input')));
 				case 'UpdateEditComment':
 					var text = msg.a;
-					var _v4 = model.editingComment;
-					if (_v4.$ === 'Just') {
-						var _v5 = _v4.a;
-						var offset = _v5.a;
+					var _v7 = model.editingComment;
+					if (_v7.$ === 'Just') {
+						var _v8 = _v7.a;
+						var offset = _v8.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7432,17 +6721,17 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveComment':
-					var _v6 = model.editingComment;
-					if (_v6.$ === 'Just') {
-						var _v7 = _v6.a;
-						var offset = _v7.a;
-						var text = _v7.b;
+					var _v9 = model.editingComment;
+					if (_v9.$ === 'Just') {
+						var _v10 = _v9.a;
+						var offset = _v10.a;
+						var text = _v10.b;
 						var newComments = $elm$core$String$isEmpty(
 							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.comments) : A3($elm$core$Dict$insert, offset, text, model.comments);
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
-								{comments: newComments, editingComment: $elm$core$Maybe$Nothing}),
+								{comments: newComments, dirty: true, editingComment: $elm$core$Maybe$Nothing}),
 							$elm$core$Platform$Cmd$none);
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -7453,66 +6742,37 @@ var $author$project$Main$update = F2(
 							model,
 							{editingComment: $elm$core$Maybe$Nothing}),
 						$elm$core$Platform$Cmd$none);
-				case 'SetRestartPoint':
-					var offset = msg.a;
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				case 'KeyPressed':
 					var event = msg.a;
-					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.markingSegmentStart, $elm$core$Maybe$Nothing))) {
+					if (!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var _v8 = event.key;
-						switch (_v8) {
+						var _v11 = event.key;
+						switch (_v11) {
 							case 'l':
 								return $author$project$Main$centerSelectedLine(model);
-							case '[':
-								var $temp$msg = $author$project$Main$PrevSegment,
-									$temp$model = model;
-								msg = $temp$msg;
-								model = $temp$model;
-								continue update;
-							case ']':
-								var $temp$msg = $author$project$Main$NextSegment,
-									$temp$model = model;
-								msg = $temp$msg;
-								model = $temp$model;
-								continue update;
-							case 's':
-								var $temp$msg = $author$project$Main$MarkSegmentStart,
-									$temp$model = model;
-								msg = $temp$msg;
-								model = $temp$model;
-								continue update;
 							case 'c':
-								var _v9 = model.selectedOffset;
-								if (_v9.$ === 'Just') {
-									var offset = _v9.a;
+								var _v12 = model.selectedOffset;
+								if (_v12.$ === 'Just') {
+									var offset = _v12.a;
 									var $temp$msg = $author$project$Main$StartEditComment(offset),
 										$temp$model = model;
 									msg = $temp$msg;
 									model = $temp$model;
 									continue update;
 								} else {
-									var $temp$msg = $author$project$Main$NoOp,
-										$temp$model = model;
-									msg = $temp$msg;
-									model = $temp$model;
-									continue update;
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								}
-							case 'Escape':
-								return _Utils_Tuple2(
-									_Utils_update(
-										model,
-										{markingSegmentStart: $elm$core$Maybe$Nothing}),
-									$elm$core$Platform$Cmd$none);
-							case '?':
-								var $temp$msg = $author$project$Main$ToggleHelp,
+							case 's':
+								var $temp$msg = $author$project$Main$SaveProject,
 									$temp$model = model;
 								msg = $temp$msg;
 								model = $temp$model;
 								continue update;
-							case 'o':
-								var $temp$msg = $author$project$Main$FileRequested,
+							case 'Escape':
+								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+							case '?':
+								var $temp$msg = $author$project$Main$ToggleHelp,
 									$temp$model = model;
 								msg = $temp$msg;
 								model = $temp$model;
@@ -7533,141 +6793,6 @@ var $author$project$Main$update = F2(
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 						}
 					}
-				case 'SelectSegment':
-					var maybeIndex = msg.a;
-					if (maybeIndex.$ === 'Just') {
-						var index = maybeIndex.a;
-						var _v11 = $elm$core$List$head(
-							A2($elm$core$List$drop, index, model.segments));
-						if (_v11.$ === 'Just') {
-							var segment = _v11.a;
-							return _Utils_Tuple2(
-								_Utils_update(
-									model,
-									{activeSegment: maybeIndex, viewStart: segment.start}),
-								$elm$core$Platform$Cmd$none);
-						} else {
-							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-						}
-					} else {
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{activeSegment: $elm$core$Maybe$Nothing}),
-							$elm$core$Platform$Cmd$none);
-					}
-				case 'NextSegment':
-					var nextIndex = function () {
-						var _v12 = model.activeSegment;
-						if (_v12.$ === 'Nothing') {
-							return $elm$core$List$isEmpty(model.segments) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(0);
-						} else {
-							var i = _v12.a;
-							return (_Utils_cmp(
-								i + 1,
-								$elm$core$List$length(model.segments)) < 0) ? $elm$core$Maybe$Just(i + 1) : $elm$core$Maybe$Just(i);
-						}
-					}();
-					var $temp$msg = $author$project$Main$SelectSegment(nextIndex),
-						$temp$model = model;
-					msg = $temp$msg;
-					model = $temp$model;
-					continue update;
-				case 'PrevSegment':
-					var prevIndex = function () {
-						var _v13 = model.activeSegment;
-						if (_v13.$ === 'Nothing') {
-							return $elm$core$Maybe$Nothing;
-						} else {
-							var i = _v13.a;
-							return (i > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Nothing;
-						}
-					}();
-					var $temp$msg = $author$project$Main$SelectSegment(prevIndex),
-						$temp$model = model;
-					msg = $temp$msg;
-					model = $temp$model;
-					continue update;
-				case 'MarkSegmentStart':
-					var _v14 = model.selectedOffset;
-					if (_v14.$ === 'Just') {
-						var offset = _v14.a;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									markingSegmentStart: $elm$core$Maybe$Just(offset)
-								}),
-							$elm$core$Platform$Cmd$none);
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				case 'CreateSegment':
-					var _v15 = _Utils_Tuple2(model.markingSegmentStart, model.selectedOffset);
-					if ((_v15.a.$ === 'Just') && (_v15.b.$ === 'Just')) {
-						var startOffset = _v15.a.a;
-						var endOffset = _v15.b.a;
-						var _v16 = (_Utils_cmp(startOffset, endOffset) < 1) ? _Utils_Tuple2(startOffset, endOffset) : _Utils_Tuple2(endOffset, startOffset);
-						var actualStart = _v16.a;
-						var actualEnd = _v16.b;
-						var segmentName = $elm$core$String$isEmpty(model.segmentNameInput) ? ('$' + A2($author$project$Main$toHex, 4, model.loadAddress + actualStart)) : model.segmentNameInput;
-						var newSegment = {end: actualEnd, name: segmentName, segType: $author$project$Types$Code, start: actualStart};
-						var newSegments = A2(
-							$elm$core$List$sortBy,
-							function ($) {
-								return $.start;
-							},
-							_Utils_ap(
-								model.segments,
-								_List_fromArray(
-									[newSegment])));
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{markingSegmentStart: $elm$core$Maybe$Nothing, segmentNameInput: '', segments: newSegments}),
-							$elm$core$Platform$Cmd$none);
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				case 'UpdateSegmentName':
-					var name = msg.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{segmentNameInput: name}),
-						$elm$core$Platform$Cmd$none);
-				case 'CancelSegmentCreate':
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{markingSegmentStart: $elm$core$Maybe$Nothing, segmentNameInput: ''}),
-						$elm$core$Platform$Cmd$none);
-				case 'DeleteSegment':
-					var index = msg.a;
-					var newSegments = A2(
-						$elm$core$List$map,
-						$elm$core$Tuple$second,
-						A2(
-							$elm$core$List$filter,
-							function (_v18) {
-								var i = _v18.a;
-								return !_Utils_eq(i, index);
-							},
-							A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, model.segments)));
-					var newActiveSegment = function () {
-						var _v17 = model.activeSegment;
-						if (_v17.$ === 'Just') {
-							var i = _v17.a;
-							return _Utils_eq(i, index) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(i, index) > 0) ? $elm$core$Maybe$Just(i - 1) : $elm$core$Maybe$Just(i));
-						} else {
-							return $elm$core$Maybe$Nothing;
-						}
-					}();
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{activeSegment: newActiveSegment, segments: newSegments}),
-						$elm$core$Platform$Cmd$none);
 				case 'ToggleHelp':
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -7675,9 +6800,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v19 = model.selectedOffset;
-					if (_v19.$ === 'Just') {
-						var offset = _v19.a;
+					var _v13 = model.selectedOffset;
+					if (_v13.$ === 'Just') {
+						var offset = _v13.a;
 						var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 						var instrLen = A2(
 							$elm$core$Maybe$withDefault,
@@ -7706,9 +6831,9 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v20 = model.selectedOffset;
-					if (_v20.$ === 'Just') {
-						var offset = _v20.a;
+					var _v14 = model.selectedOffset;
+					if (_v14.$ === 'Just') {
+						var offset = _v14.a;
 						if (offset > 0) {
 							var newOffset = A2($author$project$Main$findPrevInstructionStart, model.bytes, offset - 1);
 							return _Utils_Tuple2(
@@ -7733,62 +6858,27 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SaveProject':
-					var saveData = $author$project$Project$fromModel(model);
-					var json = A2(
-						$elm$json$Json$Encode$encode,
-						2,
-						$author$project$Project$encode(saveData));
-					var fileName = $elm$core$String$isEmpty(model.fileName) ? 'untitled.cdis' : function (n) {
-						return A2($elm$core$String$endsWith, '.cdis', n) ? n : (n + '.cdis');
-					}(
-						A3($elm$core$String$replace, '.prg', '.cdis', model.fileName));
-					return _Utils_Tuple2(
-						model,
-						A3($elm$file$File$Download$string, fileName, 'application/json', json));
-				case 'LoadProjectRequested':
-					return _Utils_Tuple2(
-						model,
-						A2(
-							$elm$file$File$Select$file,
-							_List_fromArray(
-								['application/json', '.cdis']),
-							$author$project$Main$LoadProjectSelected));
-				case 'LoadProjectSelected':
-					var file = msg.a;
-					return _Utils_Tuple2(
-						model,
-						A2(
-							$elm$core$Task$perform,
-							$author$project$Main$LoadProjectLoaded,
-							$elm$file$File$toString(file)));
-				case 'LoadProjectLoaded':
-					var jsonString = msg.a;
-					var _v21 = A2($elm$json$Json$Decode$decodeString, $author$project$Project$decoder, jsonString);
-					if (_v21.$ === 'Ok') {
-						var saveData = _v21.a;
-						var newModel = A2($author$project$Project$toModel, saveData, model);
-						var withSelection = function () {
-							if ($elm$core$Array$isEmpty(newModel.bytes)) {
-								return newModel;
-							} else {
-								var _v22 = newModel.selectedOffset;
-								if (_v22.$ === 'Nothing') {
-									return _Utils_update(
-										newModel,
-										{
-											selectedOffset: $elm$core$Maybe$Just(0)
-										});
-								} else {
-									return newModel;
-								}
-							}
-						}();
-						return _Utils_Tuple2(
-							$author$project$Main$ensureSelectionVisible(withSelection),
-							$elm$core$Platform$Cmd$none);
-					} else {
+					if ($elm$core$Array$isEmpty(model.bytes)) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					} else {
+						var saveData = $author$project$Project$fromModel(model);
+						var json = A2(
+							$elm$json$Json$Encode$encode,
+							2,
+							$author$project$Project$encode(saveData));
+						return _Utils_Tuple2(
+							model,
+							$author$project$Main$saveCdisFile(json));
 					}
+				case 'CdisSaved':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{dirty: false}),
+						$elm$core$Platform$Cmd$none);
+				case 'ErrorOccurred':
+					var errorMsg = msg.a;
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				default:
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			}
@@ -7812,6 +6902,7 @@ var $author$project$Main$KeyPressed = function (a) {
 	return {$: 'KeyPressed', a: a};
 };
 var $elm$json$Json$Decode$bool = _Json_decodeBool;
+var $elm$json$Json$Decode$map4 = _Json_map4;
 var $author$project$Main$keyDecoder = A2(
 	$elm$json$Json$Decode$map,
 	$author$project$Main$KeyPressed,
@@ -7890,6 +6981,33 @@ var $elm$html$Html$Attributes$tabindex = function (n) {
 var $author$project$Main$Scroll = function (a) {
 	return {$: 'Scroll', a: a};
 };
+var $elm$core$String$cons = _String_cons;
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $elm$core$String$padLeft = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)),
+			string);
+	});
+var $elm$core$Basics$modBy = _Basics_modBy;
 var $author$project$Disassembler$toHexHelper = F2(
 	function (n, acc) {
 		toHexHelper:
@@ -8358,10 +7476,9 @@ var $author$project$Main$onWheel = function (toMsg) {
 			},
 			A2($elm$json$Json$Decode$field, 'deltaY', $elm$json$Json$Decode$float)));
 };
-var $elm$html$Html$p = _VirtualDom_node('p');
+var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $elm$html$Html$span = _VirtualDom_node('span');
 var $author$project$Main$viewDisassemblyHeader = A2(
 	$elm$html$Html$div,
 	_List_fromArray(
@@ -8414,6 +7531,54 @@ var $author$project$Main$viewDisassemblyHeader = A2(
 var $author$project$Main$SelectLine = function (a) {
 	return {$: 'SelectLine', a: a};
 };
+var $author$project$Main$toHexHelper = F2(
+	function (n, acc) {
+		toHexHelper:
+		while (true) {
+			if ((!n) && (!$elm$core$String$isEmpty(acc))) {
+				return acc;
+			} else {
+				if (!n) {
+					return '0';
+				} else {
+					var digit = A2($elm$core$Basics$modBy, 16, n);
+					var _char = function () {
+						switch (digit) {
+							case 10:
+								return 'A';
+							case 11:
+								return 'B';
+							case 12:
+								return 'C';
+							case 13:
+								return 'D';
+							case 14:
+								return 'E';
+							case 15:
+								return 'F';
+							default:
+								return $elm$core$String$fromInt(digit);
+						}
+					}();
+					var $temp$n = (n / 16) | 0,
+						$temp$acc = _Utils_ap(_char, acc);
+					n = $temp$n;
+					acc = $temp$acc;
+					continue toHexHelper;
+				}
+			}
+		}
+	});
+var $author$project$Main$toHex = F2(
+	function (width, n) {
+		var hex = A2($author$project$Main$toHexHelper, n, '');
+		var padded = A3(
+			$elm$core$String$padLeft,
+			width,
+			_Utils_chr('0'),
+			hex);
+		return $elm$core$String$toUpper(padded);
+	});
 var $author$project$Main$formatBytes = function (bytes) {
 	return A2(
 		$elm$core$String$join,
@@ -8606,55 +7771,76 @@ var $author$project$Main$viewLine = F2(
 				]));
 	});
 var $author$project$Main$viewDisassembly = function (model) {
-	if ($elm$core$Array$isEmpty(model.bytes)) {
-		return A2(
+	var lines = A5($author$project$Disassembler$disassembleRange, model.loadAddress, model.viewStart, model.viewLines, model.bytes, model.comments);
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('disassembly'),
+				$author$project$Main$onWheel($author$project$Main$Scroll)
+			]),
+		_List_fromArray(
+			[
+				$author$project$Main$viewDisassemblyHeader,
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('lines')
+					]),
+				A2(
+					$elm$core$List$map,
+					$author$project$Main$viewLine(model),
+					lines))
+			]));
+};
+var $author$project$Main$RequestFile = {$: 'RequestFile'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $elm$html$Html$p = _VirtualDom_node('p');
+var $author$project$Main$viewFilePrompt = A2(
+	$elm$html$Html$div,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('cdis-app file-prompt')
+		]),
+	_List_fromArray(
+		[
+			A2(
 			$elm$html$Html$div,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('disassembly empty')
+					$elm$html$Html$Attributes$class('prompt-content')
 				]),
 			_List_fromArray(
 				[
 					A2(
-					$elm$html$Html$p,
+					$elm$html$Html$h1,
 					_List_Nil,
 					_List_fromArray(
 						[
-							$elm$html$Html$text('No file loaded.')
+							$elm$html$Html$text('CDis')
 						])),
 					A2(
 					$elm$html$Html$p,
 					_List_Nil,
 					_List_fromArray(
 						[
-							$elm$html$Html$text('Click \'Open PRG\' or press O to open a C64 program file.')
-						]))
-				]));
-	} else {
-		var lines = A5($author$project$Disassembler$disassembleRange, model.loadAddress, model.viewStart, model.viewLines, model.bytes, model.comments);
-		return A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('disassembly'),
-					$author$project$Main$onWheel($author$project$Main$Scroll)
-				]),
-			_List_fromArray(
-				[
-					$author$project$Main$viewDisassemblyHeader,
+							$elm$html$Html$text('C64 Disassembler')
+						])),
 					A2(
-					$elm$html$Html$div,
+					$elm$html$Html$button,
 					_List_fromArray(
 						[
-							$elm$html$Html$Attributes$class('lines')
+							$elm$html$Html$Attributes$class('load-button'),
+							$elm$html$Html$Events$onClick($author$project$Main$RequestFile)
 						]),
-					A2(
-						$elm$core$List$map,
-						$author$project$Main$viewLine(model),
-						lines))
-				]));
-	}
-};
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Open PRG File')
+						]))
+				]))
+		]));
 var $elm$html$Html$footer = _VirtualDom_node('footer');
 var $author$project$Main$viewFooter = function (model) {
 	return model.helpExpanded ? A2(
@@ -8750,26 +7936,6 @@ var $author$project$Main$viewFooter = function (model) {
 												$elm$html$Html$text('L')
 											])),
 										$elm$html$Html$text('Center selected line')
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('help-row')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										$elm$html$Html$span,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$class('key')
-											]),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('[ ]')
-											])),
-										$elm$html$Html$text('Prev/Next segment')
 									]))
 							])),
 						A2(
@@ -8788,7 +7954,7 @@ var $author$project$Main$viewFooter = function (model) {
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Selection')
+										$elm$html$Html$text('Editing')
 									])),
 								A2(
 								$elm$html$Html$div,
@@ -8907,7 +8073,7 @@ var $author$project$Main$viewFooter = function (model) {
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Segments')
+										$elm$html$Html$text('File')
 									])),
 								A2(
 								$elm$html$Html$div,
@@ -8927,86 +8093,7 @@ var $author$project$Main$viewFooter = function (model) {
 											[
 												$elm$html$Html$text('S')
 											])),
-										$elm$html$Html$text('Mark segment start')
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('help-row')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										$elm$html$Html$span,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$class('key')
-											]),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('Escape')
-											])),
-										$elm$html$Html$text('Cancel segment')
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('help-row')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										$elm$html$Html$span,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$class('key')
-											]),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('Tab click')
-											])),
-										$elm$html$Html$text('Jump to segment')
-									]))
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$class('help-section')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('help-title')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Other')
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('help-row')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										$elm$html$Html$span,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$class('key')
-											]),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('O')
-											])),
-										$elm$html$Html$text('Open PRG file')
+										$elm$html$Html$text('Save project')
 									])),
 								A2(
 								$elm$html$Html$div,
@@ -9027,26 +8114,6 @@ var $author$project$Main$viewFooter = function (model) {
 												$elm$html$Html$text('?')
 											])),
 										$elm$html$Html$text('Toggle this help')
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('help-row')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										$elm$html$Html$span,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$class('key')
-											]),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('Go to $')
-											])),
-										$elm$html$Html$text('Jump to address')
 									]))
 							]))
 					]))
@@ -9067,13 +8134,13 @@ var $author$project$Main$viewFooter = function (model) {
 						$elm$html$Html$text('↑↓: Navigate | '),
 						$elm$html$Html$text('C: Comment | '),
 						$elm$html$Html$text('L: Center | '),
-						$elm$html$Html$text('S: Segment')
+						$elm$html$Html$text('S: Save')
 					]))
 			]));
 };
-var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$html$Html$header = _VirtualDom_node('header');
 var $author$project$Main$viewHeader = function (model) {
+	var dirtyIndicator = model.dirty ? ' *' : '';
 	return A2(
 		$elm$html$Html$header,
 		_List_fromArray(
@@ -9107,175 +8174,14 @@ var $author$project$Main$viewHeader = function (model) {
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text(' - ' + model.fileName)
+						$elm$html$Html$text(' - ' + (model.fileName + dirtyIndicator))
 					]))
 			]));
-};
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $author$project$Main$DeleteSegment = function (a) {
-	return {$: 'DeleteSegment', a: a};
-};
-var $elm$html$Html$Attributes$title = $elm$html$Html$Attributes$stringProperty('title');
-var $author$project$Main$viewSegmentTab = F3(
-	function (model, index, segment) {
-		var isActive = _Utils_eq(
-			model.activeSegment,
-			$elm$core$Maybe$Just(index));
-		var addrStr = '$' + A2($author$project$Main$toHex, 4, model.loadAddress + segment.start);
-		return A2(
-			$elm$html$Html$span,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('segment-tab-wrapper')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class(
-							isActive ? 'segment-tab active' : 'segment-tab'),
-							$elm$html$Html$Events$onClick(
-							$author$project$Main$SelectSegment(
-								$elm$core$Maybe$Just(index)))
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text(segment.name + (' ' + addrStr))
-						])),
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('segment-delete'),
-							$elm$html$Html$Events$onClick(
-							$author$project$Main$DeleteSegment(index)),
-							$elm$html$Html$Attributes$title('Delete segment')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('x')
-						]))
-				]));
-	});
-var $author$project$Main$viewSegmentBar = function (model) {
-	return $elm$core$Array$isEmpty(model.bytes) ? $elm$html$Html$text('') : A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('segment-bar')
-			]),
-		_Utils_ap(
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class(
-							_Utils_eq(model.activeSegment, $elm$core$Maybe$Nothing) ? 'segment-tab active' : 'segment-tab'),
-							$elm$html$Html$Events$onClick(
-							$author$project$Main$SelectSegment($elm$core$Maybe$Nothing))
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('All')
-						]))
-				]),
-			A2(
-				$elm$core$List$indexedMap,
-				$author$project$Main$viewSegmentTab(model),
-				model.segments)));
-};
-var $author$project$Main$CancelSegmentCreate = {$: 'CancelSegmentCreate'};
-var $author$project$Main$CreateSegment = {$: 'CreateSegment'};
-var $author$project$Main$UpdateSegmentName = function (a) {
-	return {$: 'UpdateSegmentName', a: a};
-};
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
-var $author$project$Main$viewSegmentCreateBar = function (model) {
-	var _v0 = model.markingSegmentStart;
-	if (_v0.$ === 'Nothing') {
-		return $elm$html$Html$text('');
-	} else {
-		var startOffset = _v0.a;
-		var startAddr = '$' + A2($author$project$Main$toHex, 4, model.loadAddress + startOffset);
-		var endAddr = function () {
-			var _v1 = model.selectedOffset;
-			if (_v1.$ === 'Just') {
-				var endOffset = _v1.a;
-				return '$' + A2($author$project$Main$toHex, 4, model.loadAddress + endOffset);
-			} else {
-				return '...';
-			}
-		}();
-		return A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('segment-create-bar')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$span,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Creating segment: ' + (startAddr + (' to ' + endAddr)))
-						])),
-					A2(
-					$elm$html$Html$input,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$type_('text'),
-							$elm$html$Html$Attributes$placeholder('Segment name'),
-							$elm$html$Html$Attributes$value(model.segmentNameInput),
-							$elm$html$Html$Events$onInput($author$project$Main$UpdateSegmentName),
-							$elm$html$Html$Attributes$class('segment-name-input')
-						]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Events$onClick($author$project$Main$CreateSegment)
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Create')
-						])),
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Events$onClick($author$project$Main$CancelSegmentCreate)
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Cancel')
-						])),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('hint')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('(select end line, then click Create)')
-						]))
-				]));
-	}
 };
 var $author$project$Main$JumpToAddress = {$: 'JumpToAddress'};
 var $author$project$Main$JumpToInputChanged = function (a) {
 	return {$: 'JumpToInputChanged', a: a};
 };
-var $author$project$Main$LoadProjectRequested = {$: 'LoadProjectRequested'};
-var $author$project$Main$SaveProject = {$: 'SaveProject'};
-var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
 var $elm$html$Html$label = _VirtualDom_node('label');
 var $elm$html$Html$Attributes$maxlength = function (n) {
 	return A2(
@@ -9294,6 +8200,7 @@ var $author$project$Main$onKeyDown = function (msg) {
 			},
 			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 };
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
 var $author$project$Main$viewToolbar = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -9303,45 +8210,6 @@ var $author$project$Main$viewToolbar = function (model) {
 			]),
 		_List_fromArray(
 			[
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick($author$project$Main$FileRequested)
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Open PRG')
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick($author$project$Main$SaveProject),
-						$elm$html$Html$Attributes$disabled(
-						$elm$core$Array$isEmpty(model.bytes))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Save')
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick($author$project$Main$LoadProjectRequested)
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Open')
-					])),
-				A2(
-				$elm$html$Html$span,
-				_List_fromArray(
-					[
-						$elm$html$Html$Attributes$class('separator')
-					]),
-				_List_Nil),
 				A2(
 				$elm$html$Html$label,
 				_List_Nil,
@@ -9396,7 +8264,7 @@ var $author$project$Main$viewToolbar = function (model) {
 			]));
 };
 var $author$project$Main$view = function (model) {
-	return A2(
+	return $elm$core$Array$isEmpty(model.bytes) ? $author$project$Main$viewFilePrompt : A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
@@ -9409,8 +8277,6 @@ var $author$project$Main$view = function (model) {
 			[
 				$author$project$Main$viewHeader(model),
 				$author$project$Main$viewToolbar(model),
-				$author$project$Main$viewSegmentBar(model),
-				$author$project$Main$viewSegmentCreateBar(model),
 				$author$project$Main$viewDisassembly(model),
 				$author$project$Main$viewFooter(model)
 			]));
