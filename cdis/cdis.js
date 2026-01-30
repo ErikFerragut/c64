@@ -5202,7 +5202,7 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, dataRegions: _List_Nil, dirty: false, editingComment: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, mark: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
+var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, dataRegions: _List_Nil, dirty: false, editingComment: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, fileName: '', helpExpanded: false, jumpToInput: '', labels: $elm$core$Dict$empty, loadAddress: 0, mark: $elm$core$Maybe$Nothing, restartPoints: $elm$core$Set$empty, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
@@ -5250,6 +5250,9 @@ var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
 var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
 var $author$project$Main$StartEditComment = function (a) {
 	return {$: 'StartEditComment', a: a};
+};
+var $author$project$Main$StartEditLabel = function (a) {
+	return {$: 'StartEditLabel', a: a};
 };
 var $author$project$Main$ToggleHelp = {$: 'ToggleHelp'};
 var $author$project$Main$ToggleMark = {$: 'ToggleMark'};
@@ -6428,16 +6431,19 @@ var $author$project$Disassembler$isInDataRegion = F2(
 			},
 			dataRegions);
 	});
-var $author$project$Disassembler$disassembleLine = F5(
-	function (loadAddress, offset, bytes, comments, dataRegions) {
+var $author$project$Disassembler$disassembleLine = F6(
+	function (loadAddress, offset, bytes, comments, labels, dataRegions) {
+		var address = loadAddress + offset;
+		var labelAtAddr = A2($elm$core$Dict$get, address, labels);
 		var _v0 = A2($elm$core$Array$get, offset, bytes);
 		if (_v0.$ === 'Nothing') {
 			return {
-				address: loadAddress + offset,
+				address: address,
 				bytes: _List_Nil,
 				comment: A2($elm$core$Dict$get, offset, comments),
 				disassembly: '; end of file',
 				isData: false,
+				label: labelAtAddr,
 				offset: offset,
 				targetAddress: $elm$core$Maybe$Nothing
 			};
@@ -6445,12 +6451,13 @@ var $author$project$Disassembler$disassembleLine = F5(
 			var _byte = _v0.a;
 			if (A2($author$project$Disassembler$isInDataRegion, offset, dataRegions)) {
 				return {
-					address: loadAddress + offset,
+					address: address,
 					bytes: _List_fromArray(
 						[_byte]),
 					comment: A2($elm$core$Dict$get, offset, comments),
 					disassembly: '.byte ' + $author$project$Disassembler$formatByte(_byte),
 					isData: true,
+					label: labelAtAddr,
 					offset: offset,
 					targetAddress: $elm$core$Maybe$Nothing
 				};
@@ -6459,24 +6466,24 @@ var $author$project$Disassembler$disassembleLine = F5(
 				var instrBytes = A3($author$project$Disassembler$getInstructionBytes, offset, info.bytes, bytes);
 				var operandValue = $author$project$Disassembler$getOperandValue(instrBytes);
 				var endAddress = loadAddress + $elm$core$Array$length(bytes);
-				var address = loadAddress + offset;
-				var disasm = A3($author$project$Disassembler$formatInstruction, info, operandValue, address);
 				var targetAddr = A5($author$project$Disassembler$computeTargetAddress, info.mode, operandValue, address, loadAddress, endAddress);
+				var disasm = A3($author$project$Disassembler$formatInstruction, info, operandValue, address);
 				return {
 					address: address,
 					bytes: instrBytes,
 					comment: A2($elm$core$Dict$get, offset, comments),
 					disassembly: disasm,
 					isData: false,
+					label: labelAtAddr,
 					offset: offset,
 					targetAddress: targetAddr
 				};
 			}
 		}
 	});
-var $author$project$Disassembler$disassemble = F5(
-	function (loadAddress, offset, bytes, comments, dataRegions) {
-		return A5($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, dataRegions);
+var $author$project$Disassembler$disassemble = F6(
+	function (loadAddress, offset, bytes, comments, labels, dataRegions) {
+		return A6($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, dataRegions);
 	});
 var $elm$core$List$drop = F2(
 	function (n, list) {
@@ -7446,13 +7453,75 @@ var $author$project$Main$update = F2(
 							model,
 							{editingComment: $elm$core$Maybe$Nothing}),
 						$elm$core$Platform$Cmd$none);
+				case 'StartEditLabel':
+					var address = msg.a;
+					var existingLabel = A2(
+						$elm$core$Maybe$withDefault,
+						'',
+						A2($elm$core$Dict$get, address, model.labels));
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								editingLabel: $elm$core$Maybe$Just(
+									_Utils_Tuple2(address, existingLabel))
+							}),
+						A2(
+							$elm$core$Task$attempt,
+							function (_v11) {
+								return $author$project$Main$NoOp;
+							},
+							$elm$browser$Browser$Dom$focus('label-input')));
+				case 'UpdateEditLabel':
+					var text = msg.a;
+					var _v12 = model.editingLabel;
+					if (_v12.$ === 'Just') {
+						var _v13 = _v12.a;
+						var address = _v13.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									editingLabel: $elm$core$Maybe$Just(
+										_Utils_Tuple2(address, text))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'SaveLabel':
+					var _v14 = model.editingLabel;
+					if (_v14.$ === 'Just') {
+						var _v15 = _v14.a;
+						var address = _v15.a;
+						var text = _v15.b;
+						var newLabels = $elm$core$String$isEmpty(
+							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, address, model.labels) : A3(
+							$elm$core$Dict$insert,
+							address,
+							$elm$core$String$trim(text),
+							model.labels);
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{dirty: true, editingLabel: $elm$core$Maybe$Nothing, labels: newLabels}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CancelEditLabel':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{editingLabel: $elm$core$Maybe$Nothing}),
+						$elm$core$Platform$Cmd$none);
 				case 'KeyPressed':
 					var event = msg.a;
-					if (!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) {
+					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.editingLabel, $elm$core$Maybe$Nothing))) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var _v11 = event.key;
-						switch (_v11) {
+						var _v16 = event.key;
+						switch (_v16) {
 							case ' ':
 								if (event.ctrl) {
 									var $temp$msg = $author$project$Main$ToggleMark,
@@ -7466,10 +7535,23 @@ var $author$project$Main$update = F2(
 							case 'l':
 								return event.ctrl ? $author$project$Main$centerSelectedLine(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 							case ';':
-								var _v12 = model.selectedOffset;
-								if (_v12.$ === 'Just') {
-									var offset = _v12.a;
+								var _v17 = model.selectedOffset;
+								if (_v17.$ === 'Just') {
+									var offset = _v17.a;
 									var $temp$msg = $author$project$Main$StartEditComment(offset),
+										$temp$model = model;
+									msg = $temp$msg;
+									model = $temp$model;
+									continue update;
+								} else {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								}
+							case ':':
+								var _v18 = model.selectedOffset;
+								if (_v18.$ === 'Just') {
+									var offset = _v18.a;
+									var address = model.loadAddress + offset;
+									var $temp$msg = $author$project$Main$StartEditLabel(address),
 										$temp$model = model;
 									msg = $temp$msg;
 									model = $temp$model;
@@ -7484,13 +7566,13 @@ var $author$project$Main$update = F2(
 								model = $temp$model;
 								continue update;
 							case 'j':
-								var _v13 = model.selectedOffset;
-								if (_v13.$ === 'Just') {
-									var offset = _v13.a;
-									var line = A5($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.dataRegions);
-									var _v14 = line.targetAddress;
-									if (_v14.$ === 'Just') {
-										var addr = _v14.a;
+								var _v19 = model.selectedOffset;
+								if (_v19.$ === 'Just') {
+									var offset = _v19.a;
+									var line = A6($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.dataRegions);
+									var _v20 = line.targetAddress;
+									if (_v20.$ === 'Just') {
+										var addr = _v20.a;
 										var $temp$msg = $author$project$Main$ClickAddress(addr),
 											$temp$model = model;
 										msg = $temp$msg;
@@ -7504,9 +7586,9 @@ var $author$project$Main$update = F2(
 								}
 							case 'd':
 								if (event.shift) {
-									var _v15 = model.selectedOffset;
-									if (_v15.$ === 'Just') {
-										var offset = _v15.a;
+									var _v21 = model.selectedOffset;
+									if (_v21.$ === 'Just') {
+										var offset = _v21.a;
 										var $temp$msg = $author$project$Main$ClearDataRegion(offset),
 											$temp$model = model;
 										msg = $temp$msg;
@@ -7557,9 +7639,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v16 = model.selectedOffset;
-					if (_v16.$ === 'Just') {
-						var offset = _v16.a;
+					var _v22 = model.selectedOffset;
+					if (_v22.$ === 'Just') {
+						var offset = _v22.a;
 						var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 						var inDataRegion = A2(
 							$elm$core$List$any,
@@ -7594,13 +7676,13 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v17 = model.selectedOffset;
-					if (_v17.$ === 'Just') {
-						var offset = _v17.a;
+					var _v23 = model.selectedOffset;
+					if (_v23.$ === 'Just') {
+						var offset = _v23.a;
 						if (offset > 0) {
-							var _v18 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.dataRegions, offset);
-							var currentStart = _v18.a;
-							var prevStart = _v18.b;
+							var _v24 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.dataRegions, offset);
+							var currentStart = _v24.a;
+							var prevStart = _v24.b;
 							var newOffset = (_Utils_cmp(currentStart, offset) < 0) ? currentStart : prevStart;
 							return _Utils_Tuple2(
 								$author$project$Main$ensureSelectionVisible(
@@ -7646,9 +7728,9 @@ var $author$project$Main$update = F2(
 					var errorMsg = msg.a;
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				case 'ToggleMark':
-					var _v19 = model.selectedOffset;
-					if (_v19.$ === 'Just') {
-						var offset = _v19.a;
+					var _v25 = model.selectedOffset;
+					if (_v25.$ === 'Just') {
+						var offset = _v25.a;
 						return _Utils_eq(
 							model.mark,
 							$elm$core$Maybe$Just(offset)) ? _Utils_Tuple2(
@@ -7666,10 +7748,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'MarkSelectionAsData':
-					var _v20 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v20.a.$ === 'Just') && (_v20.b.$ === 'Just')) {
-						var markOffset = _v20.a.a;
-						var cursorOffset = _v20.b.a;
+					var _v26 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v26.a.$ === 'Just') && (_v26.b.$ === 'Just')) {
+						var markOffset = _v26.a.a;
+						var cursorOffset = _v26.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newRegion = {end: endOff, start: startOff};
@@ -7769,8 +7851,24 @@ var $elm$html$Html$Attributes$tabindex = function (n) {
 var $author$project$Main$Scroll = function (a) {
 	return {$: 'Scroll', a: a};
 };
-var $author$project$Disassembler$disassembleHelper = F7(
-	function (loadAddress, offset, remaining, bytes, comments, dataRegions, acc) {
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $elm$core$List$concatMap = F2(
+	function (f, list) {
+		return $elm$core$List$concat(
+			A2($elm$core$List$map, f, list));
+	});
+var $author$project$Disassembler$disassembleHelper = F8(
+	function (loadAddress, offset, remaining, bytes, comments, labels, dataRegions, acc) {
 		disassembleHelper:
 		while (true) {
 			if ((remaining <= 0) || (_Utils_cmp(
@@ -7779,13 +7877,14 @@ var $author$project$Disassembler$disassembleHelper = F7(
 				return $elm$core$List$reverse(acc);
 			} else {
 				var newRemaining = remaining - 1;
-				var line = A5($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, dataRegions);
+				var line = A6($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, dataRegions);
 				var newOffset = offset + $elm$core$List$length(line.bytes);
 				var $temp$loadAddress = loadAddress,
 					$temp$offset = newOffset,
 					$temp$remaining = newRemaining,
 					$temp$bytes = bytes,
 					$temp$comments = comments,
+					$temp$labels = labels,
 					$temp$dataRegions = dataRegions,
 					$temp$acc = A2($elm$core$List$cons, line, acc);
 				loadAddress = $temp$loadAddress;
@@ -7793,15 +7892,16 @@ var $author$project$Disassembler$disassembleHelper = F7(
 				remaining = $temp$remaining;
 				bytes = $temp$bytes;
 				comments = $temp$comments;
+				labels = $temp$labels;
 				dataRegions = $temp$dataRegions;
 				acc = $temp$acc;
 				continue disassembleHelper;
 			}
 		}
 	});
-var $author$project$Disassembler$disassembleRange = F6(
-	function (loadAddress, startOffset, count, bytes, comments, dataRegions) {
-		return A7($author$project$Disassembler$disassembleHelper, loadAddress, startOffset, count, bytes, comments, dataRegions, _List_Nil);
+var $author$project$Disassembler$disassembleRange = F7(
+	function (loadAddress, startOffset, count, bytes, comments, labels, dataRegions) {
+		return A8($author$project$Disassembler$disassembleHelper, loadAddress, startOffset, count, bytes, comments, labels, dataRegions, _List_Nil);
 	});
 var $elm$json$Json$Decode$float = _Json_decodeFloat;
 var $elm$core$Basics$negate = function (n) {
@@ -7883,6 +7983,137 @@ var $author$project$Main$viewDisassemblyHeader = A2(
 var $author$project$Main$SelectLine = function (a) {
 	return {$: 'SelectLine', a: a};
 };
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $author$project$Main$viewLabelLine = F2(
+	function (labelText, line) {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('line label-line'),
+					$elm$html$Html$Events$onClick(
+					$author$project$Main$SelectLine(line.offset))
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('label-text')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(labelText + ':')
+						]))
+				]));
+	});
+var $author$project$Main$SaveLabel = {$: 'SaveLabel'};
+var $author$project$Main$UpdateEditLabel = function (a) {
+	return {$: 'UpdateEditLabel', a: a};
+};
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$autofocus = $elm$html$Html$Attributes$boolProperty('autofocus');
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$Events$onBlur = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'blur',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $author$project$Main$CancelEditLabel = {$: 'CancelEditLabel'};
+var $author$project$Main$onKeyDownLabel = A2(
+	$elm$html$Html$Events$on,
+	'keydown',
+	A2(
+		$elm$json$Json$Decode$andThen,
+		function (key) {
+			return (key === 'Enter') ? $elm$json$Json$Decode$succeed($author$project$Main$SaveLabel) : ((key === 'Escape') ? $elm$json$Json$Decode$succeed($author$project$Main$CancelEditLabel) : $elm$json$Json$Decode$fail('not enter or escape'));
+		},
+		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$Main$viewLabelLineEditing = F2(
+	function (currentText, line) {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('line label-line editing')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$input,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$type_('text'),
+							$elm$html$Html$Attributes$value(currentText),
+							$elm$html$Html$Events$onInput($author$project$Main$UpdateEditLabel),
+							$elm$html$Html$Events$onBlur($author$project$Main$SaveLabel),
+							$author$project$Main$onKeyDownLabel,
+							$elm$html$Html$Attributes$id('label-input'),
+							$elm$html$Html$Attributes$autofocus(true),
+							$elm$html$Html$Attributes$placeholder('label name'),
+							$elm$html$Html$Attributes$class('label-input')
+						]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('label-colon')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(':')
+						]))
+				]));
+	});
 var $author$project$Main$toHexHelper = F2(
 	function (n, acc) {
 		toHexHelper:
@@ -7940,12 +8171,6 @@ var $author$project$Main$formatBytes = function (bytes) {
 			$author$project$Main$toHex(2),
 			bytes));
 };
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
 var $elm$html$Html$Events$onDoubleClick = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
@@ -7955,53 +8180,6 @@ var $elm$html$Html$Events$onDoubleClick = function (msg) {
 var $author$project$Main$SaveComment = {$: 'SaveComment'};
 var $author$project$Main$UpdateEditComment = function (a) {
 	return {$: 'UpdateEditComment', a: a};
-};
-var $elm$json$Json$Encode$bool = _Json_wrap;
-var $elm$html$Html$Attributes$boolProperty = F2(
-	function (key, bool) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$bool(bool));
-	});
-var $elm$html$Html$Attributes$autofocus = $elm$html$Html$Attributes$boolProperty('autofocus');
-var $elm$html$Html$input = _VirtualDom_node('input');
-var $elm$html$Html$Events$onBlur = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'blur',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $elm$html$Html$Events$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
-	return {$: 'MayStopPropagation', a: a};
-};
-var $elm$html$Html$Events$stopPropagationOn = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
-var $elm$html$Html$Events$targetValue = A2(
-	$elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	$elm$json$Json$Decode$string);
-var $elm$html$Html$Events$onInput = function (tagger) {
-	return A2(
-		$elm$html$Html$Events$stopPropagationOn,
-		'input',
-		A2(
-			$elm$json$Json$Decode$map,
-			$elm$html$Html$Events$alwaysStop,
-			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
 var $author$project$Main$CancelEditComment = {$: 'CancelEditComment'};
 var $author$project$Main$onKeyDownComment = A2(
@@ -8013,8 +8191,6 @@ var $author$project$Main$onKeyDownComment = A2(
 			return (key === 'Enter') ? $elm$json$Json$Decode$succeed($author$project$Main$SaveComment) : ((key === 'Escape') ? $elm$json$Json$Decode$succeed($author$project$Main$CancelEditComment) : $elm$json$Json$Decode$fail('not enter or escape'));
 		},
 		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
-var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
-var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$viewCommentText = function (maybeComment) {
 	return A2(
 		$elm$html$Html$span,
@@ -8070,54 +8246,10 @@ var $author$project$Main$viewComment = F2(
 		}
 	});
 var $elm$core$String$words = _String_words;
-var $author$project$Main$viewDisasm = function (line) {
-	var _v0 = line.targetAddress;
-	if (_v0.$ === 'Nothing') {
-		return A2(
-			$elm$html$Html$span,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('col-disasm')
-				]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(line.disassembly)
-				]));
-	} else {
-		var addr = _v0.a;
-		var parts = $elm$core$String$words(line.disassembly);
-		if (parts.b) {
-			var mnemonic = parts.a;
-			var operandParts = parts.b;
-			var operand = A2($elm$core$String$join, ' ', operandParts);
-			return A2(
-				$elm$html$Html$span,
-				_List_fromArray(
-					[
-						$elm$html$Html$Attributes$class('col-disasm')
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text(mnemonic + ' '),
-						A2(
-						$elm$html$Html$span,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$class('operand-link'),
-								A2(
-								$elm$html$Html$Events$stopPropagationOn,
-								'click',
-								$elm$json$Json$Decode$succeed(
-									_Utils_Tuple2(
-										$author$project$Main$ClickAddress(addr),
-										true)))
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text(operand)
-							]))
-					]));
-		} else {
+var $author$project$Main$viewDisasm = F2(
+	function (line, labels) {
+		var _v0 = line.targetAddress;
+		if (_v0.$ === 'Nothing') {
 			return A2(
 				$elm$html$Html$span,
 				_List_fromArray(
@@ -8128,9 +8260,62 @@ var $author$project$Main$viewDisasm = function (line) {
 					[
 						$elm$html$Html$text(line.disassembly)
 					]));
+		} else {
+			var addr = _v0.a;
+			var parts = $elm$core$String$words(line.disassembly);
+			var labelName = A2($elm$core$Dict$get, addr, labels);
+			if (parts.b) {
+				var mnemonic = parts.a;
+				var operandParts = parts.b;
+				var operand = function () {
+					if (labelName.$ === 'Just') {
+						var lbl = labelName.a;
+						return lbl;
+					} else {
+						return A2($elm$core$String$join, ' ', operandParts);
+					}
+				}();
+				return A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('col-disasm')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(mnemonic + ' '),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('operand-link'),
+									A2(
+									$elm$html$Html$Events$stopPropagationOn,
+									'click',
+									$elm$json$Json$Decode$succeed(
+										_Utils_Tuple2(
+											$author$project$Main$ClickAddress(addr),
+											true)))
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(operand)
+								]))
+						]));
+			} else {
+				return A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('col-disasm')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(line.disassembly)
+						]));
+			}
 		}
-	}
-};
+	});
 var $author$project$Main$viewLine = F2(
 	function (model, line) {
 		var isSelected = function () {
@@ -8203,12 +8388,60 @@ var $author$project$Main$viewLine = F2(
 							$elm$html$Html$text(
 							$author$project$Main$formatBytes(line.bytes))
 						])),
-					$author$project$Main$viewDisasm(line),
+					A2($author$project$Main$viewDisasm, line, model.labels),
 					A2($author$project$Main$viewComment, model, line)
 				]));
 	});
+var $author$project$Main$viewLineWithLabel = F2(
+	function (model, line) {
+		var _v0 = _Utils_Tuple2(line.label, model.editingLabel);
+		if (_v0.b.$ === 'Just') {
+			var _v1 = _v0.b.a;
+			var editAddr = _v1.a;
+			var editText = _v1.b;
+			if (_Utils_eq(editAddr, line.address)) {
+				return _List_fromArray(
+					[
+						A2($author$project$Main$viewLabelLineEditing, editText, line),
+						A2($author$project$Main$viewLine, model, line)
+					]);
+			} else {
+				var _v2 = line.label;
+				if (_v2.$ === 'Just') {
+					var labelText = _v2.a;
+					return _List_fromArray(
+						[
+							A2($author$project$Main$viewLabelLine, labelText, line),
+							A2($author$project$Main$viewLine, model, line)
+						]);
+				} else {
+					return _List_fromArray(
+						[
+							A2($author$project$Main$viewLine, model, line)
+						]);
+				}
+			}
+		} else {
+			if (_v0.a.$ === 'Just') {
+				var labelText = _v0.a.a;
+				var _v3 = _v0.b;
+				return _List_fromArray(
+					[
+						A2($author$project$Main$viewLabelLine, labelText, line),
+						A2($author$project$Main$viewLine, model, line)
+					]);
+			} else {
+				var _v4 = _v0.a;
+				var _v5 = _v0.b;
+				return _List_fromArray(
+					[
+						A2($author$project$Main$viewLine, model, line)
+					]);
+			}
+		}
+	});
 var $author$project$Main$viewDisassembly = function (model) {
-	var lines = A6($author$project$Disassembler$disassembleRange, model.loadAddress, model.viewStart, model.viewLines, model.bytes, model.comments, model.dataRegions);
+	var lines = A7($author$project$Disassembler$disassembleRange, model.loadAddress, model.viewStart, model.viewLines, model.bytes, model.comments, model.labels, model.dataRegions);
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -8226,8 +8459,8 @@ var $author$project$Main$viewDisassembly = function (model) {
 						$elm$html$Html$Attributes$class('lines')
 					]),
 				A2(
-					$elm$core$List$map,
-					$author$project$Main$viewLine(model),
+					$elm$core$List$concatMap,
+					$author$project$Main$viewLineWithLabel(model),
 					lines))
 			]));
 };
@@ -8469,9 +8702,9 @@ var $author$project$Main$viewFooter = function (model) {
 											]),
 										_List_fromArray(
 											[
-												$elm$html$Html$text('Double-click')
+												$elm$html$Html$text(':')
 											])),
-										$elm$html$Html$text('Edit comment')
+										$elm$html$Html$text('Edit label')
 									])),
 								A2(
 								$elm$html$Html$div,
@@ -8491,7 +8724,7 @@ var $author$project$Main$viewFooter = function (model) {
 											[
 												$elm$html$Html$text('Enter')
 											])),
-										$elm$html$Html$text('Save comment')
+										$elm$html$Html$text('Save')
 									])),
 								A2(
 								$elm$html$Html$div,
@@ -8670,7 +8903,7 @@ var $author$project$Main$viewFooter = function (model) {
 						$elm$html$Html$text('↑↓: Navigate | '),
 						$elm$html$Html$text('J: Jump | '),
 						$elm$html$Html$text(';: Comment | '),
-						$elm$html$Html$text('Ctrl+Space: Mark | '),
+						$elm$html$Html$text(':: Label | '),
 						$elm$html$Html$text('D: Data | '),
 						$elm$html$Html$text('S: Save')
 					]))
@@ -8738,7 +8971,6 @@ var $author$project$Main$onKeyDown = function (msg) {
 			},
 			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 };
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
 var $author$project$Main$viewToolbar = function (model) {
 	return A2(
 		$elm$html$Html$div,

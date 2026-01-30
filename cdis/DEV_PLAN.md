@@ -12,7 +12,12 @@ A desktop 6502 disassembler for C64 PRG files, built in Elm with Tauri. Clean, f
 
 ### Keyboard Shortcuts
 - `↑/↓` - Navigate lines
+- `J` - Jump to operand address
 - `;` - Edit comment on selected line
+- `:` - Edit label on selected line
+- `Ctrl+Space` - Set/clear mark (for selection)
+- `D` - Mark selection as data
+- `Shift+D` - Clear data region at cursor
 - `Ctrl+L` - Center selected line on screen
 - `S` - Save project
 - `?` - Toggle help
@@ -31,21 +36,20 @@ A desktop 6502 disassembler for C64 PRG files, built in Elm with Tauri. Clean, f
 - [x] Scrollable view (mouse wheel, arrow keys)
 - [x] Jump to address (go to $xxxx)
 - [x] Keep selected line visible when navigating
-- [ ] Click on address operand to jump there
+- [x] Click on address operand to jump there (+ `J` key to jump from selected line)
 
-### Phase 3: Segments & Restart Points
-*Temporarily removed - will be rebuilt with better UX*
-- [ ] Define segments (name, start, end, type: code/data)
+### Phase 3: Data Regions (Partial)
+- [x] Mark regions as data (Ctrl+Space to mark, D to convert, shows as .byte)
+- [ ] Define named segments (name, start, end, type: code/data)
 - [ ] Tab bar showing all segments
 - [ ] Click to jump to segment
 - [ ] Set disassembly restart point (for when linear disassembly desyncs)
-- [ ] Mark regions as data (show as .byte instead of opcodes)
 
-### Phase 4: Annotation (Partial)
+### Phase 4: Annotation ✅
 - [x] Add comment to any byte offset (`;` key or double-click)
 - [x] Comments displayed inline (right side)
 - [x] Edit/delete comments
-- [ ] Add labels to addresses
+- [x] Add labels to addresses (`:` key, displayed above line)
 
 ### Phase 5: Persistence ✅
 - [x] Save project as JSON (.cdis file next to .prg)
@@ -84,10 +88,11 @@ type alias Model =
     , loadAddress : Int              -- From PRG header (e.g., 0x0800)
     , comments : Dict Int String     -- Offset → comment
     , labels : Dict Int String       -- Address → label name
+    , dataRegions : List DataRegion  -- Regions to render as .byte
+    , mark : Maybe Int               -- Emacs-style selection mark
     , viewStart : Int                -- Scroll position (byte offset)
     , viewLines : Int                -- How many lines visible
     , selectedOffset : Maybe Int     -- Cursor position
-    , restartPoints : Set Int        -- Manual "start disassembly here" marks
     , fileName : String              -- For display
     , dirty : Bool                   -- Unsaved changes indicator
     }
@@ -98,6 +103,8 @@ type alias Line =
     , bytes : List Int               -- Raw bytes for this line
     , disassembly : String           -- "LDA #$00" or ".byte $FF"
     , comment : Maybe String
+    , label : Maybe String           -- Label displayed above line
+    , isData : Bool                  -- True if in a data region
     }
 ```
 
@@ -132,4 +139,4 @@ cargo tauri build
 - ACME syntax for output compatibility
 - Symbols from C64 memory map (VIC at $D000, SID at $D400, etc.)
 - .cdis files are JSON, saved alongside .prg files
-- Project version 2 (still reads v1 files)
+- Project version 3 (backward compatible with v1/v2 files)

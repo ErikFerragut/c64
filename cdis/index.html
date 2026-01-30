@@ -230,6 +230,38 @@
             background: var(--accent-color);
         }
 
+        /* Label lines */
+        .line.label-line {
+            padding: 4px 0 0 0;
+            border-bottom: none;
+        }
+
+        .line.label-line .label-text {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        .line.label-line.editing {
+            padding: 2px 0;
+        }
+
+        .line.label-line .label-input {
+            background: var(--bg-color);
+            border: 1px solid var(--highlight-color);
+            color: var(--highlight-color);
+            padding: 2px 6px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            width: 150px;
+        }
+
+        .line.label-line .label-colon {
+            color: var(--highlight-color);
+            font-weight: bold;
+            margin-left: 2px;
+        }
+
         .col-address {
             width: 80px;
             color: var(--address-color);

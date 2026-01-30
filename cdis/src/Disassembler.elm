@@ -10,20 +10,20 @@ import Types exposing (AddressingMode(..), DataRegion, Line, OpcodeInfo)
 {-| Disassemble a range of bytes starting at a given offset
     Returns a list of disassembled lines
 -}
-disassembleRange : Int -> Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> List Line
-disassembleRange loadAddress startOffset count bytes comments dataRegions =
-    disassembleHelper loadAddress startOffset count bytes comments dataRegions []
+disassembleRange : Int -> Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List DataRegion -> List Line
+disassembleRange loadAddress startOffset count bytes comments labels dataRegions =
+    disassembleHelper loadAddress startOffset count bytes comments labels dataRegions []
 
 
-disassembleHelper : Int -> Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> List Line -> List Line
-disassembleHelper loadAddress offset remaining bytes comments dataRegions acc =
+disassembleHelper : Int -> Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List DataRegion -> List Line -> List Line
+disassembleHelper loadAddress offset remaining bytes comments labels dataRegions acc =
     if remaining <= 0 || offset >= Array.length bytes then
         List.reverse acc
 
     else
         let
             line =
-                disassembleLine loadAddress offset bytes comments dataRegions
+                disassembleLine loadAddress offset bytes comments labels dataRegions
 
             newOffset =
                 offset + List.length line.bytes
@@ -31,14 +31,14 @@ disassembleHelper loadAddress offset remaining bytes comments dataRegions acc =
             newRemaining =
                 remaining - 1
         in
-        disassembleHelper loadAddress newOffset newRemaining bytes comments dataRegions (line :: acc)
+        disassembleHelper loadAddress newOffset newRemaining bytes comments labels dataRegions (line :: acc)
 
 
 {-| Disassemble a single instruction at the given offset
 -}
-disassemble : Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> Line
-disassemble loadAddress offset bytes comments dataRegions =
-    disassembleLine loadAddress offset bytes comments dataRegions
+disassemble : Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List DataRegion -> Line
+disassemble loadAddress offset bytes comments labels dataRegions =
+    disassembleLine loadAddress offset bytes comments labels dataRegions
 
 
 {-| Check if an offset falls within any data region
@@ -48,29 +48,38 @@ isInDataRegion offset dataRegions =
     List.any (\r -> offset >= r.start && offset <= r.end) dataRegions
 
 
-disassembleLine : Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> Line
-disassembleLine loadAddress offset bytes comments dataRegions =
+disassembleLine : Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List DataRegion -> Line
+disassembleLine loadAddress offset bytes comments labels dataRegions =
+    let
+        address =
+            loadAddress + offset
+
+        labelAtAddr =
+            Dict.get address labels
+    in
     case Array.get offset bytes of
         Nothing ->
             { offset = offset
-            , address = loadAddress + offset
+            , address = address
             , bytes = []
             , disassembly = "; end of file"
             , comment = Dict.get offset comments
             , targetAddress = Nothing
             , isData = False
+            , label = labelAtAddr
             }
 
         Just byte ->
             if isInDataRegion offset dataRegions then
                 -- Render as data byte
                 { offset = offset
-                , address = loadAddress + offset
+                , address = address
                 , bytes = [ byte ]
                 , disassembly = ".byte " ++ formatByte byte
                 , comment = Dict.get offset comments
                 , targetAddress = Nothing
                 , isData = True
+                , label = labelAtAddr
                 }
 
             else
@@ -81,9 +90,6 @@ disassembleLine loadAddress offset bytes comments dataRegions =
 
                     instrBytes =
                         getInstructionBytes offset info.bytes bytes
-
-                    address =
-                        loadAddress + offset
 
                     operandValue =
                         getOperandValue instrBytes
@@ -104,6 +110,7 @@ disassembleLine loadAddress offset bytes comments dataRegions =
                 , comment = Dict.get offset comments
                 , targetAddress = targetAddr
                 , isData = False
+                , label = labelAtAddr
                 }
 
 

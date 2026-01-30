@@ -115,6 +115,10 @@ type Msg
     | UpdateEditComment String
     | SaveComment
     | CancelEditComment
+    | StartEditLabel Int
+    | UpdateEditLabel String
+    | SaveLabel
+    | CancelEditLabel
     | KeyPressed KeyEvent
     | ToggleHelp
     | SelectNextLine
@@ -268,8 +272,50 @@ update msg model =
         CancelEditComment ->
             ( { model | editingComment = Nothing }, Cmd.none )
 
+        StartEditLabel address ->
+            let
+                existingLabel =
+                    Dict.get address model.labels |> Maybe.withDefault ""
+            in
+            ( { model | editingLabel = Just ( address, existingLabel ) }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "label-input")
+            )
+
+        UpdateEditLabel text ->
+            case model.editingLabel of
+                Just ( address, _ ) ->
+                    ( { model | editingLabel = Just ( address, text ) }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        SaveLabel ->
+            case model.editingLabel of
+                Just ( address, text ) ->
+                    let
+                        newLabels =
+                            if String.isEmpty (String.trim text) then
+                                Dict.remove address model.labels
+
+                            else
+                                Dict.insert address (String.trim text) model.labels
+                    in
+                    ( { model
+                        | labels = newLabels
+                        , editingLabel = Nothing
+                        , dirty = True
+                      }
+                    , Cmd.none
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        CancelEditLabel ->
+            ( { model | editingLabel = Nothing }, Cmd.none )
+
         KeyPressed event ->
-            if model.editingComment /= Nothing then
+            if model.editingComment /= Nothing || model.editingLabel /= Nothing then
                 ( model, Cmd.none )
 
             else
@@ -296,6 +342,18 @@ update msg model =
                             Nothing ->
                                 ( model, Cmd.none )
 
+                    ":" ->
+                        case model.selectedOffset of
+                            Just offset ->
+                                let
+                                    address =
+                                        model.loadAddress + offset
+                                in
+                                update (StartEditLabel address) model
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
                     "s" ->
                         update SaveProject model
 
@@ -304,7 +362,7 @@ update msg model =
                             Just offset ->
                                 let
                                     line =
-                                        disassemble model.loadAddress offset model.bytes model.comments model.dataRegions
+                                        disassemble model.loadAddress offset model.bytes model.comments model.labels model.dataRegions
                                 in
                                 case line.targetAddress of
                                     Just addr ->
@@ -729,6 +787,7 @@ viewDisassembly model =
                 model.viewLines
                 model.bytes
                 model.comments
+                model.labels
                 model.dataRegions
     in
     div
@@ -736,7 +795,7 @@ viewDisassembly model =
         , onWheel Scroll
         ]
         [ viewDisassemblyHeader
-        , div [ class "lines" ] (List.map (viewLine model) lines)
+        , div [ class "lines" ] (List.concatMap (viewLineWithLabel model) lines)
         ]
 
 
@@ -806,13 +865,92 @@ viewLine model line =
         ]
         [ span [ class "col-address" ] [ text ("$" ++ toHex 4 line.address) ]
         , span [ class "col-bytes" ] [ text (formatBytes line.bytes) ]
-        , viewDisasm line
+        , viewDisasm line model.labels
         , viewComment model line
         ]
 
 
-viewDisasm : Line -> Html Msg
-viewDisasm line =
+{-| Render a line with its label (if any) above it
+-}
+viewLineWithLabel : Model -> Line -> List (Html Msg)
+viewLineWithLabel model line =
+    case ( line.label, model.editingLabel ) of
+        ( _, Just ( editAddr, editText ) ) ->
+            if editAddr == line.address then
+                -- Editing this label
+                [ viewLabelLineEditing editText line
+                , viewLine model line
+                ]
+
+            else
+                case line.label of
+                    Just labelText ->
+                        [ viewLabelLine labelText line
+                        , viewLine model line
+                        ]
+
+                    Nothing ->
+                        [ viewLine model line ]
+
+        ( Just labelText, Nothing ) ->
+            [ viewLabelLine labelText line
+            , viewLine model line
+            ]
+
+        ( Nothing, Nothing ) ->
+            [ viewLine model line ]
+
+
+viewLabelLine : String -> Line -> Html Msg
+viewLabelLine labelText line =
+    div
+        [ class "line label-line"
+        , onClick (SelectLine line.offset)
+        ]
+        [ span [ class "label-text" ] [ text (labelText ++ ":") ]
+        ]
+
+
+viewLabelLineEditing : String -> Line -> Html Msg
+viewLabelLineEditing currentText line =
+    div
+        [ class "line label-line editing" ]
+        [ input
+            [ type_ "text"
+            , value currentText
+            , onInput UpdateEditLabel
+            , onBlur SaveLabel
+            , onKeyDownLabel
+            , id "label-input"
+            , autofocus True
+            , placeholder "label name"
+            , class "label-input"
+            ]
+            []
+        , span [ class "label-colon" ] [ text ":" ]
+        ]
+
+
+onKeyDownLabel : Attribute Msg
+onKeyDownLabel =
+    Html.Events.on "keydown"
+        (JD.field "key" JD.string
+            |> JD.andThen
+                (\key ->
+                    if key == "Enter" then
+                        JD.succeed SaveLabel
+
+                    else if key == "Escape" then
+                        JD.succeed CancelEditLabel
+
+                    else
+                        JD.fail "not enter or escape"
+                )
+        )
+
+
+viewDisasm : Line -> Dict Int String -> Html Msg
+viewDisasm line labels =
     case line.targetAddress of
         Nothing ->
             span [ class "col-disasm" ] [ text line.disassembly ]
@@ -821,12 +959,21 @@ viewDisasm line =
             let
                 parts =
                     String.words line.disassembly
+
+                -- Use label if available, otherwise use the original operand
+                labelName =
+                    Dict.get addr labels
             in
             case parts of
                 mnemonic :: operandParts ->
                     let
                         operand =
-                            String.join " " operandParts
+                            case labelName of
+                                Just lbl ->
+                                    lbl
+
+                                Nothing ->
+                                    String.join " " operandParts
                     in
                     span [ class "col-disasm" ]
                         [ text (mnemonic ++ " ")
@@ -888,8 +1035,8 @@ viewFooter model =
                     [ div [ class "help-title" ] [ text "Editing" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Click" ], text "Select line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text ";" ], text "Edit comment" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Double-click" ], text "Edit comment" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save comment" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text ":" ], text "Edit label" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel / Clear mark" ]
                     ]
                 , div [ class "help-section" ]
@@ -913,7 +1060,7 @@ viewFooter model =
                 , text "↑↓: Navigate | "
                 , text "J: Jump | "
                 , text ";: Comment | "
-                , text "Ctrl+Space: Mark | "
+                , text ":: Label | "
                 , text "D: Data | "
                 , text "S: Save"
                 ]

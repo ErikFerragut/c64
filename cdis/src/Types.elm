@@ -23,6 +23,7 @@ type alias Model =
     , fileName : String
     , jumpToInput : String
     , editingComment : Maybe ( Int, String )
+    , editingLabel : Maybe ( Int, String ) -- (address, label text)
     , helpExpanded : Bool
     , dirty : Bool
     , mark : Maybe Int -- Emacs-style mark position (offset)
@@ -38,6 +39,7 @@ type alias Line =
     , comment : Maybe String
     , targetAddress : Maybe Int
     , isData : Bool
+    , label : Maybe String
     }
 
 
@@ -79,6 +81,7 @@ initModel =
     , fileName = ""
     , jumpToInput = ""
     , editingComment = Nothing
+    , editingLabel = Nothing
     , helpExpanded = False
     , dirty = False
     , mark = Nothing
