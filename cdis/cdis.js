@@ -12639,6 +12639,59 @@ var $author$project$Main$viewLineWithLabel = F2(
 					])));
 	});
 var $author$project$Main$viewDisassembly = function (model) {
+	var originLine = (!model.viewStart) ? _List_fromArray(
+		[
+			A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('line origin-line')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('col-address')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('')
+						])),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('col-bytes')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('')
+						])),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('col-disasm origin')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							'*= $' + A2($author$project$Main$toHex, 4, model.loadAddress))
+						])),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('col-comment')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('')
+						]))
+				]))
+		]) : _List_Nil;
 	var lines = A9($author$project$Disassembler$disassembleRange, model.loadAddress, model.viewStart, model.viewLines, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments);
 	return A2(
 		$elm$html$Html$div,
@@ -12657,10 +12710,12 @@ var $author$project$Main$viewDisassembly = function (model) {
 						$elm$html$Html$Attributes$class('lines'),
 						$elm$html$Html$Attributes$id('lines-container')
 					]),
-				A2(
-					$elm$core$List$concatMap,
-					$author$project$Main$viewLineWithLabel(model),
-					lines))
+				_Utils_ap(
+					originLine,
+					A2(
+						$elm$core$List$concatMap,
+						$author$project$Main$viewLineWithLabel(model),
+						lines)))
 			]));
 };
 var $author$project$Main$RequestFile = {$: 'RequestFile'};

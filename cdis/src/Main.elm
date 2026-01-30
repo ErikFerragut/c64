@@ -1773,13 +1773,25 @@ viewDisassembly model =
                 model.regions
                 model.segments
                 model.majorComments
+
+        originLine =
+            if model.viewStart == 0 then
+                [ div [ class "line origin-line" ]
+                    [ span [ class "col-address" ] [ text "" ]
+                    , span [ class "col-bytes" ] [ text "" ]
+                    , span [ class "col-disasm origin" ] [ text ("*= $" ++ toHex 4 model.loadAddress) ]
+                    , span [ class "col-comment" ] [ text "" ]
+                    ]
+                ]
+            else
+                []
     in
     div
         [ class "disassembly"
         , onWheel Scroll
         ]
         [ viewDisassemblyHeader
-        , div [ class "lines", id "lines-container" ] (List.concatMap (viewLineWithLabel model) lines)
+        , div [ class "lines", id "lines-container" ] (originLine ++ List.concatMap (viewLineWithLabel model) lines)
         ]
 
 
