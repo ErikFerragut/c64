@@ -3,6 +3,7 @@ port module Main exposing (main)
 import Array exposing (Array)
 import Browser
 import Browser.Dom as Dom
+import Browser.Events
 import Dict exposing (Dict)
 import Disassembler exposing (disassemble, disassembleRange)
 import Html exposing (..)
@@ -151,7 +152,9 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( initModel, Cmd.none )
+    ( initModel
+    , Task.perform GotViewport Dom.getViewport
+    )
 
 
 
@@ -201,10 +204,16 @@ type Msg
     | OutlineSelect
     | CancelOutline
     | RestartDisassembly
+    | JumpBack
+    | PageUp
+    | PageDown
     | RequestQuit
     | ConfirmQuit
     | CancelQuit
     | ExportAsm
+    | WindowResized Int Int
+    | GotViewport Dom.Viewport
+    | GotLinesElement (Result Dom.Error Dom.Element)
     | NoOp
 
 
@@ -255,7 +264,10 @@ update msg model =
                                     baseModel
                     in
                     ( ensureSelectionVisible finalModel
-                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                    , Cmd.batch
+                        [ Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                        , Task.attempt GotLinesElement (Dom.getElement "lines-container")
+                        ]
                     )
 
                 Err _ ->
@@ -325,9 +337,25 @@ update msg model =
             let
                 offset =
                     addr - model.loadAddress
+
+                -- Push current position to jump history before jumping
+                newHistory =
+                    case model.selectedOffset of
+                        Just currentOffset ->
+                            currentOffset :: model.jumpHistory |> List.take 50
+
+                        Nothing ->
+                            model.jumpHistory
             in
             if offset >= 0 && offset < Array.length model.bytes then
-                ( ensureSelectionVisible { model | viewStart = offset, selectedOffset = Just offset }, Cmd.none )
+                ( ensureSelectionVisible
+                    { model
+                        | viewStart = offset
+                        , selectedOffset = Just offset
+                        , jumpHistory = newHistory
+                    }
+                , Cmd.none
+                )
 
             else
                 ( model, Cmd.none )
@@ -611,6 +639,16 @@ update msg model =
 
                     "?" ->
                         update ToggleHelp model
+
+                    "J" ->
+                        -- Shift+J: jump back
+                        update JumpBack model
+
+                    "PageUp" ->
+                        update PageUp model
+
+                    "PageDown" ->
+                        update PageDown model
 
                     "ArrowDown" ->
                         update SelectNextLine model
@@ -980,6 +1018,56 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
+        JumpBack ->
+            case model.jumpHistory of
+                prevOffset :: rest ->
+                    ( ensureSelectionVisible
+                        { model
+                            | selectedOffset = Just prevOffset
+                            , viewStart = prevOffset
+                            , jumpHistory = rest
+                        }
+                    , Cmd.none
+                    )
+
+                [] ->
+                    ( model, Cmd.none )
+
+        PageUp ->
+            let
+                newViewStart =
+                    Basics.max 0 (model.viewStart - model.viewLines)
+
+                -- Find instruction boundary at new view start
+                ( instrStart, _ ) =
+                    findInstructionBoundaries model.bytes model.regions newViewStart
+            in
+            ( { model
+                | viewStart = instrStart
+                , selectedOffset = Just instrStart
+              }
+            , Cmd.none
+            )
+
+        PageDown ->
+            let
+                maxOffset =
+                    Array.length model.bytes - 1
+
+                newViewStart =
+                    Basics.min maxOffset (model.viewStart + model.viewLines)
+
+                -- Find instruction boundary at new view start
+                ( instrStart, _ ) =
+                    findInstructionBoundaries model.bytes model.regions newViewStart
+            in
+            ( { model
+                | viewStart = instrStart
+                , selectedOffset = Just instrStart
+              }
+            , Cmd.none
+            )
+
         RequestQuit ->
             if model.dirty then
                 -- Need confirmation
@@ -1005,6 +1093,34 @@ update msg model =
                         generateAsm model
                 in
                 ( model, exportAsmFile asmContent )
+
+        WindowResized _ _ ->
+            -- On resize, measure the lines container after a brief delay for layout
+            ( model, Task.attempt GotLinesElement (Dom.getElement "lines-container") )
+
+        GotViewport _ ->
+            -- After getting viewport, measure the lines container
+            ( model, Task.attempt GotLinesElement (Dom.getElement "lines-container") )
+
+        GotLinesElement result ->
+            case result of
+                Ok element ->
+                    let
+                        -- Each line is approximately 24px (14px font + padding)
+                        lineHeight =
+                            24
+
+                        availableHeight =
+                            element.element.height
+
+                        newViewLines =
+                            Basics.max 5 (floor availableHeight // lineHeight)
+                    in
+                    ( { model | viewLines = newViewLines }, Cmd.none )
+
+                Err _ ->
+                    -- Element not found (file not loaded yet), keep default
+                    ( model, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -1150,6 +1266,7 @@ subscriptions _ =
         [ prgFileOpened PrgFileOpened
         , cdisSaved (\_ -> CdisSaved)
         , showError ErrorOccurred
+        , Browser.Events.onResize WindowResized
         ]
 
 
@@ -1179,7 +1296,7 @@ onKeyDownPreventDefault =
                                 KeyPressed event
 
                             shouldPrevent =
-                                List.member event.key [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ]
+                                List.member event.key [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown" ]
                                     || (event.key == " " && event.ctrl)
                         in
                         ( msg, shouldPrevent )
@@ -1437,7 +1554,7 @@ viewDisassembly model =
         , onWheel Scroll
         ]
         [ viewDisassemblyHeader
-        , div [ class "lines" ] (List.concatMap (viewLineWithLabel model) lines)
+        , div [ class "lines", id "lines-container" ] (List.concatMap (viewLineWithLabel model) lines)
         ]
 
 
@@ -1603,17 +1720,22 @@ onKeyDownMajorComment =
     stopPropagationOn "keydown"
         (JD.map2 Tuple.pair
             (JD.field "key" JD.string)
-            (JD.field "ctrlKey" JD.bool)
+            (JD.field "shiftKey" JD.bool)
             |> JD.map
-                (\( key, ctrl ) ->
-                    if key == "Enter" && ctrl then
+                (\( key, shift ) ->
+                    if key == "Enter" && not shift then
+                        -- Enter (without Shift) saves
                         ( SaveMajorComment, True )
+
+                    else if key == "Enter" && shift then
+                        -- Shift+Enter inserts newline (don't prevent default)
+                        ( NoOp, False )
 
                     else if key == "Escape" then
                         ( CancelEditMajorComment, True )
 
                     else
-                        ( NoOp, True )
+                        ( NoOp, False )
                 )
         )
 
@@ -1812,11 +1934,11 @@ viewFooter model =
                 [ div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Navigation" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "↑ / ↓" ], text "Prev/Next line" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "PgUp / PgDn" ], text "Page up/down" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "G" ], text "Go to address" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+L" ], text "Center selected line" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "J" ], text "Jump to operand address" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "J / Shift+J" ], text "Jump to address / back" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "O" ], text "Outline (segment picker)" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+L" ], text "Center selected line" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Editing" ]

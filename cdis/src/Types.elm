@@ -48,6 +48,7 @@ type alias Model =
     , editingMajorComment : Maybe ( Int, String )
     , outlineMode : Bool
     , outlineSelection : Int -- Index in segment list
+    , jumpHistory : List Int -- Stack of offsets to jump back to
     }
 
 
@@ -117,4 +118,5 @@ initModel =
     , editingMajorComment = Nothing
     , outlineMode = False
     , outlineSelection = 0
+    , jumpHistory = []
     }
