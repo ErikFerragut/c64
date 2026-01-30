@@ -5247,6 +5247,7 @@ var $author$project$Main$ClickAddress = function (a) {
 var $author$project$Main$ConfirmQuit = {$: 'ConfirmQuit'};
 var $author$project$Main$EnterGotoMode = {$: 'EnterGotoMode'};
 var $author$project$Main$ExecuteGoto = {$: 'ExecuteGoto'};
+var $author$project$Main$ExportAsm = {$: 'ExportAsm'};
 var $author$project$Main$FocusResult = {$: 'FocusResult'};
 var $author$project$Main$MarkSelectionAsData = {$: 'MarkSelectionAsData'};
 var $author$project$Main$NoOp = {$: 'NoOp'};
@@ -6711,6 +6712,7 @@ var $author$project$Main$ensureSelectionVisible = function (model) {
 		return model;
 	}
 };
+var $author$project$Main$exportAsmFile = _Platform_outgoingPort('exportAsmFile', $elm$json$Json$Encode$string);
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -6738,6 +6740,202 @@ var $author$project$Project$fromModel = function (model) {
 		loadAddress: model.loadAddress,
 		version: $author$project$Project$currentVersion
 	};
+};
+var $author$project$Main$toHexHelper = F2(
+	function (n, acc) {
+		toHexHelper:
+		while (true) {
+			if ((!n) && (!$elm$core$String$isEmpty(acc))) {
+				return acc;
+			} else {
+				if (!n) {
+					return '0';
+				} else {
+					var digit = A2($elm$core$Basics$modBy, 16, n);
+					var _char = function () {
+						switch (digit) {
+							case 10:
+								return 'A';
+							case 11:
+								return 'B';
+							case 12:
+								return 'C';
+							case 13:
+								return 'D';
+							case 14:
+								return 'E';
+							case 15:
+								return 'F';
+							default:
+								return $elm$core$String$fromInt(digit);
+						}
+					}();
+					var $temp$n = (n / 16) | 0,
+						$temp$acc = _Utils_ap(_char, acc);
+					n = $temp$n;
+					acc = $temp$acc;
+					continue toHexHelper;
+				}
+			}
+		}
+	});
+var $author$project$Main$toHex = F2(
+	function (width, n) {
+		var hex = A2($author$project$Main$toHexHelper, n, '');
+		var padded = A3(
+			$elm$core$String$padLeft,
+			width,
+			_Utils_chr('0'),
+			hex);
+		return $elm$core$String$toUpper(padded);
+	});
+var $author$project$Main$generateOperand = F3(
+	function (model, offset, info) {
+		var labelOrHex = F2(
+			function (addr, width) {
+				var _v1 = A2($elm$core$Dict$get, addr, model.labels);
+				if (_v1.$ === 'Just') {
+					var labelName = _v1.a;
+					return labelName;
+				} else {
+					return '$' + A2($author$project$Main$toHex, width, addr);
+				}
+			});
+		var getByte = function (off) {
+			return A2(
+				$elm$core$Maybe$withDefault,
+				0,
+				A2($elm$core$Array$get, off, model.bytes));
+		};
+		var hi = getByte(offset + 2);
+		var lo = getByte(offset + 1);
+		var wordValue = (hi * 256) + lo;
+		var address = model.loadAddress + offset;
+		var relativeTarget = function () {
+			var signedOffset = (lo > 127) ? (lo - 256) : lo;
+			return (address + 2) + signedOffset;
+		}();
+		var _v0 = info.mode;
+		switch (_v0.$) {
+			case 'Implied':
+				return '';
+			case 'Accumulator':
+				return '';
+			case 'Immediate':
+				return '#$' + A2($author$project$Main$toHex, 2, lo);
+			case 'ZeroPage':
+				return A2(labelOrHex, lo, 2);
+			case 'ZeroPageX':
+				return A2(labelOrHex, lo, 2) + ',X';
+			case 'ZeroPageY':
+				return A2(labelOrHex, lo, 2) + ',Y';
+			case 'Absolute':
+				return A2(labelOrHex, wordValue, 4);
+			case 'AbsoluteX':
+				return A2(labelOrHex, wordValue, 4) + ',X';
+			case 'AbsoluteY':
+				return A2(labelOrHex, wordValue, 4) + ',Y';
+			case 'Indirect':
+				return '(' + (A2(labelOrHex, wordValue, 4) + ')');
+			case 'IndirectX':
+				return '(' + (A2(labelOrHex, lo, 2) + ',X)');
+			case 'IndirectY':
+				return '(' + (A2(labelOrHex, lo, 2) + '),Y');
+			default:
+				return A2(labelOrHex, relativeTarget, 4);
+		}
+	});
+var $author$project$Main$generateCodeLine = F2(
+	function (model, offset) {
+		var _v0 = A2($elm$core$Array$get, offset, model.bytes);
+		if (_v0.$ === 'Nothing') {
+			return _Utils_Tuple2('; end of file', 1);
+		} else {
+			var opcodeByte = _v0.a;
+			var info = $author$project$Opcodes$getOpcode(opcodeByte);
+			var mnemonic = info.undocumented ? ('*' + info.mnemonic) : info.mnemonic;
+			var operandStr = A3($author$project$Main$generateOperand, model, offset, info);
+			return $elm$core$String$isEmpty(operandStr) ? _Utils_Tuple2(mnemonic, info.bytes) : _Utils_Tuple2(mnemonic + (' ' + operandStr), info.bytes);
+		}
+	});
+var $author$project$Main$generateDataLine = F2(
+	function (model, offset) {
+		var _v0 = A2($elm$core$Array$get, offset, model.bytes);
+		if (_v0.$ === 'Just') {
+			var _byte = _v0.a;
+			return _Utils_Tuple2(
+				'.byte $' + A2($author$project$Main$toHex, 2, _byte),
+				1);
+		} else {
+			return _Utils_Tuple2('; end of file', 1);
+		}
+	});
+var $author$project$Main$generateAsmLines = F3(
+	function (model, offset, acc) {
+		generateAsmLines:
+		while (true) {
+			if (_Utils_cmp(
+				offset,
+				$elm$core$Array$length(model.bytes)) > -1) {
+				return $elm$core$List$reverse(acc);
+			} else {
+				var inDataRegion = A2(
+					$elm$core$List$any,
+					function (r) {
+						return (_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1);
+					},
+					model.dataRegions);
+				var commentText = function () {
+					var _v2 = A2($elm$core$Dict$get, offset, model.comments);
+					if (_v2.$ === 'Just') {
+						var cmt = _v2.a;
+						return ' ; ' + cmt;
+					} else {
+						return '';
+					}
+				}();
+				var address = model.loadAddress + offset;
+				var labelLine = function () {
+					var _v1 = A2($elm$core$Dict$get, address, model.labels);
+					if (_v1.$ === 'Just') {
+						var labelName = _v1.a;
+						return _List_fromArray(
+							[labelName + ':']);
+					} else {
+						return _List_Nil;
+					}
+				}();
+				var _v0 = inDataRegion ? A2($author$project$Main$generateDataLine, model, offset) : A2($author$project$Main$generateCodeLine, model, offset);
+				var lineText = _v0.a;
+				var bytesConsumed = _v0.b;
+				var fullLine = '    ' + (lineText + commentText);
+				var newAcc = _Utils_ap(
+					A2($elm$core$List$cons, fullLine, labelLine),
+					acc);
+				var $temp$model = model,
+					$temp$offset = offset + bytesConsumed,
+					$temp$acc = newAcc;
+				model = $temp$model;
+				offset = $temp$offset;
+				acc = $temp$acc;
+				continue generateAsmLines;
+			}
+		}
+	});
+var $author$project$Main$generateAsm = function (model) {
+	var header = _List_fromArray(
+		[
+			'; Disassembly of ' + model.fileName,
+			'; Generated by CDis',
+			'',
+			'* = $' + A2($author$project$Main$toHex, 4, model.loadAddress),
+			''
+		]);
+	var asmLines = A3($author$project$Main$generateAsmLines, model, 0, _List_Nil);
+	return A2(
+		$elm$core$String$join,
+		'\n',
+		_Utils_ap(header, asmLines));
 };
 var $elm$core$List$head = function (list) {
 	if (list.b) {
@@ -7741,6 +7939,12 @@ var $author$project$Main$update = F2(
 										msg = $temp$msg;
 										model = $temp$model;
 										continue update;
+									case 'a':
+										var $temp$msg = $author$project$Main$ExportAsm,
+											$temp$model = model;
+										msg = $temp$msg;
+										model = $temp$model;
+										continue update;
 									case 'q':
 										var $temp$msg = $author$project$Main$RequestQuit,
 											$temp$model = model;
@@ -8009,6 +8213,15 @@ var $author$project$Main$update = F2(
 							model,
 							{confirmQuit: false}),
 						$elm$core$Platform$Cmd$none);
+				case 'ExportAsm':
+					if ($elm$core$Array$isEmpty(model.bytes)) {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					} else {
+						var asmContent = $author$project$Main$generateAsm(model);
+						return _Utils_Tuple2(
+							model,
+							$author$project$Main$exportAsmFile(asmContent));
+					}
 				default:
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			}
@@ -8914,54 +9127,6 @@ var $author$project$Main$viewLabelLineEditing = F2(
 						]))
 				]));
 	});
-var $author$project$Main$toHexHelper = F2(
-	function (n, acc) {
-		toHexHelper:
-		while (true) {
-			if ((!n) && (!$elm$core$String$isEmpty(acc))) {
-				return acc;
-			} else {
-				if (!n) {
-					return '0';
-				} else {
-					var digit = A2($elm$core$Basics$modBy, 16, n);
-					var _char = function () {
-						switch (digit) {
-							case 10:
-								return 'A';
-							case 11:
-								return 'B';
-							case 12:
-								return 'C';
-							case 13:
-								return 'D';
-							case 14:
-								return 'E';
-							case 15:
-								return 'F';
-							default:
-								return $elm$core$String$fromInt(digit);
-						}
-					}();
-					var $temp$n = (n / 16) | 0,
-						$temp$acc = _Utils_ap(_char, acc);
-					n = $temp$n;
-					acc = $temp$acc;
-					continue toHexHelper;
-				}
-			}
-		}
-	});
-var $author$project$Main$toHex = F2(
-	function (width, n) {
-		var hex = A2($author$project$Main$toHexHelper, n, '');
-		var padded = A3(
-			$elm$core$String$padLeft,
-			width,
-			_Utils_chr('0'),
-			hex);
-		return $elm$core$String$toUpper(padded);
-	});
 var $author$project$Main$formatBytes = function (bytes) {
 	return A2(
 		$elm$core$String$join,
@@ -9806,6 +9971,26 @@ var $author$project$Main$viewFooter = function (model) {
 														]),
 													_List_fromArray(
 														[
+															$elm$html$Html$text('A')
+														])),
+													$elm$html$Html$text('Export as .asm')
+												])),
+											A2(
+											$elm$html$Html$div,
+											_List_fromArray(
+												[
+													$elm$html$Html$Attributes$class('help-row')
+												]),
+											_List_fromArray(
+												[
+													A2(
+													$elm$html$Html$span,
+													_List_fromArray(
+														[
+															$elm$html$Html$Attributes$class('key')
+														]),
+													_List_fromArray(
+														[
 															$elm$html$Html$text('?')
 														])),
 													$elm$html$Html$text('Toggle this help')
@@ -9834,7 +10019,8 @@ var $author$project$Main$viewFooter = function (model) {
 									$elm$html$Html$text(';/:: Comment/Label | '),
 									$elm$html$Html$text('D: Data | '),
 									$elm$html$Html$text('R: Restart | '),
-									$elm$html$Html$text('S: Save')
+									$elm$html$Html$text('S: Save | '),
+									$elm$html$Html$text('A: Asm')
 								]))
 						]));
 			}

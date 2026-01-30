@@ -594,6 +594,43 @@
             }
         });
 
+        // Export ASM file
+        app.ports.exportAsmFile.subscribe(async function(content) {
+            console.log('exportAsmFile called');
+            if (runningInTauri) {
+                try {
+                    // Use Tauri's dialog to pick save location
+                    const result = await invoke('plugin:dialog|save', {
+                        options: {
+                            filters: [{
+                                name: 'Assembly',
+                                extensions: ['asm']
+                            }],
+                            defaultPath: currentCdisPath ? currentCdisPath.replace('.cdis', '.asm') : 'output.asm'
+                        }
+                    });
+
+                    if (result) {
+                        // Write the file
+                        await invoke('save_cdis_file', { path: result, content: content });
+                        console.log('Exported ASM to:', result);
+                    }
+                } catch (e) {
+                    console.error('Error exporting ASM:', e);
+                    app.ports.showError.send('Failed to export: ' + e.message);
+                }
+            } else {
+                // Browser fallback - download
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'output.asm';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        });
+
         // Quit app
         app.ports.quitApp.subscribe(async function() {
             console.log('quitApp called');
