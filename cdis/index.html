@@ -262,6 +262,57 @@
             margin-left: 2px;
         }
 
+        /* Goto mode */
+        .cdis-footer.goto-mode {
+            background: var(--accent-color);
+        }
+
+        .cdis-footer .goto-prompt {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        .cdis-footer .goto-input {
+            color: var(--address-color);
+            font-weight: bold;
+        }
+
+        .cdis-footer .goto-cursor {
+            color: var(--address-color);
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .cdis-footer .goto-hint {
+            color: #666;
+        }
+
+        .cdis-footer.goto-error {
+            background: rgba(255, 50, 50, 0.3);
+        }
+
+        .cdis-footer .goto-error-msg {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        /* Quit confirmation */
+        .cdis-footer.quit-confirm {
+            background: rgba(255, 50, 50, 0.3);
+        }
+
+        .cdis-footer .quit-warning {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        .cdis-footer .quit-prompt {
+            color: var(--text-color);
+        }
+
         .col-address {
             width: 80px;
             color: var(--address-color);
@@ -492,6 +543,24 @@
             } else {
                 console.error('Cannot save: not in Tauri or no file path');
                 app.ports.showError.send('Cannot save: no file path set');
+            }
+        });
+
+        // Quit app
+        app.ports.quitApp.subscribe(async function() {
+            console.log('quitApp called');
+            if (runningInTauri) {
+                try {
+                    // Close the window
+                    const { getCurrentWindow } = window.__TAURI__.window;
+                    await getCurrentWindow().close();
+                } catch (e) {
+                    console.error('Error closing window:', e);
+                    // Fallback: try window.close()
+                    window.close();
+                }
+            } else {
+                window.close();
             }
         });
     </script>

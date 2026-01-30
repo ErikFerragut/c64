@@ -21,7 +21,10 @@ type alias Model =
     , selectedOffset : Maybe Int
     , restartPoints : Set Int
     , fileName : String
-    , jumpToInput : String
+    , gotoMode : Bool
+    , gotoInput : String
+    , gotoError : Bool
+    , confirmQuit : Bool
     , editingComment : Maybe ( Int, String )
     , editingLabel : Maybe ( Int, String ) -- (address, label text)
     , helpExpanded : Bool
@@ -79,7 +82,10 @@ initModel =
     , selectedOffset = Nothing
     , restartPoints = Set.empty
     , fileName = ""
-    , jumpToInput = ""
+    , gotoMode = False
+    , gotoInput = ""
+    , gotoError = False
+    , confirmQuit = False
     , editingComment = Nothing
     , editingLabel = Nothing
     , helpExpanded = False

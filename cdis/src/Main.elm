@@ -69,6 +69,9 @@ port cdisSaved : (() -> msg) -> Sub msg
 port showError : (String -> msg) -> Sub msg
 
 
+port quitApp : () -> Cmd msg
+
+
 type alias KeyEvent =
     { key : String
     , ctrl : Bool
@@ -108,8 +111,10 @@ type Msg
     = RequestFile
     | PrgFileOpened JE.Value
     | Scroll Int
-    | JumpToAddress
-    | JumpToInputChanged String
+    | EnterGotoMode
+    | UpdateGotoInput String
+    | ExecuteGoto
+    | CancelGoto
     | SelectLine Int
     | StartEditComment Int
     | UpdateEditComment String
@@ -132,6 +137,9 @@ type Msg
     | MarkSelectionAsData
     | ClearDataRegion Int
     | RestartDisassembly
+    | RequestQuit
+    | ConfirmQuit
+    | CancelQuit
     | NoOp
 
 
@@ -198,21 +206,55 @@ update msg model =
             in
             ( { model | viewStart = newStart }, Cmd.none )
 
-        JumpToAddress ->
-            case parseHex model.jumpToInput of
+        EnterGotoMode ->
+            ( { model | gotoMode = True, gotoInput = "" }, Cmd.none )
+
+        UpdateGotoInput str ->
+            -- Only allow hex characters
+            let
+                filtered =
+                    String.filter (\c -> Char.isHexDigit c) (String.toUpper str)
+            in
+            ( { model | gotoInput = String.left 4 filtered }, Cmd.none )
+
+        ExecuteGoto ->
+            case parseHex model.gotoInput of
                 Just addr ->
                     let
                         offset =
                             addr - model.loadAddress
                     in
                     if offset >= 0 && offset < Array.length model.bytes then
-                        ( { model | viewStart = offset, jumpToInput = "" }, Cmd.none )
+                        ( ensureSelectionVisible
+                            { model
+                                | viewStart = offset
+                                , selectedOffset = Just offset
+                                , gotoMode = False
+                                , gotoInput = ""
+                                , gotoError = False
+                            }
+                        , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                        )
 
                     else
-                        ( model, Cmd.none )
+                        -- Invalid address - show error
+                        ( { model | gotoError = True }, Cmd.none )
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    if String.isEmpty model.gotoInput then
+                        -- Empty input - just cancel
+                        ( { model | gotoMode = False, gotoInput = "", gotoError = False }
+                        , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                        )
+
+                    else
+                        -- Invalid input - show error
+                        ( { model | gotoError = True }, Cmd.none )
+
+        CancelGoto ->
+            ( { model | gotoMode = False, gotoInput = "", gotoError = False }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
 
         ClickAddress addr ->
             let
@@ -224,9 +266,6 @@ update msg model =
 
             else
                 ( model, Cmd.none )
-
-        JumpToInputChanged str ->
-            ( { model | jumpToInput = str }, Cmd.none )
 
         SelectLine offset ->
             ( ensureSelectionVisible { model | selectedOffset = Just offset }, Cmd.none )
@@ -323,6 +362,44 @@ update msg model =
             if model.editingComment /= Nothing || model.editingLabel /= Nothing then
                 ( model, Cmd.none )
 
+            else if model.gotoMode then
+                -- Handle goto mode input
+                case event.key of
+                    "Enter" ->
+                        update ExecuteGoto model
+
+                    "Escape" ->
+                        update CancelGoto model
+
+                    "Backspace" ->
+                        ( { model | gotoInput = String.dropRight 1 model.gotoInput, gotoError = False }, Cmd.none )
+
+                    key ->
+                        if String.length key == 1 && String.length model.gotoInput < 4 then
+                            let
+                                char =
+                                    String.toUpper key
+
+                                isHex =
+                                    String.all Char.isHexDigit char
+                            in
+                            if isHex then
+                                ( { model | gotoInput = model.gotoInput ++ char, gotoError = False }, Cmd.none )
+
+                            else
+                                ( model, Cmd.none )
+
+                        else
+                            ( model, Cmd.none )
+
+            else if model.confirmQuit then
+                -- In quit confirmation mode
+                if event.key == "q" then
+                    update ConfirmQuit model
+
+                else
+                    update CancelQuit model
+
             else
                 case event.key of
                     " " ->
@@ -331,6 +408,9 @@ update msg model =
 
                         else
                             ( model, Cmd.none )
+
+                    "g" ->
+                        update EnterGotoMode model
 
                     "l" ->
                         if event.ctrl then
@@ -361,6 +441,9 @@ update msg model =
 
                     "s" ->
                         update SaveProject model
+
+                    "q" ->
+                        update RequestQuit model
 
                     "j" ->
                         case model.selectedOffset of
@@ -580,6 +663,21 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
+        RequestQuit ->
+            if model.dirty then
+                -- Need confirmation
+                ( { model | confirmQuit = True }, Cmd.none )
+
+            else
+                -- No unsaved changes, quit immediately
+                ( model, quitApp () )
+
+        ConfirmQuit ->
+            ( model, quitApp () )
+
+        CancelQuit ->
+            ( { model | confirmQuit = False }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -635,12 +733,28 @@ ensureSelectionVisible model =
 
                 maxViewStart =
                     Basics.max 0 (Array.length model.bytes - model.viewLines)
+
+                -- Snap a raw offset to a valid instruction boundary
+                snapToInstructionStart rawOffset =
+                    let
+                        ( instrStart, _ ) =
+                            findInstructionBoundaries model.bytes model.dataRegions rawOffset
+                    in
+                    instrStart
             in
             if tooHigh then
-                { model | viewStart = Basics.max 0 (offset - margin) }
+                let
+                    rawStart =
+                        Basics.max 0 (offset - margin)
+                in
+                { model | viewStart = snapToInstructionStart rawStart }
 
             else if tooLow then
-                { model | viewStart = Basics.min maxViewStart (offset - model.viewLines + margin + 1) }
+                let
+                    rawStart =
+                        Basics.min maxViewStart (offset - model.viewLines + margin + 1)
+                in
+                { model | viewStart = snapToInstructionStart rawStart }
 
             else
                 model
@@ -794,22 +908,7 @@ viewHeader model =
 viewToolbar : Model -> Html Msg
 viewToolbar model =
     div [ class "toolbar" ]
-        [ label []
-            [ text "Go to: $"
-            , input
-                [ type_ "text"
-                , placeholder "0800"
-                , value model.jumpToInput
-                , onInput JumpToInputChanged
-                , onKeyDown JumpToAddress
-                , maxlength 4
-                , class "address-input"
-                ]
-                []
-            ]
-        , button [ onClick JumpToAddress ] [ text "Go" ]
-        , span [ class "separator" ] []
-        , span [ class "info" ]
+        [ span [ class "info" ]
             [ text ("Load: $" ++ toHex 4 model.loadAddress)
             , text (" | Size: " ++ String.fromInt (Array.length model.bytes) ++ " bytes")
             ]
@@ -1054,13 +1153,43 @@ viewCommentText maybeComment =
 
 viewFooter : Model -> Html Msg
 viewFooter model =
-    if model.helpExpanded then
+    if model.confirmQuit then
+        footer [ class "cdis-footer quit-confirm" ]
+            [ span [ class "quit-warning" ] [ text "Unsaved changes! " ]
+            , span [ class "quit-prompt" ] [ text "Press Q to quit, any other key to cancel" ]
+            ]
+
+    else if model.gotoMode then
+        let
+            footerClass =
+                if model.gotoError then
+                    "cdis-footer goto-mode goto-error"
+
+                else
+                    "cdis-footer goto-mode"
+
+            hint =
+                if model.gotoError then
+                    span [ class "goto-error-msg" ] [ text "  Address out of range!" ]
+
+                else
+                    span [ class "goto-hint" ] [ text "  (Enter to jump, Esc to cancel)" ]
+        in
+        footer [ class footerClass ]
+            [ span [ class "goto-prompt" ] [ text "GOTO: $" ]
+            , span [ class "goto-input" ] [ text model.gotoInput ]
+            , span [ class "goto-cursor" ] [ text "_" ]
+            , hint
+            ]
+
+    else if model.helpExpanded then
         footer [ class "cdis-footer expanded" ]
             [ div [ class "help-grid" ]
                 [ div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Navigation" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "↑ / ↓" ], text "Prev/Next line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "G" ], text "Go to address" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+L" ], text "Center selected line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "J" ], text "Jump to operand address" ]
                     ]
@@ -1092,6 +1221,7 @@ viewFooter model =
             [ span []
                 [ text "?: Help | "
                 , text "↑↓: Navigate | "
+                , text "G: Goto | "
                 , text "J: Jump | "
                 , text ";/:: Comment/Label | "
                 , text "D: Data | "
