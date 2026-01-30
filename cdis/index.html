@@ -207,8 +207,27 @@
         }
 
         .line.selected {
-            background: var(--accent-color);
             border-bottom: 1px solid var(--highlight-color);
+        }
+
+        .line.in-selection {
+            background: rgba(255, 200, 0, 0.2);  /* Yellow highlight for selection range */
+        }
+
+        .line.data-region {
+            background: rgba(100, 100, 255, 0.1);  /* Subtle blue tint */
+        }
+
+        .line.in-selection.data-region {
+            background: rgba(200, 180, 100, 0.25);  /* Combined yellow+blue */
+        }
+
+        /* Selected line always takes priority over other highlights */
+        .line.selected,
+        .line.selected.in-selection,
+        .line.selected.data-region,
+        .line.selected.in-selection.data-region {
+            background: var(--accent-color);
         }
 
         .col-address {
@@ -227,6 +246,15 @@
             width: 200px;
             color: var(--mnemonic-color);
             flex-shrink: 0;
+        }
+
+        .operand-link {
+            cursor: pointer;
+            color: var(--address-color);
+        }
+
+        .operand-link:hover {
+            text-decoration: underline;
         }
 
         .col-comment {

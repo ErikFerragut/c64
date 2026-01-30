@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Browser
 import Browser.Dom as Dom
 import Dict exposing (Dict)
-import Disassembler exposing (disassembleRange)
+import Disassembler exposing (disassemble, disassembleRange)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -14,6 +14,40 @@ import Opcodes exposing (opcodeBytes)
 import Project
 import Task
 import Types exposing (..)
+
+
+{-| Merge a new data region into the list, combining overlapping/adjacent regions
+-}
+mergeDataRegion : Types.DataRegion -> List Types.DataRegion -> List Types.DataRegion
+mergeDataRegion newRegion regions =
+    let
+        -- Check if two regions overlap or are adjacent (can be merged)
+        canMerge r1 r2 =
+            not (r1.end < r2.start - 1 || r2.end < r1.start - 1)
+
+        -- Merge two regions into one
+        merge r1 r2 =
+            { start = Basics.min r1.start r2.start
+            , end = Basics.max r1.end r2.end
+            }
+
+        -- Insert and merge the new region
+        insertAndMerge region acc =
+            case acc of
+                [] ->
+                    [ region ]
+
+                r :: rest ->
+                    if canMerge region r then
+                        insertAndMerge (merge region r) rest
+
+                    else
+                        region :: r :: rest
+    in
+    regions
+        |> List.sortBy .start
+        |> insertAndMerge newRegion
+        |> List.sortBy .start
 
 
 
@@ -89,6 +123,10 @@ type Msg
     | CdisSaved
     | ErrorOccurred String
     | FocusResult
+    | ClickAddress Int
+    | ToggleMark
+    | MarkSelectionAsData
+    | ClearDataRegion Int
     | NoOp
 
 
@@ -171,6 +209,17 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
+        ClickAddress addr ->
+            let
+                offset =
+                    addr - model.loadAddress
+            in
+            if offset >= 0 && offset < Array.length model.bytes then
+                ( ensureSelectionVisible { model | viewStart = offset, selectedOffset = Just offset }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
         JumpToInputChanged str ->
             ( { model | jumpToInput = str }, Cmd.none )
 
@@ -225,9 +274,17 @@ update msg model =
 
             else
                 case event.key of
+                    " " ->
+                        if event.ctrl then
+                            update ToggleMark model
+
+                        else
+                            ( model, Cmd.none )
+
                     "l" ->
                         if event.ctrl then
                             centerSelectedLine model
+
                         else
                             ( model, Cmd.none )
 
@@ -242,8 +299,40 @@ update msg model =
                     "s" ->
                         update SaveProject model
 
+                    "j" ->
+                        case model.selectedOffset of
+                            Just offset ->
+                                let
+                                    line =
+                                        disassemble model.loadAddress offset model.bytes model.comments model.dataRegions
+                                in
+                                case line.targetAddress of
+                                    Just addr ->
+                                        update (ClickAddress addr) model
+
+                                    Nothing ->
+                                        ( model, Cmd.none )
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                    "d" ->
+                        if event.shift then
+                            -- Shift+D: clear data region at cursor
+                            case model.selectedOffset of
+                                Just offset ->
+                                    update (ClearDataRegion offset) model
+
+                                Nothing ->
+                                    ( model, Cmd.none )
+
+                        else
+                            -- D: mark selection as data
+                            update MarkSelectionAsData model
+
                     "Escape" ->
-                        ( model, Cmd.none )
+                        -- Escape clears the mark
+                        ( { model | mark = Nothing }, Cmd.none )
 
                     "?" ->
                         update ToggleHelp model
@@ -264,10 +353,18 @@ update msg model =
             case model.selectedOffset of
                 Just offset ->
                     let
+                        -- In data region: move 1 byte; otherwise move by instruction length
+                        inDataRegion =
+                            List.any (\r -> offset >= r.start && offset <= r.end) model.dataRegions
+
                         instrLen =
-                            Array.get offset model.bytes
-                                |> Maybe.map opcodeBytes
-                                |> Maybe.withDefault 1
+                            if inDataRegion then
+                                1
+
+                            else
+                                Array.get offset model.bytes
+                                    |> Maybe.map opcodeBytes
+                                    |> Maybe.withDefault 1
 
                         newOffset =
                             offset + instrLen
@@ -291,8 +388,18 @@ update msg model =
                 Just offset ->
                     if offset > 0 then
                         let
+                            -- Find current instruction start and previous instruction start
+                            ( currentStart, prevStart ) =
+                                findInstructionBoundaries model.bytes model.dataRegions offset
+
+                            -- If we're in the middle of an instruction, go to its start
+                            -- Otherwise go to the previous instruction
                             newOffset =
-                                findPrevInstructionStart model.bytes (offset - 1)
+                                if currentStart < offset then
+                                    currentStart
+
+                                else
+                                    prevStart
                         in
                         ( ensureSelectionVisible { model | selectedOffset = Just newOffset }
                         , Cmd.none
@@ -325,6 +432,56 @@ update msg model =
         ErrorOccurred errorMsg ->
             -- For now just log to console via the port
             ( model, Cmd.none )
+
+        ToggleMark ->
+            case model.selectedOffset of
+                Just offset ->
+                    if model.mark == Just offset then
+                        -- Clear mark if setting at same position
+                        ( { model | mark = Nothing }, Cmd.none )
+
+                    else
+                        ( { model | mark = Just offset }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        MarkSelectionAsData ->
+            case ( model.mark, model.selectedOffset ) of
+                ( Just markOffset, Just cursorOffset ) ->
+                    let
+                        startOff =
+                            Basics.min markOffset cursorOffset
+
+                        endOff =
+                            Basics.max markOffset cursorOffset
+
+                        newRegion =
+                            { start = startOff, end = endOff }
+
+                        newRegions =
+                            mergeDataRegion newRegion model.dataRegions
+                    in
+                    ( { model
+                        | dataRegions = newRegions
+                        , mark = Nothing
+                        , dirty = True
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    -- No selection active
+                    ( model, Cmd.none )
+
+        ClearDataRegion offset ->
+            let
+                newRegions =
+                    List.filter
+                        (\r -> not (offset >= r.start && offset <= r.end))
+                        model.dataRegions
+            in
+            ( { model | dataRegions = newRegions, dirty = True }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -395,34 +552,43 @@ ensureSelectionVisible model =
             model
 
 
-findPrevInstructionStart : Array Int -> Int -> Int
-findPrevInstructionStart bytes targetOffset =
-    let
-        try1 =
-            targetOffset
+{-| Find the start of the instruction containing the given offset,
+    and the start of the previous instruction, by forward disassembly from 0.
+    Returns (currentInstrStart, prevInstrStart)
+-}
+findInstructionBoundaries : Array Int -> List Types.DataRegion -> Int -> ( Int, Int )
+findInstructionBoundaries bytes dataRegions targetOffset =
+    findInstructionBoundariesHelper bytes dataRegions 0 0 0 targetOffset
 
-        try2 =
-            targetOffset - 1
 
-        try3 =
-            targetOffset - 2
-
-        lenAt off =
-            Array.get off bytes
-                |> Maybe.map opcodeBytes
-                |> Maybe.withDefault 1
-    in
-    if try3 >= 0 && lenAt try3 == 3 then
-        try3
-
-    else if try2 >= 0 && lenAt try2 == 2 then
-        try2
-
-    else if try1 >= 0 then
-        try1
+findInstructionBoundariesHelper : Array Int -> List Types.DataRegion -> Int -> Int -> Int -> Int -> ( Int, Int )
+findInstructionBoundariesHelper bytes dataRegions offset prevStart prevPrevStart targetOffset =
+    if offset >= Array.length bytes then
+        ( prevStart, prevPrevStart )
 
     else
-        0
+        let
+            inDataRegion =
+                List.any (\r -> offset >= r.start && offset <= r.end) dataRegions
+
+            instrLen =
+                if inDataRegion then
+                    1
+
+                else
+                    Array.get offset bytes
+                        |> Maybe.map opcodeBytes
+                        |> Maybe.withDefault 1
+
+            nextOffset =
+                offset + instrLen
+        in
+        if nextOffset > targetOffset then
+            -- Current instruction contains or passes targetOffset
+            ( offset, prevStart )
+
+        else
+            findInstructionBoundariesHelper bytes dataRegions nextOffset offset prevStart targetOffset
 
 
 
@@ -452,19 +618,22 @@ onKeyDownPreventDefault : Attribute Msg
 onKeyDownPreventDefault =
     let
         decoder =
-            keyDecoder
+            JD.map4 KeyEvent
+                (JD.field "key" JD.string)
+                (JD.field "ctrlKey" JD.bool)
+                (JD.field "altKey" JD.bool)
+                (JD.field "shiftKey" JD.bool)
                 |> JD.map
-                    (\msg ->
-                        case msg of
-                            KeyPressed event ->
-                                if List.member event.key [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] then
-                                    ( msg, True )
+                    (\event ->
+                        let
+                            msg =
+                                KeyPressed event
 
-                                else
-                                    ( msg, False )
-
-                            _ ->
-                                ( msg, False )
+                            shouldPrevent =
+                                List.member event.key [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ]
+                                    || (event.key == " " && event.ctrl)
+                        in
+                        ( msg, shouldPrevent )
                     )
     in
     preventDefaultOn "keydown" decoder
@@ -560,6 +729,7 @@ viewDisassembly model =
                 model.viewLines
                 model.bytes
                 model.comments
+                model.dataRegions
     in
     div
         [ class "disassembly"
@@ -583,15 +753,51 @@ viewDisassemblyHeader =
 viewLine : Model -> Line -> Html Msg
 viewLine model line =
     let
+        -- Check if selectedOffset falls within this line's byte range
         isSelected =
-            model.selectedOffset == Just line.offset
+            case model.selectedOffset of
+                Just selOffset ->
+                    selOffset >= line.offset && selOffset < line.offset + List.length line.bytes
+
+                Nothing ->
+                    False
+
+        isInSelection =
+            case ( model.mark, model.selectedOffset ) of
+                ( Just markOffset, Just cursorOffset ) ->
+                    let
+                        selStart =
+                            Basics.min markOffset cursorOffset
+
+                        selEnd =
+                            Basics.max markOffset cursorOffset
+                    in
+                    line.offset >= selStart && line.offset <= selEnd
+
+                _ ->
+                    False
 
         lineClass =
-            if isSelected then
-                "line selected"
+            String.join " "
+                (List.filter ((/=) "")
+                    [ "line"
+                    , if isSelected then
+                        "selected"
 
-            else
-                "line"
+                      else
+                        ""
+                    , if isInSelection then
+                        "in-selection"
+
+                      else
+                        ""
+                    , if line.isData then
+                        "data-region"
+
+                      else
+                        ""
+                    ]
+                )
     in
     div
         [ class lineClass
@@ -600,9 +806,39 @@ viewLine model line =
         ]
         [ span [ class "col-address" ] [ text ("$" ++ toHex 4 line.address) ]
         , span [ class "col-bytes" ] [ text (formatBytes line.bytes) ]
-        , span [ class "col-disasm" ] [ text line.disassembly ]
+        , viewDisasm line
         , viewComment model line
         ]
+
+
+viewDisasm : Line -> Html Msg
+viewDisasm line =
+    case line.targetAddress of
+        Nothing ->
+            span [ class "col-disasm" ] [ text line.disassembly ]
+
+        Just addr ->
+            let
+                parts =
+                    String.words line.disassembly
+            in
+            case parts of
+                mnemonic :: operandParts ->
+                    let
+                        operand =
+                            String.join " " operandParts
+                    in
+                    span [ class "col-disasm" ]
+                        [ text (mnemonic ++ " ")
+                        , span
+                            [ class "operand-link"
+                            , stopPropagationOn "click" (JD.succeed ( ClickAddress addr, True ))
+                            ]
+                            [ text operand ]
+                        ]
+
+                _ ->
+                    span [ class "col-disasm" ] [ text line.disassembly ]
 
 
 viewComment : Model -> Line -> Html Msg
@@ -646,6 +882,7 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "↑ / ↓" ], text "Prev/Next line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+L" ], text "Center selected line" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "J" ], text "Jump to operand address" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Editing" ]
@@ -653,7 +890,13 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text ";" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Double-click" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save comment" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel / Clear mark" ]
+                    ]
+                , div [ class "help-section" ]
+                    [ div [ class "help-title" ] [ text "Data Regions" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+Space" ], text "Set/Clear mark" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "D" ], text "Mark selection as data" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Shift+D" ], text "Clear data region" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "File" ]
@@ -668,8 +911,10 @@ viewFooter model =
             [ span []
                 [ text "?: Help | "
                 , text "↑↓: Navigate | "
+                , text "J: Jump | "
                 , text ";: Comment | "
-                , text "Ctrl+L: Center | "
+                , text "Ctrl+Space: Mark | "
+                , text "D: Data | "
                 , text "S: Save"
                 ]
             ]

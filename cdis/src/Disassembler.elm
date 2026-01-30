@@ -4,26 +4,26 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Opcodes exposing (getOpcode, opcodeBytes)
 import Symbols exposing (getSymbol)
-import Types exposing (AddressingMode(..), Line, OpcodeInfo)
+import Types exposing (AddressingMode(..), DataRegion, Line, OpcodeInfo)
 
 
 {-| Disassemble a range of bytes starting at a given offset
     Returns a list of disassembled lines
 -}
-disassembleRange : Int -> Int -> Int -> Array Int -> Dict Int String -> List Line
-disassembleRange loadAddress startOffset count bytes comments =
-    disassembleHelper loadAddress startOffset count bytes comments []
+disassembleRange : Int -> Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> List Line
+disassembleRange loadAddress startOffset count bytes comments dataRegions =
+    disassembleHelper loadAddress startOffset count bytes comments dataRegions []
 
 
-disassembleHelper : Int -> Int -> Int -> Array Int -> Dict Int String -> List Line -> List Line
-disassembleHelper loadAddress offset remaining bytes comments acc =
+disassembleHelper : Int -> Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> List Line -> List Line
+disassembleHelper loadAddress offset remaining bytes comments dataRegions acc =
     if remaining <= 0 || offset >= Array.length bytes then
         List.reverse acc
 
     else
         let
             line =
-                disassembleLine loadAddress offset bytes comments
+                disassembleLine loadAddress offset bytes comments dataRegions
 
             newOffset =
                 offset + List.length line.bytes
@@ -31,18 +31,25 @@ disassembleHelper loadAddress offset remaining bytes comments acc =
             newRemaining =
                 remaining - 1
         in
-        disassembleHelper loadAddress newOffset newRemaining bytes comments (line :: acc)
+        disassembleHelper loadAddress newOffset newRemaining bytes comments dataRegions (line :: acc)
 
 
 {-| Disassemble a single instruction at the given offset
 -}
-disassemble : Int -> Int -> Array Int -> Dict Int String -> Line
-disassemble loadAddress offset bytes comments =
-    disassembleLine loadAddress offset bytes comments
+disassemble : Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> Line
+disassemble loadAddress offset bytes comments dataRegions =
+    disassembleLine loadAddress offset bytes comments dataRegions
 
 
-disassembleLine : Int -> Int -> Array Int -> Dict Int String -> Line
-disassembleLine loadAddress offset bytes comments =
+{-| Check if an offset falls within any data region
+-}
+isInDataRegion : Int -> List DataRegion -> Bool
+isInDataRegion offset dataRegions =
+    List.any (\r -> offset >= r.start && offset <= r.end) dataRegions
+
+
+disassembleLine : Int -> Int -> Array Int -> Dict Int String -> List DataRegion -> Line
+disassembleLine loadAddress offset bytes comments dataRegions =
     case Array.get offset bytes of
         Nothing ->
             { offset = offset
@@ -50,31 +57,54 @@ disassembleLine loadAddress offset bytes comments =
             , bytes = []
             , disassembly = "; end of file"
             , comment = Dict.get offset comments
+            , targetAddress = Nothing
+            , isData = False
             }
 
-        Just opcodeByte ->
-            let
-                info =
-                    getOpcode opcodeByte
+        Just byte ->
+            if isInDataRegion offset dataRegions then
+                -- Render as data byte
+                { offset = offset
+                , address = loadAddress + offset
+                , bytes = [ byte ]
+                , disassembly = ".byte " ++ formatByte byte
+                , comment = Dict.get offset comments
+                , targetAddress = Nothing
+                , isData = True
+                }
 
-                instrBytes =
-                    getInstructionBytes offset info.bytes bytes
+            else
+                -- Normal instruction disassembly
+                let
+                    info =
+                        getOpcode byte
 
-                address =
-                    loadAddress + offset
+                    instrBytes =
+                        getInstructionBytes offset info.bytes bytes
 
-                operandValue =
-                    getOperandValue instrBytes
+                    address =
+                        loadAddress + offset
 
-                disasm =
-                    formatInstruction info operandValue address
-            in
-            { offset = offset
-            , address = address
-            , bytes = instrBytes
-            , disassembly = disasm
-            , comment = Dict.get offset comments
-            }
+                    operandValue =
+                        getOperandValue instrBytes
+
+                    disasm =
+                        formatInstruction info operandValue address
+
+                    endAddress =
+                        loadAddress + Array.length bytes
+
+                    targetAddr =
+                        computeTargetAddress info.mode operandValue address loadAddress endAddress
+                in
+                { offset = offset
+                , address = address
+                , bytes = instrBytes
+                , disassembly = disasm
+                , comment = Dict.get offset comments
+                , targetAddress = targetAddr
+                , isData = False
+                }
 
 
 {-| Get the bytes for this instruction
@@ -178,6 +208,68 @@ formatOperand mode operand instrAddress =
                     instrAddress + 2 + signedOffset
             in
             formatWordWithSymbol target
+
+
+{-| Compute the target address for clickable operands
+    Only returns Just if the address is within the loaded program range
+-}
+computeTargetAddress : AddressingMode -> Int -> Int -> Int -> Int -> Maybe Int
+computeTargetAddress mode operand instrAddress loadAddress endAddress =
+    let
+        inRange addr =
+            if addr >= loadAddress && addr < endAddress then
+                Just addr
+
+            else
+                Nothing
+    in
+    case mode of
+        Implied ->
+            Nothing
+
+        Accumulator ->
+            Nothing
+
+        Immediate ->
+            Nothing
+
+        ZeroPage ->
+            inRange operand
+
+        ZeroPageX ->
+            inRange operand
+
+        ZeroPageY ->
+            inRange operand
+
+        Absolute ->
+            inRange operand
+
+        AbsoluteX ->
+            inRange operand
+
+        AbsoluteY ->
+            inRange operand
+
+        Indirect ->
+            inRange operand
+
+        IndirectX ->
+            inRange operand
+
+        IndirectY ->
+            inRange operand
+
+        Relative ->
+            let
+                signedOffset =
+                    if operand > 127 then
+                        operand - 256
+
+                    else
+                        operand
+            in
+            inRange (instrAddress + 2 + signedOffset)
 
 
 {-| Format a byte value as hex

@@ -5,6 +5,12 @@ import Dict exposing (Dict)
 import Set exposing (Set)
 
 
+type alias DataRegion =
+    { start : Int -- Byte offset
+    , end : Int -- Byte offset (inclusive)
+    }
+
+
 type alias Model =
     { bytes : Array Int
     , loadAddress : Int
@@ -19,6 +25,8 @@ type alias Model =
     , editingComment : Maybe ( Int, String )
     , helpExpanded : Bool
     , dirty : Bool
+    , mark : Maybe Int -- Emacs-style mark position (offset)
+    , dataRegions : List DataRegion
     }
 
 
@@ -28,6 +36,8 @@ type alias Line =
     , bytes : List Int
     , disassembly : String
     , comment : Maybe String
+    , targetAddress : Maybe Int
+    , isData : Bool
     }
 
 
@@ -71,4 +81,6 @@ initModel =
     , editingComment = Nothing
     , helpExpanded = False
     , dirty = False
+    , mark = Nothing
+    , dataRegions = []
     }
