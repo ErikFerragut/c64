@@ -11,12 +11,12 @@ import Array
 import Dict exposing (Dict)
 import Json.Decode as JD
 import Json.Encode as JE
-import Types exposing (DataRegion, Model, initModel)
+import Types exposing (Model, Region, RegionType(..), Segment, initModel)
 
 
 currentVersion : Int
 currentVersion =
-    3
+    4
 
 
 type alias SaveData =
@@ -25,7 +25,9 @@ type alias SaveData =
     , loadAddress : Int
     , comments : List ( Int, String )
     , labels : List ( Int, String )
-    , dataRegions : List { start : Int, end : Int }
+    , regions : List { start : Int, end : Int, regionType : String }
+    , segments : List { start : Int, end : Int }
+    , majorComments : List ( Int, String )
     }
 
 
@@ -41,15 +43,34 @@ encode data =
         , ( "loadAddress", JE.int data.loadAddress )
         , ( "comments", JE.list encodeComment data.comments )
         , ( "labels", JE.list encodeLabel data.labels )
-        , ( "dataRegions", JE.list encodeDataRegion data.dataRegions )
+        , ( "regions", JE.list encodeRegion data.regions )
+        , ( "segments", JE.list encodeSegment data.segments )
+        , ( "majorComments", JE.list encodeMajorComment data.majorComments )
         ]
 
 
-encodeDataRegion : { start : Int, end : Int } -> JE.Value
-encodeDataRegion region =
+encodeRegion : { start : Int, end : Int, regionType : String } -> JE.Value
+encodeRegion region =
     JE.object
         [ ( "start", JE.int region.start )
         , ( "end", JE.int region.end )
+        , ( "regionType", JE.string region.regionType )
+        ]
+
+
+encodeSegment : { start : Int, end : Int } -> JE.Value
+encodeSegment segment =
+    JE.object
+        [ ( "start", JE.int segment.start )
+        , ( "end", JE.int segment.end )
+        ]
+
+
+encodeMajorComment : ( Int, String ) -> JE.Value
+encodeMajorComment ( offset, text ) =
+    JE.object
+        [ ( "offset", JE.int offset )
+        , ( "text", JE.string text )
         ]
 
 
@@ -91,48 +112,93 @@ decoderForVersion version =
         3 ->
             decodeV3
 
+        4 ->
+            decodeV4
+
         _ ->
             JD.fail ("Unknown save file version: " ++ String.fromInt version)
 
 
 decodeV1 : JD.Decoder SaveData
 decodeV1 =
-    JD.map6 SaveData
+    JD.map8 SaveData
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
         (optionalField "comments" (JD.list decodeComment) [])
         (optionalField "labels" (JD.list decodeLabel) [])
+        (JD.succeed [])
+        (JD.succeed [])
         (JD.succeed [])
 
 
 decodeV2 : JD.Decoder SaveData
 decodeV2 =
-    JD.map6 SaveData
+    JD.map8 SaveData
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
         (optionalField "comments" (JD.list decodeComment) [])
         (optionalField "labels" (JD.list decodeLabel) [])
         (JD.succeed [])
+        (JD.succeed [])
+        (JD.succeed [])
 
 
 decodeV3 : JD.Decoder SaveData
 decodeV3 =
-    JD.map6 SaveData
+    -- Backward compat: convert dataRegions to regions with type "byte"
+    JD.map8 SaveData
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
         (optionalField "comments" (JD.list decodeComment) [])
         (optionalField "labels" (JD.list decodeLabel) [])
-        (optionalField "dataRegions" (JD.list decodeDataRegion) [])
+        (optionalField "dataRegions" (JD.list decodeDataRegionAsRegion) [])
+        (JD.succeed [])
+        (JD.succeed [])
 
 
-decodeDataRegion : JD.Decoder { start : Int, end : Int }
-decodeDataRegion =
+decodeV4 : JD.Decoder SaveData
+decodeV4 =
+    JD.map8 SaveData
+        (JD.succeed currentVersion)
+        (JD.field "fileName" JD.string)
+        (JD.field "loadAddress" JD.int)
+        (optionalField "comments" (JD.list decodeComment) [])
+        (optionalField "labels" (JD.list decodeLabel) [])
+        (optionalField "regions" (JD.list decodeRegion) [])
+        (optionalField "segments" (JD.list decodeSegment) [])
+        (optionalField "majorComments" (JD.list decodeMajorComment) [])
+
+
+decodeDataRegionAsRegion : JD.Decoder { start : Int, end : Int, regionType : String }
+decodeDataRegionAsRegion =
+    JD.map2 (\s e -> { start = s, end = e, regionType = "byte" })
+        (JD.field "start" JD.int)
+        (JD.field "end" JD.int)
+
+
+decodeRegion : JD.Decoder { start : Int, end : Int, regionType : String }
+decodeRegion =
+    JD.map3 (\s e t -> { start = s, end = e, regionType = t })
+        (JD.field "start" JD.int)
+        (JD.field "end" JD.int)
+        (JD.field "regionType" JD.string)
+
+
+decodeSegment : JD.Decoder { start : Int, end : Int }
+decodeSegment =
     JD.map2 (\s e -> { start = s, end = e })
         (JD.field "start" JD.int)
         (JD.field "end" JD.int)
+
+
+decodeMajorComment : JD.Decoder ( Int, String )
+decodeMajorComment =
+    JD.map2 Tuple.pair
+        (JD.field "offset" JD.int)
+        (JD.field "text" JD.string)
 
 
 decodeComment : JD.Decoder ( Int, String )
@@ -159,6 +225,26 @@ optionalField field dec default =
 -- CONVERT
 
 
+regionTypeToString : RegionType -> String
+regionTypeToString rt =
+    case rt of
+        ByteRegion ->
+            "byte"
+
+        TextRegion ->
+            "text"
+
+
+stringToRegionType : String -> RegionType
+stringToRegionType s =
+    case s of
+        "text" ->
+            TextRegion
+
+        _ ->
+            ByteRegion
+
+
 fromModel : Model -> SaveData
 fromModel model =
     { version = currentVersion
@@ -166,7 +252,17 @@ fromModel model =
     , loadAddress = model.loadAddress
     , comments = Dict.toList model.comments
     , labels = Dict.toList model.labels
-    , dataRegions = List.map (\r -> { start = r.start, end = r.end }) model.dataRegions
+    , regions =
+        List.map
+            (\r ->
+                { start = r.start
+                , end = r.end
+                , regionType = regionTypeToString r.regionType
+                }
+            )
+            model.regions
+    , segments = List.map (\s -> { start = s.start, end = s.end }) model.segments
+    , majorComments = Dict.toList model.majorComments
     }
 
 
@@ -177,5 +273,15 @@ toModel data model =
         , loadAddress = data.loadAddress
         , comments = Dict.fromList data.comments
         , labels = Dict.fromList data.labels
-        , dataRegions = List.map (\r -> { start = r.start, end = r.end }) data.dataRegions
+        , regions =
+            List.map
+                (\r ->
+                    { start = r.start
+                    , end = r.end
+                    , regionType = stringToRegionType r.regionType
+                    }
+                )
+                data.regions
+        , segments = List.map (\s -> { start = s.start, end = s.end }) data.segments
+        , majorComments = Dict.fromList data.majorComments
     }

@@ -5,9 +5,21 @@ import Dict exposing (Dict)
 import Set exposing (Set)
 
 
-type alias DataRegion =
+type RegionType
+    = ByteRegion -- .byte $XX
+    | TextRegion -- .text "ABC" (PETSCII)
+
+
+type alias Region =
     { start : Int -- Byte offset
     , end : Int -- Byte offset (inclusive)
+    , regionType : RegionType
+    }
+
+
+type alias Segment =
+    { start : Int
+    , end : Int
     }
 
 
@@ -30,7 +42,12 @@ type alias Model =
     , helpExpanded : Bool
     , dirty : Bool
     , mark : Maybe Int -- Emacs-style mark position (offset)
-    , dataRegions : List DataRegion
+    , regions : List Region
+    , segments : List Segment
+    , majorComments : Dict Int String -- offset -> multiline string
+    , editingMajorComment : Maybe ( Int, String )
+    , outlineMode : Bool
+    , outlineSelection : Int -- Index in segment list
     }
 
 
@@ -41,8 +58,11 @@ type alias Line =
     , disassembly : String
     , comment : Maybe String
     , targetAddress : Maybe Int
-    , isData : Bool
+    , isData : Bool -- For byte regions
+    , isText : Bool -- For text regions
     , label : Maybe String
+    , majorComment : Maybe String -- Major comment above this line
+    , inSegment : Bool -- Whether this line is in a segment
     }
 
 
@@ -91,5 +111,10 @@ initModel =
     , helpExpanded = False
     , dirty = False
     , mark = Nothing
-    , dataRegions = []
+    , regions = []
+    , segments = []
+    , majorComments = Dict.empty
+    , editingMajorComment = Nothing
+    , outlineMode = False
+    , outlineSelection = 0
     }

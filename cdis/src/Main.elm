@@ -16,19 +16,20 @@ import Task
 import Types exposing (..)
 
 
-{-| Merge a new data region into the list, combining overlapping/adjacent regions
+{-| Merge a new region into the list, combining overlapping/adjacent regions of the same type
 -}
-mergeDataRegion : Types.DataRegion -> List Types.DataRegion -> List Types.DataRegion
-mergeDataRegion newRegion regions =
+mergeRegion : Types.Region -> List Types.Region -> List Types.Region
+mergeRegion newRegion regions =
     let
-        -- Check if two regions overlap or are adjacent (can be merged)
+        -- Check if two regions can be merged (same type and overlapping/adjacent)
         canMerge r1 r2 =
-            not (r1.end < r2.start - 1 || r2.end < r1.start - 1)
+            r1.regionType == r2.regionType && not (r1.end < r2.start - 1 || r2.end < r1.start - 1)
 
         -- Merge two regions into one
         merge r1 r2 =
             { start = Basics.min r1.start r2.start
             , end = Basics.max r1.end r2.end
+            , regionType = r1.regionType
             }
 
         -- Insert and merge the new region
@@ -48,6 +49,52 @@ mergeDataRegion newRegion regions =
         |> List.sortBy .start
         |> insertAndMerge newRegion
         |> List.sortBy .start
+
+
+{-| Merge a new segment into the list, combining overlapping/adjacent segments
+-}
+mergeSegment : Types.Segment -> List Types.Segment -> List Types.Segment
+mergeSegment newSegment segments =
+    let
+        canMerge s1 s2 =
+            not (s1.end < s2.start - 1 || s2.end < s1.start - 1)
+
+        merge s1 s2 =
+            { start = Basics.min s1.start s2.start
+            , end = Basics.max s1.end s2.end
+            }
+
+        insertAndMerge segment acc =
+            case acc of
+                [] ->
+                    [ segment ]
+
+                s :: rest ->
+                    if canMerge segment s then
+                        insertAndMerge (merge segment s) rest
+
+                    else
+                        segment :: s :: rest
+    in
+    segments
+        |> List.sortBy .start
+        |> insertAndMerge newSegment
+        |> List.sortBy .start
+
+
+{-| Get segment name from major comment at segment start (first word) or default
+-}
+getSegmentName : Model -> Types.Segment -> String
+getSegmentName model segment =
+    case Dict.get segment.start model.majorComments of
+        Just comment ->
+            comment
+                |> String.words
+                |> List.head
+                |> Maybe.withDefault ("SEG_" ++ toHex 4 (model.loadAddress + segment.start))
+
+        Nothing ->
+            "SEG_" ++ toHex 4 (model.loadAddress + segment.start)
 
 
 
@@ -137,8 +184,21 @@ type Msg
     | FocusResult
     | ClickAddress Int
     | ToggleMark
-    | MarkSelectionAsData
-    | ClearDataRegion Int
+    | MarkSelectionAsBytes
+    | MarkSelectionAsText
+    | ClearByteRegion Int
+    | ClearTextRegion Int
+    | MarkSelectionAsSegment
+    | ClearSegment Int
+    | StartEditMajorComment Int
+    | UpdateEditMajorComment String
+    | SaveMajorComment
+    | CancelEditMajorComment
+    | EnterOutlineMode
+    | OutlineNext
+    | OutlinePrev
+    | OutlineSelect
+    | CancelOutline
     | RestartDisassembly
     | RequestQuit
     | ConfirmQuit
@@ -363,7 +423,7 @@ update msg model =
             )
 
         KeyPressed event ->
-            if model.editingComment /= Nothing || model.editingLabel /= Nothing then
+            if model.editingComment /= Nothing || model.editingLabel /= Nothing || model.editingMajorComment /= Nothing then
                 ( model, Cmd.none )
 
             else if model.gotoMode then
@@ -395,6 +455,24 @@ update msg model =
 
                         else
                             ( model, Cmd.none )
+
+            else if model.outlineMode then
+                -- Handle outline mode input
+                case event.key of
+                    "ArrowLeft" ->
+                        update OutlinePrev model
+
+                    "ArrowRight" ->
+                        update OutlineNext model
+
+                    "Enter" ->
+                        update OutlineSelect model
+
+                    "Escape" ->
+                        update CancelOutline model
+
+                    _ ->
+                        ( model, Cmd.none )
 
             else if model.confirmQuit then
                 -- In quit confirmation mode
@@ -443,8 +521,31 @@ update msg model =
                             Nothing ->
                                 ( model, Cmd.none )
 
+                    "\"" ->
+                        -- " key: edit major comment
+                        case model.selectedOffset of
+                            Just offset ->
+                                update (StartEditMajorComment offset) model
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
                     "s" ->
-                        update SaveProject model
+                        -- s: mark selection as segment
+                        update MarkSelectionAsSegment model
+
+                    "S" ->
+                        -- Shift+S: clear segment at cursor (or save if no segment)
+                        case model.selectedOffset of
+                            Just offset ->
+                                if List.any (\seg -> offset >= seg.start && offset <= seg.end) model.segments then
+                                    update (ClearSegment offset) model
+
+                                else
+                                    update SaveProject model
+
+                            Nothing ->
+                                update SaveProject model
 
                     "a" ->
                         update ExportAsm model
@@ -452,12 +553,16 @@ update msg model =
                     "q" ->
                         update RequestQuit model
 
+                    "o" ->
+                        -- o: open outline picker
+                        update EnterOutlineMode model
+
                     "j" ->
                         case model.selectedOffset of
                             Just offset ->
                                 let
                                     line =
-                                        disassemble model.loadAddress offset model.bytes model.comments model.labels model.dataRegions
+                                        disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
                                 in
                                 case line.targetAddress of
                                     Just addr ->
@@ -469,15 +574,28 @@ update msg model =
                             Nothing ->
                                 ( model, Cmd.none )
 
-                    "d" ->
-                        -- D: mark selection as data
-                        update MarkSelectionAsData model
+                    "b" ->
+                        -- b: mark selection as bytes
+                        update MarkSelectionAsBytes model
 
-                    "D" ->
-                        -- Shift+D: clear data region at cursor
+                    "B" ->
+                        -- Shift+B: clear byte region at cursor
                         case model.selectedOffset of
                             Just offset ->
-                                update (ClearDataRegion offset) model
+                                update (ClearByteRegion offset) model
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                    "t" ->
+                        -- t: mark selection as text
+                        update MarkSelectionAsText model
+
+                    "T" ->
+                        -- Shift+T: clear text region at cursor
+                        case model.selectedOffset of
+                            Just offset ->
+                                update (ClearTextRegion offset) model
 
                             Nothing ->
                                 ( model, Cmd.none )
@@ -509,18 +627,30 @@ update msg model =
             case model.selectedOffset of
                 Just offset ->
                     let
-                        -- In data region: move 1 byte; otherwise move by instruction length
-                        inDataRegion =
-                            List.any (\r -> offset >= r.start && offset <= r.end) model.dataRegions
+                        -- In byte region: move 1 byte
+                        -- In text region: move to end of text region + 1
+                        -- Otherwise: move by instruction length
+                        inByteRegion =
+                            List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+                        textRegion =
+                            List.filter (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+                                |> List.head
 
                         instrLen =
-                            if inDataRegion then
-                                1
+                            case textRegion of
+                                Just tr ->
+                                    -- Jump past entire text region
+                                    tr.end - offset + 1
 
-                            else
-                                Array.get offset model.bytes
-                                    |> Maybe.map opcodeBytes
-                                    |> Maybe.withDefault 1
+                                Nothing ->
+                                    if inByteRegion then
+                                        1
+
+                                    else
+                                        Array.get offset model.bytes
+                                            |> Maybe.map opcodeBytes
+                                            |> Maybe.withDefault 1
 
                         newOffset =
                             offset + instrLen
@@ -546,7 +676,7 @@ update msg model =
                         let
                             -- Find current instruction start and previous instruction start
                             ( currentStart, prevStart ) =
-                                findInstructionBoundaries model.bytes model.dataRegions offset
+                                findInstructionBoundaries model.bytes model.regions offset
 
                             -- If we're in the middle of an instruction, go to its start
                             -- Otherwise go to the previous instruction
@@ -602,7 +732,7 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        MarkSelectionAsData ->
+        MarkSelectionAsBytes ->
             case ( model.mark, model.selectedOffset ) of
                 ( Just markOffset, Just cursorOffset ) ->
                     let
@@ -613,13 +743,13 @@ update msg model =
                             Basics.max markOffset cursorOffset
 
                         newRegion =
-                            { start = startOff, end = endOff }
+                            { start = startOff, end = endOff, regionType = Types.ByteRegion }
 
                         newRegions =
-                            mergeDataRegion newRegion model.dataRegions
+                            mergeRegion newRegion model.regions
                     in
                     ( { model
-                        | dataRegions = newRegions
+                        | regions = newRegions
                         , mark = Nothing
                         , dirty = True
                       }
@@ -630,26 +760,205 @@ update msg model =
                     -- No selection active
                     ( model, Cmd.none )
 
-        ClearDataRegion offset ->
+        MarkSelectionAsText ->
+            case ( model.mark, model.selectedOffset ) of
+                ( Just markOffset, Just cursorOffset ) ->
+                    let
+                        startOff =
+                            Basics.min markOffset cursorOffset
+
+                        endOff =
+                            Basics.max markOffset cursorOffset
+
+                        newRegion =
+                            { start = startOff, end = endOff, regionType = Types.TextRegion }
+
+                        newRegions =
+                            mergeRegion newRegion model.regions
+                    in
+                    ( { model
+                        | regions = newRegions
+                        , mark = Nothing
+                        , dirty = True
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ClearByteRegion offset ->
             let
                 newRegions =
                     List.filter
-                        (\r -> not (offset >= r.start && offset <= r.end))
-                        model.dataRegions
+                        (\r -> not (r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end))
+                        model.regions
             in
-            ( { model | dataRegions = newRegions, dirty = True }, Cmd.none )
+            ( { model | regions = newRegions, dirty = True }, Cmd.none )
+
+        ClearTextRegion offset ->
+            let
+                newRegions =
+                    List.filter
+                        (\r -> not (r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end))
+                        model.regions
+            in
+            ( { model | regions = newRegions, dirty = True }, Cmd.none )
+
+        MarkSelectionAsSegment ->
+            case ( model.mark, model.selectedOffset ) of
+                ( Just markOffset, Just cursorOffset ) ->
+                    let
+                        startOff =
+                            Basics.min markOffset cursorOffset
+
+                        endOff =
+                            Basics.max markOffset cursorOffset
+
+                        newSegment =
+                            { start = startOff, end = endOff }
+
+                        newSegments =
+                            mergeSegment newSegment model.segments
+                    in
+                    ( { model
+                        | segments = newSegments
+                        , mark = Nothing
+                        , dirty = True
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ClearSegment offset ->
+            let
+                newSegments =
+                    List.filter
+                        (\s -> not (offset >= s.start && offset <= s.end))
+                        model.segments
+            in
+            ( { model | segments = newSegments, dirty = True }, Cmd.none )
+
+        StartEditMajorComment offset ->
+            let
+                existingComment =
+                    Dict.get offset model.majorComments |> Maybe.withDefault ""
+            in
+            ( { model | editingMajorComment = Just ( offset, existingComment ) }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "major-comment-input")
+            )
+
+        UpdateEditMajorComment text ->
+            case model.editingMajorComment of
+                Just ( offset, _ ) ->
+                    ( { model | editingMajorComment = Just ( offset, text ) }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        SaveMajorComment ->
+            case model.editingMajorComment of
+                Just ( offset, text ) ->
+                    let
+                        newMajorComments =
+                            if String.isEmpty (String.trim text) then
+                                Dict.remove offset model.majorComments
+
+                            else
+                                Dict.insert offset text model.majorComments
+                    in
+                    ( { model
+                        | majorComments = newMajorComments
+                        , editingMajorComment = Nothing
+                        , dirty = True
+                      }
+                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        CancelEditMajorComment ->
+            ( { model | editingMajorComment = Nothing }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
+
+        EnterOutlineMode ->
+            if List.isEmpty model.segments then
+                ( model, Cmd.none )
+
+            else
+                -- Find the segment containing current selection, or default to 0
+                let
+                    currentOffset =
+                        model.selectedOffset |> Maybe.withDefault 0
+
+                    segmentIndex =
+                        model.segments
+                            |> List.indexedMap Tuple.pair
+                            |> List.filter (\( _, s ) -> currentOffset >= s.start && currentOffset <= s.end)
+                            |> List.head
+                            |> Maybe.map Tuple.first
+                            |> Maybe.withDefault 0
+                in
+                ( { model | outlineMode = True, outlineSelection = segmentIndex }, Cmd.none )
+
+        OutlineNext ->
+            let
+                maxIdx =
+                    List.length model.segments - 1
+
+                newIdx =
+                    Basics.min maxIdx (model.outlineSelection + 1)
+            in
+            ( { model | outlineSelection = newIdx }, Cmd.none )
+
+        OutlinePrev ->
+            let
+                newIdx =
+                    Basics.max 0 (model.outlineSelection - 1)
+            in
+            ( { model | outlineSelection = newIdx }, Cmd.none )
+
+        OutlineSelect ->
+            let
+                maybeSegment =
+                    model.segments
+                        |> List.drop model.outlineSelection
+                        |> List.head
+            in
+            case maybeSegment of
+                Just segment ->
+                    ( ensureSelectionVisible
+                        { model
+                            | outlineMode = False
+                            , selectedOffset = Just segment.start
+                            , viewStart = segment.start
+                        }
+                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                    )
+
+                Nothing ->
+                    ( { model | outlineMode = False }, Cmd.none )
+
+        CancelOutline ->
+            ( { model | outlineMode = False }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
 
         RestartDisassembly ->
             case model.selectedOffset of
                 Just offset ->
                     if offset < Array.length model.bytes - 1 then
                         let
-                            -- Add single-byte data region at current offset
+                            -- Add single-byte byte region at current offset
                             newRegion =
-                                { start = offset, end = offset }
+                                { start = offset, end = offset, regionType = Types.ByteRegion }
 
                             newRegions =
-                                mergeDataRegion newRegion model.dataRegions
+                                mergeRegion newRegion model.regions
 
                             -- Move selection to next byte
                             newOffset =
@@ -657,7 +966,7 @@ update msg model =
                         in
                         ( ensureSelectionVisible
                             { model
-                                | dataRegions = newRegions
+                                | regions = newRegions
                                 , selectedOffset = Just newOffset
                                 , dirty = True
                             }
@@ -756,7 +1065,7 @@ ensureSelectionVisible model =
                 snapToInstructionStart rawOffset =
                     let
                         ( instrStart, _ ) =
-                            findInstructionBoundaries model.bytes model.dataRegions rawOffset
+                            findInstructionBoundaries model.bytes model.regions rawOffset
                     in
                     instrStart
             in
@@ -785,29 +1094,39 @@ ensureSelectionVisible model =
     and the start of the previous instruction, by forward disassembly from 0.
     Returns (currentInstrStart, prevInstrStart)
 -}
-findInstructionBoundaries : Array Int -> List Types.DataRegion -> Int -> ( Int, Int )
-findInstructionBoundaries bytes dataRegions targetOffset =
-    findInstructionBoundariesHelper bytes dataRegions 0 0 0 targetOffset
+findInstructionBoundaries : Array Int -> List Types.Region -> Int -> ( Int, Int )
+findInstructionBoundaries bytes regions targetOffset =
+    findInstructionBoundariesHelper bytes regions 0 0 0 targetOffset
 
 
-findInstructionBoundariesHelper : Array Int -> List Types.DataRegion -> Int -> Int -> Int -> Int -> ( Int, Int )
-findInstructionBoundariesHelper bytes dataRegions offset prevStart prevPrevStart targetOffset =
+findInstructionBoundariesHelper : Array Int -> List Types.Region -> Int -> Int -> Int -> Int -> ( Int, Int )
+findInstructionBoundariesHelper bytes regions offset prevStart prevPrevStart targetOffset =
     if offset >= Array.length bytes then
         ( prevStart, prevPrevStart )
 
     else
         let
-            inDataRegion =
-                List.any (\r -> offset >= r.start && offset <= r.end) dataRegions
+            inByteRegion =
+                List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) regions
+
+            textRegion =
+                List.filter (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) regions
+                    |> List.head
 
             instrLen =
-                if inDataRegion then
-                    1
+                case textRegion of
+                    Just tr ->
+                        -- Text region consumes all bytes at once
+                        tr.end - offset + 1
 
-                else
-                    Array.get offset bytes
-                        |> Maybe.map opcodeBytes
-                        |> Maybe.withDefault 1
+                    Nothing ->
+                        if inByteRegion then
+                            1
+
+                        else
+                            Array.get offset bytes
+                                |> Maybe.map opcodeBytes
+                                |> Maybe.withDefault 1
 
             nextOffset =
                 offset + instrLen
@@ -817,7 +1136,7 @@ findInstructionBoundariesHelper bytes dataRegions offset prevStart prevPrevStart
             ( offset, prevStart )
 
         else
-            findInstructionBoundariesHelper bytes dataRegions nextOffset offset prevStart targetOffset
+            findInstructionBoundariesHelper bytes regions nextOffset offset prevStart targetOffset
 
 
 
@@ -944,11 +1263,21 @@ viewCheatsheet model =
 
         Just offset ->
             let
-                -- Check if in data region
-                inDataRegion =
-                    List.any (\r -> offset >= r.start && offset <= r.end) model.dataRegions
+                -- Check if in byte or text region
+                inByteRegion =
+                    List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+                inTextRegion =
+                    List.any (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
             in
-            if inDataRegion then
+            if inTextRegion then
+                div [ class "cheatsheet" ]
+                    [ span [ class "cheatsheet-mnemonic" ] [ text ".text" ]
+                    , span [ class "cheatsheet-sep" ] [ text " | " ]
+                    , span [ class "cheatsheet-desc" ] [ text "Text data (PETSCII)" ]
+                    ]
+
+            else if inByteRegion then
                 div [ class "cheatsheet" ]
                     [ span [ class "cheatsheet-mnemonic" ] [ text ".byte" ]
                     , span [ class "cheatsheet-sep" ] [ text " | " ]
@@ -1012,7 +1341,9 @@ viewDisassembly model =
                 model.bytes
                 model.comments
                 model.labels
-                model.dataRegions
+                model.regions
+                model.segments
+                model.majorComments
     in
     div
         [ class "disassembly"
@@ -1073,6 +1404,16 @@ viewLine model line =
 
                       else
                         ""
+                    , if line.isText then
+                        "text-region"
+
+                      else
+                        ""
+                    , if line.inSegment then
+                        "in-segment"
+
+                      else
+                        ""
                     ]
                 )
     in
@@ -1088,35 +1429,106 @@ viewLine model line =
         ]
 
 
-{-| Render a line with its label (if any) above it
+{-| Render a line with its label (if any) above it, and major comment above label
 -}
 viewLineWithLabel : Model -> Line -> List (Html Msg)
 viewLineWithLabel model line =
-    case ( line.label, model.editingLabel ) of
-        ( _, Just ( editAddr, editText ) ) ->
-            if editAddr == line.address then
-                -- Editing this label
-                [ viewLabelLineEditing editText line
-                , viewLine model line
-                ]
+    let
+        majorCommentLines =
+            case model.editingMajorComment of
+                Just ( editOffset, editText ) ->
+                    if editOffset == line.offset then
+                        [ viewMajorCommentEditing editText line ]
 
-            else
-                case line.label of
-                    Just labelText ->
-                        [ viewLabelLine labelText line
-                        , viewLine model line
-                        ]
+                    else
+                        case line.majorComment of
+                            Just mc ->
+                                [ viewMajorCommentLine mc line ]
 
-                    Nothing ->
-                        [ viewLine model line ]
+                            Nothing ->
+                                []
 
-        ( Just labelText, Nothing ) ->
-            [ viewLabelLine labelText line
-            , viewLine model line
+                Nothing ->
+                    case line.majorComment of
+                        Just mc ->
+                            [ viewMajorCommentLine mc line ]
+
+                        Nothing ->
+                            []
+
+        labelLines =
+            case ( line.label, model.editingLabel ) of
+                ( _, Just ( editAddr, editText ) ) ->
+                    if editAddr == line.address then
+                        [ viewLabelLineEditing editText line ]
+
+                    else
+                        case line.label of
+                            Just labelText ->
+                                [ viewLabelLine labelText line ]
+
+                            Nothing ->
+                                []
+
+                ( Just labelText, Nothing ) ->
+                    [ viewLabelLine labelText line ]
+
+                ( Nothing, Nothing ) ->
+                    []
+    in
+    majorCommentLines ++ labelLines ++ [ viewLine model line ]
+
+
+viewMajorCommentLine : String -> Line -> Html Msg
+viewMajorCommentLine commentText line =
+    let
+        commentLines =
+            String.lines commentText
+    in
+    div
+        [ class "line major-comment-line"
+        , onClick (SelectLine line.offset)
+        ]
+        (List.map (\l -> div [ class "major-comment-text" ] [ text (";; " ++ l) ]) commentLines)
+
+
+viewMajorCommentEditing : String -> Line -> Html Msg
+viewMajorCommentEditing currentText line =
+    div
+        [ class "line major-comment-line editing" ]
+        [ textarea
+            [ value currentText
+            , onInput UpdateEditMajorComment
+            , onBlur SaveMajorComment
+            , onKeyDownMajorComment
+            , id "major-comment-input"
+            , autofocus True
+            , placeholder "Major comment (first word = segment name)"
+            , class "major-comment-input"
+            , rows 3
             ]
+            []
+        ]
 
-        ( Nothing, Nothing ) ->
-            [ viewLine model line ]
+
+onKeyDownMajorComment : Attribute Msg
+onKeyDownMajorComment =
+    stopPropagationOn "keydown"
+        (JD.map2 Tuple.pair
+            (JD.field "key" JD.string)
+            (JD.field "ctrlKey" JD.bool)
+            |> JD.map
+                (\( key, ctrl ) ->
+                    if key == "Enter" && ctrl then
+                        ( SaveMajorComment, True )
+
+                    else if key == "Escape" then
+                        ( CancelEditMajorComment, True )
+
+                    else
+                        ( NoOp, True )
+                )
+        )
 
 
 viewLabelLine : String -> Line -> Html Msg
@@ -1268,6 +1680,45 @@ viewFooter model =
             , hint
             ]
 
+    else if model.outlineMode then
+        let
+            segmentCount =
+                List.length model.segments
+
+            segmentItems =
+                model.segments
+                    |> List.indexedMap
+                        (\idx seg ->
+                            let
+                                segName =
+                                    getSegmentName model seg
+
+                                isSelected =
+                                    idx == model.outlineSelection
+
+                                itemClass =
+                                    if isSelected then
+                                        "outline-item selected"
+
+                                    else
+                                        "outline-item"
+                            in
+                            span [ class itemClass ] [ text segName ]
+                        )
+
+            separator =
+                span [ class "outline-sep" ] [ text " | " ]
+
+            itemsWithSeparators =
+                segmentItems
+                    |> List.intersperse separator
+        in
+        footer [ class "cdis-footer outline-mode" ]
+            ([ span [ class "outline-label" ] [ text "OUTLINE: " ] ]
+                ++ itemsWithSeparators
+                ++ [ span [ class "outline-hint" ] [ text "  (←→ navigate, Enter select, Esc cancel)" ] ]
+            )
+
     else if model.helpExpanded then
         footer [ class "cdis-footer expanded" ]
             [ div [ class "help-grid" ]
@@ -1278,27 +1729,34 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "G" ], text "Go to address" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+L" ], text "Center selected line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "J" ], text "Jump to operand address" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "O" ], text "Outline (segment picker)" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Editing" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Click" ], text "Select line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text ";" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text ":" ], text "Edit label" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "\"" ], text "Edit major comment" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save (Ctrl+Enter for major)" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel / Clear mark" ]
                     ]
                 , div [ class "help-section" ]
-                    [ div [ class "help-title" ] [ text "Data Regions" ]
+                    [ div [ class "help-title" ] [ text "Regions & Segments" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+Space" ], text "Set/Clear mark" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "D" ], text "Mark selection as data" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Shift+D" ], text "Clear data region" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "B / Shift+B" ], text "Mark/Clear bytes" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "T / Shift+T" ], text "Mark/Clear text" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "S / Shift+S" ], text "Mark/Clear segment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "R" ], text "Restart (peel byte)" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "File" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "S" ], text "Save project" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Shift+S" ], text "Save project" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "A" ], text "Export as .asm" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
+                    ]
+                , div [ class "help-section" ]
+                    [ div [ class "help-title" ] [ text "Credits" ]
+                    , div [ class "help-row" ] [ text "PETSCII font: Pet Me 64 by Kreative Software" ]
                     ]
                 ]
             ]
@@ -1310,10 +1768,10 @@ viewFooter model =
                 , text "↑↓: Navigate | "
                 , text "G: Goto | "
                 , text "J: Jump | "
-                , text ";/:: Comment/Label | "
-                , text "D: Data | "
-                , text "R: Restart | "
-                , text "S: Save | "
+                , text "O: Outline | "
+                , text ";/:/\": Comments | "
+                , text "B/T/S: Regions | "
+                , text "Shift+S: Save | "
                 , text "A: Asm"
                 ]
             ]
@@ -1355,6 +1813,30 @@ generateAsmLines model offset acc =
             address =
                 model.loadAddress + offset
 
+            -- Check if this is the start of a segment
+            segmentStartLine =
+                case List.filter (\s -> s.start == offset) model.segments of
+                    seg :: _ ->
+                        let
+                            segName =
+                                getSegmentName model seg
+                        in
+                        [ "", "; === " ++ segName ++ " ===" ]
+
+                    [] ->
+                        []
+
+            -- Check for major comment at this offset
+            majorCommentLines =
+                case Dict.get offset model.majorComments of
+                    Just mc ->
+                        mc
+                            |> String.lines
+                            |> List.map (\l -> ";; " ++ l)
+
+                    Nothing ->
+                        []
+
             -- Check for label at this address
             labelLine =
                 case Dict.get address model.labels of
@@ -1364,17 +1846,26 @@ generateAsmLines model offset acc =
                     Nothing ->
                         []
 
-            -- Check if in data region
-            inDataRegion =
-                List.any (\r -> offset >= r.start && offset <= r.end) model.dataRegions
+            -- Check region type
+            inByteRegion =
+                List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+            textRegion =
+                List.filter (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+                    |> List.head
 
             -- Generate the instruction or data line
             ( lineText, bytesConsumed ) =
-                if inDataRegion then
-                    generateDataLine model offset
+                case textRegion of
+                    Just tr ->
+                        generateTextLine model offset tr.end
 
-                else
-                    generateCodeLine model offset
+                    Nothing ->
+                        if inByteRegion then
+                            generateDataLine model offset
+
+                        else
+                            generateCodeLine model offset
 
             -- Check for comment
             commentText =
@@ -1389,7 +1880,7 @@ generateAsmLines model offset acc =
                 "    " ++ lineText ++ commentText
 
             newAcc =
-                (fullLine :: labelLine) ++ acc
+                (fullLine :: labelLine) ++ majorCommentLines ++ segmentStartLine ++ acc
         in
         generateAsmLines model (offset + bytesConsumed) newAcc
 
@@ -1404,6 +1895,39 @@ generateDataLine model offset =
 
         Nothing ->
             ( "; end of file", 1 )
+
+
+{-| Generate a text line (.text "...")
+-}
+generateTextLine : Model -> Int -> Int -> ( String, Int )
+generateTextLine model offset regionEnd =
+    let
+        -- Collect all bytes from offset to regionEnd
+        collectBytes off endOff accBytes =
+            if off > endOff then
+                List.reverse accBytes
+
+            else
+                case Array.get off model.bytes of
+                    Just b ->
+                        collectBytes (off + 1) endOff (b :: accBytes)
+
+                    Nothing ->
+                        List.reverse accBytes
+
+        textBytes =
+            collectBytes offset regionEnd []
+
+        -- Convert to PETSCII string
+        textStr =
+            textBytes
+                |> List.map Disassembler.toPetscii
+                |> String.fromList
+
+        bytesConsumed =
+            regionEnd - offset + 1
+    in
+    ( ".text \"" ++ textStr ++ "\"", bytesConsumed )
 
 
 {-| Generate a code line (instruction)

@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CDis - C64 Disassembler</title>
     <style>
+        /* Pet Me 64 font by Kreative Software - https://www.kreativekorp.com/software/fonts/c64/ */
+        @font-face {
+            font-family: 'PetMe64';
+            src: url('fonts/PetMe64.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         :root {
             --bg-color: #1a1a2e;
             --panel-bg: #16213e;
@@ -218,16 +226,59 @@
             background: rgba(100, 100, 255, 0.1);  /* Subtle blue tint */
         }
 
+        .line.text-region {
+            background: rgba(100, 200, 100, 0.1);  /* Subtle green tint */
+        }
+
+
+        .line.in-segment {
+            border-left: 2px solid #666;
+        }
+
         .line.in-selection.data-region {
             background: rgba(200, 180, 100, 0.25);  /* Combined yellow+blue */
+        }
+
+        .line.in-selection.text-region {
+            background: rgba(150, 200, 100, 0.25);  /* Combined yellow+green */
         }
 
         /* Selected line always takes priority over other highlights */
         .line.selected,
         .line.selected.in-selection,
         .line.selected.data-region,
-        .line.selected.in-selection.data-region {
+        .line.selected.text-region,
+        .line.selected.in-selection.data-region,
+        .line.selected.in-selection.text-region {
             background: var(--accent-color);
+        }
+
+        /* Major comment lines */
+        .line.major-comment-line {
+            padding: 4px 0 2px 0;
+            border-bottom: none;
+            flex-direction: column;
+        }
+
+        .line.major-comment-line .major-comment-text {
+            color: #888;
+            font-style: italic;
+        }
+
+        .line.major-comment-line.editing {
+            padding: 4px 0;
+        }
+
+        .line.major-comment-line .major-comment-input {
+            background: var(--bg-color);
+            border: 1px solid var(--highlight-color);
+            color: #888;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 14px;
+            font-style: italic;
+            width: 100%;
+            resize: vertical;
         }
 
         /* Label lines */
@@ -239,6 +290,8 @@
         .line.label-line .label-text {
             color: var(--highlight-color);
             font-weight: bold;
+            font-family: 'PetMe64', 'Consolas', monospace;
+            font-size: 12px;
         }
 
         .line.label-line.editing {
@@ -250,8 +303,8 @@
             border: 1px solid var(--highlight-color);
             color: var(--highlight-color);
             padding: 2px 6px;
-            font-family: inherit;
-            font-size: 14px;
+            font-family: 'PetMe64', 'Consolas', monospace;
+            font-size: 12px;
             font-weight: bold;
             width: 150px;
         }
@@ -259,6 +312,8 @@
         .line.label-line .label-colon {
             color: var(--highlight-color);
             font-weight: bold;
+            font-family: 'PetMe64', 'Consolas', monospace;
+            font-size: 12px;
             margin-left: 2px;
         }
 
@@ -297,6 +352,35 @@
         .cdis-footer .goto-error-msg {
             color: var(--highlight-color);
             font-weight: bold;
+        }
+
+        /* Outline mode */
+        .cdis-footer.outline-mode {
+            background: var(--accent-color);
+        }
+
+        .cdis-footer .outline-label {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        .cdis-footer .outline-item {
+            padding: 2px 8px;
+            color: #888;
+        }
+
+        .cdis-footer .outline-item.selected {
+            background: var(--highlight-color);
+            color: #fff;
+        }
+
+        .cdis-footer .outline-sep {
+            color: #444;
+        }
+
+        .cdis-footer .outline-hint {
+            color: #666;
+            margin-left: 10px;
         }
 
         /* Quit confirmation */
@@ -377,6 +461,8 @@
             width: 200px;
             color: var(--mnemonic-color);
             flex-shrink: 0;
+            font-family: 'PetMe64', 'Consolas', monospace;
+            font-size: 12px;
         }
 
         .operand-link {
