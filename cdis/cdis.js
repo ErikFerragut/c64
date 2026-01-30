@@ -6750,8 +6750,8 @@ var $author$project$Main$update = F2(
 						var _v11 = event.key;
 						switch (_v11) {
 							case 'l':
-								return $author$project$Main$centerSelectedLine(model);
-							case 'c':
+								return event.ctrl ? $author$project$Main$centerSelectedLine(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+							case ';':
 								var _v12 = model.selectedOffset;
 								if (_v12.$ === 'Just') {
 									var offset = _v12.a;
@@ -7933,7 +7933,7 @@ var $author$project$Main$viewFooter = function (model) {
 											]),
 										_List_fromArray(
 											[
-												$elm$html$Html$text('L')
+												$elm$html$Html$text('Ctrl+L')
 											])),
 										$elm$html$Html$text('Center selected line')
 									]))
@@ -7992,7 +7992,7 @@ var $author$project$Main$viewFooter = function (model) {
 											]),
 										_List_fromArray(
 											[
-												$elm$html$Html$text('C')
+												$elm$html$Html$text(';')
 											])),
 										$elm$html$Html$text('Edit comment')
 									])),
@@ -8132,8 +8132,8 @@ var $author$project$Main$viewFooter = function (model) {
 					[
 						$elm$html$Html$text('?: Help | '),
 						$elm$html$Html$text('↑↓: Navigate | '),
-						$elm$html$Html$text('C: Comment | '),
-						$elm$html$Html$text('L: Center | '),
+						$elm$html$Html$text(';: Comment | '),
+						$elm$html$Html$text('Ctrl+L: Center | '),
 						$elm$html$Html$text('S: Save')
 					]))
 			]));

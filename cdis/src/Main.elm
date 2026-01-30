@@ -226,9 +226,12 @@ update msg model =
             else
                 case event.key of
                     "l" ->
-                        centerSelectedLine model
+                        if event.ctrl then
+                            centerSelectedLine model
+                        else
+                            ( model, Cmd.none )
 
-                    "c" ->
+                    ";" ->
                         case model.selectedOffset of
                             Just offset ->
                                 update (StartEditComment offset) model
@@ -642,12 +645,12 @@ viewFooter model =
                     [ div [ class "help-title" ] [ text "Navigation" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "↑ / ↓" ], text "Prev/Next line" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Mouse wheel" ], text "Scroll" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "L" ], text "Center selected line" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+L" ], text "Center selected line" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "Editing" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Click" ], text "Select line" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "C" ], text "Edit comment" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text ";" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Double-click" ], text "Edit comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Save comment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Escape" ], text "Cancel" ]
@@ -665,8 +668,8 @@ viewFooter model =
             [ span []
                 [ text "?: Help | "
                 , text "↑↓: Navigate | "
-                , text "C: Comment | "
-                , text "L: Center | "
+                , text ";: Comment | "
+                , text "Ctrl+L: Center | "
                 , text "S: Save"
                 ]
             ]
