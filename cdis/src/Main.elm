@@ -131,6 +131,7 @@ type Msg
     | ToggleMark
     | MarkSelectionAsData
     | ClearDataRegion Int
+    | RestartDisassembly
     | NoOp
 
 
@@ -263,14 +264,16 @@ update msg model =
                         , editingComment = Nothing
                         , dirty = True
                       }
-                    , Cmd.none
+                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
                     )
 
                 Nothing ->
                     ( model, Cmd.none )
 
         CancelEditComment ->
-            ( { model | editingComment = Nothing }, Cmd.none )
+            ( { model | editingComment = Nothing }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
 
         StartEditLabel address ->
             let
@@ -305,14 +308,16 @@ update msg model =
                         , editingLabel = Nothing
                         , dirty = True
                       }
-                    , Cmd.none
+                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
                     )
 
                 Nothing ->
                     ( model, Cmd.none )
 
         CancelEditLabel ->
-            ( { model | editingLabel = Nothing }, Cmd.none )
+            ( { model | editingLabel = Nothing }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
 
         KeyPressed event ->
             if model.editingComment /= Nothing || model.editingLabel /= Nothing then
@@ -375,18 +380,21 @@ update msg model =
                                 ( model, Cmd.none )
 
                     "d" ->
-                        if event.shift then
-                            -- Shift+D: clear data region at cursor
-                            case model.selectedOffset of
-                                Just offset ->
-                                    update (ClearDataRegion offset) model
+                        -- D: mark selection as data
+                        update MarkSelectionAsData model
 
-                                Nothing ->
-                                    ( model, Cmd.none )
+                    "D" ->
+                        -- Shift+D: clear data region at cursor
+                        case model.selectedOffset of
+                            Just offset ->
+                                update (ClearDataRegion offset) model
 
-                        else
-                            -- D: mark selection as data
-                            update MarkSelectionAsData model
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                    "r" ->
+                        -- R: restart disassembly (peel off first byte as .byte)
+                        update RestartDisassembly model
 
                     "Escape" ->
                         -- Escape clears the mark
@@ -540,6 +548,37 @@ update msg model =
                         model.dataRegions
             in
             ( { model | dataRegions = newRegions, dirty = True }, Cmd.none )
+
+        RestartDisassembly ->
+            case model.selectedOffset of
+                Just offset ->
+                    if offset < Array.length model.bytes - 1 then
+                        let
+                            -- Add single-byte data region at current offset
+                            newRegion =
+                                { start = offset, end = offset }
+
+                            newRegions =
+                                mergeDataRegion newRegion model.dataRegions
+
+                            -- Move selection to next byte
+                            newOffset =
+                                offset + 1
+                        in
+                        ( ensureSelectionVisible
+                            { model
+                                | dataRegions = newRegions
+                                , selectedOffset = Just newOffset
+                                , dirty = True
+                            }
+                        , Cmd.none
+                        )
+
+                    else
+                        ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -812,14 +851,8 @@ viewDisassemblyHeader =
 viewLine : Model -> Line -> Html Msg
 viewLine model line =
     let
-        -- Check if selectedOffset falls within this line's byte range
         isSelected =
-            case model.selectedOffset of
-                Just selOffset ->
-                    selOffset >= line.offset && selOffset < line.offset + List.length line.bytes
-
-                Nothing ->
-                    False
+            model.selectedOffset == Just line.offset
 
         isInSelection =
             case ( model.mark, model.selectedOffset ) of
@@ -933,18 +966,18 @@ viewLabelLineEditing currentText line =
 
 onKeyDownLabel : Attribute Msg
 onKeyDownLabel =
-    Html.Events.on "keydown"
+    stopPropagationOn "keydown"
         (JD.field "key" JD.string
-            |> JD.andThen
+            |> JD.map
                 (\key ->
                     if key == "Enter" then
-                        JD.succeed SaveLabel
+                        ( SaveLabel, True )
 
                     else if key == "Escape" then
-                        JD.succeed CancelEditLabel
+                        ( CancelEditLabel, True )
 
                     else
-                        JD.fail "not enter or escape"
+                        ( NoOp, True )
                 )
         )
 
@@ -1044,6 +1077,7 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+Space" ], text "Set/Clear mark" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "D" ], text "Mark selection as data" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Shift+D" ], text "Clear data region" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "R" ], text "Restart (peel byte)" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "File" ]
@@ -1059,9 +1093,9 @@ viewFooter model =
                 [ text "?: Help | "
                 , text "↑↓: Navigate | "
                 , text "J: Jump | "
-                , text ";: Comment | "
-                , text ":: Label | "
+                , text ";/:: Comment/Label | "
                 , text "D: Data | "
+                , text "R: Restart | "
                 , text "S: Save"
                 ]
             ]
@@ -1252,17 +1286,17 @@ onKeyDown msg =
 
 onKeyDownComment : Attribute Msg
 onKeyDownComment =
-    Html.Events.on "keydown"
+    stopPropagationOn "keydown"
         (JD.field "key" JD.string
-            |> JD.andThen
+            |> JD.map
                 (\key ->
                     if key == "Enter" then
-                        JD.succeed SaveComment
+                        ( SaveComment, True )
 
                     else if key == "Escape" then
-                        JD.succeed CancelEditComment
+                        ( CancelEditComment, True )
 
                     else
-                        JD.fail "not enter or escape"
+                        ( NoOp, True )
                 )
         )

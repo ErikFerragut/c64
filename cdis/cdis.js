@@ -5245,6 +5245,7 @@ var $author$project$Main$ClickAddress = function (a) {
 var $author$project$Main$FocusResult = {$: 'FocusResult'};
 var $author$project$Main$MarkSelectionAsData = {$: 'MarkSelectionAsData'};
 var $author$project$Main$NoOp = {$: 'NoOp'};
+var $author$project$Main$RestartDisassembly = {$: 'RestartDisassembly'};
 var $author$project$Main$SaveProject = {$: 'SaveProject'};
 var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
 var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
@@ -7443,7 +7444,12 @@ var $author$project$Main$update = F2(
 							_Utils_update(
 								model,
 								{comments: newComments, dirty: true, editingComment: $elm$core$Maybe$Nothing}),
-							$elm$core$Platform$Cmd$none);
+							A2(
+								$elm$core$Task$attempt,
+								function (_v11) {
+									return $author$project$Main$FocusResult;
+								},
+								$elm$browser$Browser$Dom$focus('cdis-main')));
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
@@ -7452,7 +7458,12 @@ var $author$project$Main$update = F2(
 						_Utils_update(
 							model,
 							{editingComment: $elm$core$Maybe$Nothing}),
-						$elm$core$Platform$Cmd$none);
+						A2(
+							$elm$core$Task$attempt,
+							function (_v12) {
+								return $author$project$Main$FocusResult;
+							},
+							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'StartEditLabel':
 					var address = msg.a;
 					var existingLabel = A2(
@@ -7468,16 +7479,16 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v11) {
+							function (_v13) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('label-input')));
 				case 'UpdateEditLabel':
 					var text = msg.a;
-					var _v12 = model.editingLabel;
-					if (_v12.$ === 'Just') {
-						var _v13 = _v12.a;
-						var address = _v13.a;
+					var _v14 = model.editingLabel;
+					if (_v14.$ === 'Just') {
+						var _v15 = _v14.a;
+						var address = _v15.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7490,11 +7501,11 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveLabel':
-					var _v14 = model.editingLabel;
-					if (_v14.$ === 'Just') {
-						var _v15 = _v14.a;
-						var address = _v15.a;
-						var text = _v15.b;
+					var _v16 = model.editingLabel;
+					if (_v16.$ === 'Just') {
+						var _v17 = _v16.a;
+						var address = _v17.a;
+						var text = _v17.b;
 						var newLabels = $elm$core$String$isEmpty(
 							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, address, model.labels) : A3(
 							$elm$core$Dict$insert,
@@ -7505,7 +7516,12 @@ var $author$project$Main$update = F2(
 							_Utils_update(
 								model,
 								{dirty: true, editingLabel: $elm$core$Maybe$Nothing, labels: newLabels}),
-							$elm$core$Platform$Cmd$none);
+							A2(
+								$elm$core$Task$attempt,
+								function (_v18) {
+									return $author$project$Main$FocusResult;
+								},
+								$elm$browser$Browser$Dom$focus('cdis-main')));
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
@@ -7514,14 +7530,19 @@ var $author$project$Main$update = F2(
 						_Utils_update(
 							model,
 							{editingLabel: $elm$core$Maybe$Nothing}),
-						$elm$core$Platform$Cmd$none);
+						A2(
+							$elm$core$Task$attempt,
+							function (_v19) {
+								return $author$project$Main$FocusResult;
+							},
+							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'KeyPressed':
 					var event = msg.a;
 					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.editingLabel, $elm$core$Maybe$Nothing))) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var _v16 = event.key;
-						switch (_v16) {
+						var _v20 = event.key;
+						switch (_v20) {
 							case ' ':
 								if (event.ctrl) {
 									var $temp$msg = $author$project$Main$ToggleMark,
@@ -7535,9 +7556,9 @@ var $author$project$Main$update = F2(
 							case 'l':
 								return event.ctrl ? $author$project$Main$centerSelectedLine(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 							case ';':
-								var _v17 = model.selectedOffset;
-								if (_v17.$ === 'Just') {
-									var offset = _v17.a;
+								var _v21 = model.selectedOffset;
+								if (_v21.$ === 'Just') {
+									var offset = _v21.a;
 									var $temp$msg = $author$project$Main$StartEditComment(offset),
 										$temp$model = model;
 									msg = $temp$msg;
@@ -7547,9 +7568,9 @@ var $author$project$Main$update = F2(
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								}
 							case ':':
-								var _v18 = model.selectedOffset;
-								if (_v18.$ === 'Just') {
-									var offset = _v18.a;
+								var _v22 = model.selectedOffset;
+								if (_v22.$ === 'Just') {
+									var offset = _v22.a;
 									var address = model.loadAddress + offset;
 									var $temp$msg = $author$project$Main$StartEditLabel(address),
 										$temp$model = model;
@@ -7566,13 +7587,13 @@ var $author$project$Main$update = F2(
 								model = $temp$model;
 								continue update;
 							case 'j':
-								var _v19 = model.selectedOffset;
-								if (_v19.$ === 'Just') {
-									var offset = _v19.a;
+								var _v23 = model.selectedOffset;
+								if (_v23.$ === 'Just') {
+									var offset = _v23.a;
 									var line = A6($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.dataRegions);
-									var _v20 = line.targetAddress;
-									if (_v20.$ === 'Just') {
-										var addr = _v20.a;
+									var _v24 = line.targetAddress;
+									if (_v24.$ === 'Just') {
+										var addr = _v24.a;
 										var $temp$msg = $author$project$Main$ClickAddress(addr),
 											$temp$model = model;
 										msg = $temp$msg;
@@ -7585,25 +7606,29 @@ var $author$project$Main$update = F2(
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								}
 							case 'd':
-								if (event.shift) {
-									var _v21 = model.selectedOffset;
-									if (_v21.$ === 'Just') {
-										var offset = _v21.a;
-										var $temp$msg = $author$project$Main$ClearDataRegion(offset),
-											$temp$model = model;
-										msg = $temp$msg;
-										model = $temp$model;
-										continue update;
-									} else {
-										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-									}
-								} else {
-									var $temp$msg = $author$project$Main$MarkSelectionAsData,
+								var $temp$msg = $author$project$Main$MarkSelectionAsData,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case 'D':
+								var _v25 = model.selectedOffset;
+								if (_v25.$ === 'Just') {
+									var offset = _v25.a;
+									var $temp$msg = $author$project$Main$ClearDataRegion(offset),
 										$temp$model = model;
 									msg = $temp$msg;
 									model = $temp$model;
 									continue update;
+								} else {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								}
+							case 'r':
+								var $temp$msg = $author$project$Main$RestartDisassembly,
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
 							case 'Escape':
 								return _Utils_Tuple2(
 									_Utils_update(
@@ -7639,9 +7664,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v22 = model.selectedOffset;
-					if (_v22.$ === 'Just') {
-						var offset = _v22.a;
+					var _v26 = model.selectedOffset;
+					if (_v26.$ === 'Just') {
+						var offset = _v26.a;
 						var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 						var inDataRegion = A2(
 							$elm$core$List$any,
@@ -7676,13 +7701,13 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v23 = model.selectedOffset;
-					if (_v23.$ === 'Just') {
-						var offset = _v23.a;
+					var _v27 = model.selectedOffset;
+					if (_v27.$ === 'Just') {
+						var offset = _v27.a;
 						if (offset > 0) {
-							var _v24 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.dataRegions, offset);
-							var currentStart = _v24.a;
-							var prevStart = _v24.b;
+							var _v28 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.dataRegions, offset);
+							var currentStart = _v28.a;
+							var prevStart = _v28.b;
 							var newOffset = (_Utils_cmp(currentStart, offset) < 0) ? currentStart : prevStart;
 							return _Utils_Tuple2(
 								$author$project$Main$ensureSelectionVisible(
@@ -7728,9 +7753,9 @@ var $author$project$Main$update = F2(
 					var errorMsg = msg.a;
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				case 'ToggleMark':
-					var _v25 = model.selectedOffset;
-					if (_v25.$ === 'Just') {
-						var offset = _v25.a;
+					var _v29 = model.selectedOffset;
+					if (_v29.$ === 'Just') {
+						var offset = _v29.a;
 						return _Utils_eq(
 							model.mark,
 							$elm$core$Maybe$Just(offset)) ? _Utils_Tuple2(
@@ -7748,10 +7773,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'MarkSelectionAsData':
-					var _v26 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v26.a.$ === 'Just') && (_v26.b.$ === 'Just')) {
-						var markOffset = _v26.a.a;
-						var cursorOffset = _v26.b.a;
+					var _v30 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v30.a.$ === 'Just') && (_v30.b.$ === 'Just')) {
+						var markOffset = _v30.a.a;
+						var cursorOffset = _v30.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newRegion = {end: endOff, start: startOff};
@@ -7777,6 +7802,32 @@ var $author$project$Main$update = F2(
 							model,
 							{dataRegions: newRegions, dirty: true}),
 						$elm$core$Platform$Cmd$none);
+				case 'RestartDisassembly':
+					var _v31 = model.selectedOffset;
+					if (_v31.$ === 'Just') {
+						var offset = _v31.a;
+						if (_Utils_cmp(
+							offset,
+							$elm$core$Array$length(model.bytes) - 1) < 0) {
+							var newRegion = {end: offset, start: offset};
+							var newRegions = A2($author$project$Main$mergeDataRegion, newRegion, model.dataRegions);
+							var newOffset = offset + 1;
+							return _Utils_Tuple2(
+								$author$project$Main$ensureSelectionVisible(
+									_Utils_update(
+										model,
+										{
+											dataRegions: newRegions,
+											dirty: true,
+											selectedOffset: $elm$core$Maybe$Just(newOffset)
+										})),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				default:
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			}
@@ -8066,12 +8117,12 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 };
 var $author$project$Main$CancelEditLabel = {$: 'CancelEditLabel'};
 var $author$project$Main$onKeyDownLabel = A2(
-	$elm$html$Html$Events$on,
+	$elm$html$Html$Events$stopPropagationOn,
 	'keydown',
 	A2(
-		$elm$json$Json$Decode$andThen,
+		$elm$json$Json$Decode$map,
 		function (key) {
-			return (key === 'Enter') ? $elm$json$Json$Decode$succeed($author$project$Main$SaveLabel) : ((key === 'Escape') ? $elm$json$Json$Decode$succeed($author$project$Main$CancelEditLabel) : $elm$json$Json$Decode$fail('not enter or escape'));
+			return (key === 'Enter') ? _Utils_Tuple2($author$project$Main$SaveLabel, true) : ((key === 'Escape') ? _Utils_Tuple2($author$project$Main$CancelEditLabel, true) : _Utils_Tuple2($author$project$Main$NoOp, true));
 		},
 		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
@@ -8183,12 +8234,12 @@ var $author$project$Main$UpdateEditComment = function (a) {
 };
 var $author$project$Main$CancelEditComment = {$: 'CancelEditComment'};
 var $author$project$Main$onKeyDownComment = A2(
-	$elm$html$Html$Events$on,
+	$elm$html$Html$Events$stopPropagationOn,
 	'keydown',
 	A2(
-		$elm$json$Json$Decode$andThen,
+		$elm$json$Json$Decode$map,
 		function (key) {
-			return (key === 'Enter') ? $elm$json$Json$Decode$succeed($author$project$Main$SaveComment) : ((key === 'Escape') ? $elm$json$Json$Decode$succeed($author$project$Main$CancelEditComment) : $elm$json$Json$Decode$fail('not enter or escape'));
+			return (key === 'Enter') ? _Utils_Tuple2($author$project$Main$SaveComment, true) : ((key === 'Escape') ? _Utils_Tuple2($author$project$Main$CancelEditComment, true) : _Utils_Tuple2($author$project$Main$NoOp, true));
 		},
 		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 var $author$project$Main$viewCommentText = function (maybeComment) {
@@ -8318,17 +8369,9 @@ var $author$project$Main$viewDisasm = F2(
 	});
 var $author$project$Main$viewLine = F2(
 	function (model, line) {
-		var isSelected = function () {
-			var _v1 = model.selectedOffset;
-			if (_v1.$ === 'Just') {
-				var selOffset = _v1.a;
-				return (_Utils_cmp(selOffset, line.offset) > -1) && (_Utils_cmp(
-					selOffset,
-					line.offset + $elm$core$List$length(line.bytes)) < 0);
-			} else {
-				return false;
-			}
-		}();
+		var isSelected = _Utils_eq(
+			model.selectedOffset,
+			$elm$core$Maybe$Just(line.offset));
 		var isInSelection = function () {
 			var _v0 = _Utils_Tuple2(model.mark, model.selectedOffset);
 			if ((_v0.a.$ === 'Just') && (_v0.b.$ === 'Just')) {
@@ -8824,6 +8867,26 @@ var $author$project$Main$viewFooter = function (model) {
 												$elm$html$Html$text('Shift+D')
 											])),
 										$elm$html$Html$text('Clear data region')
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('help-row')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('key')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('R')
+											])),
+										$elm$html$Html$text('Restart (peel byte)')
 									]))
 							])),
 						A2(
@@ -8902,9 +8965,9 @@ var $author$project$Main$viewFooter = function (model) {
 						$elm$html$Html$text('?: Help | '),
 						$elm$html$Html$text('↑↓: Navigate | '),
 						$elm$html$Html$text('J: Jump | '),
-						$elm$html$Html$text(';: Comment | '),
-						$elm$html$Html$text(':: Label | '),
+						$elm$html$Html$text(';/:: Comment/Label | '),
 						$elm$html$Html$text('D: Data | '),
+						$elm$html$Html$text('R: Restart | '),
 						$elm$html$Html$text('S: Save')
 					]))
 			]));
