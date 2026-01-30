@@ -49,6 +49,7 @@ type alias Model =
     , outlineMode : Bool
     , outlineSelection : Int -- Index in segment list
     , jumpHistory : List Int -- Stack of offsets to jump back to
+    , patches : Dict Int Int -- offset -> new byte value (for persistence)
     }
 
 
@@ -119,4 +120,5 @@ initModel =
     , outlineMode = False
     , outlineSelection = 0
     , jumpHistory = []
+    , patches = Dict.empty
     }

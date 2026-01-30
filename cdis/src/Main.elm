@@ -207,6 +207,7 @@ type Msg
     | JumpBack
     | PageUp
     | PageDown
+    | NopCurrentByte
     | RequestQuit
     | ConfirmQuit
     | CancelQuit
@@ -656,6 +657,9 @@ update msg model =
                     "ArrowUp" ->
                         update SelectPrevLine model
 
+                    "n" ->
+                        update NopCurrentByte model
+
                     _ ->
                         ( model, Cmd.none )
 
@@ -1067,6 +1071,77 @@ update msg model =
               }
             , Cmd.none
             )
+
+        NopCurrentByte ->
+            case model.selectedOffset of
+                Just offset ->
+                    case Array.get offset model.bytes of
+                        Just currentByte ->
+                            let
+                                -- Get the instruction length before we NOP it
+                                inByteRegion =
+                                    List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+                                inTextRegion =
+                                    List.any (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+
+                                instrLen =
+                                    if inByteRegion || inTextRegion then
+                                        1
+                                    else
+                                        opcodeBytes currentByte
+
+                                -- Replace the byte with NOP ($EA = 234)
+                                newBytes =
+                                    Array.set offset 234 model.bytes
+
+                                -- Record the patch for persistence
+                                newPatches =
+                                    Dict.insert offset 234 model.patches
+
+                                -- If instruction was multi-byte, add remaining bytes as byte regions
+                                newRegions =
+                                    if instrLen > 1 && not inByteRegion && not inTextRegion then
+                                        let
+                                            leftoverStart =
+                                                offset + 1
+
+                                            leftoverEnd =
+                                                offset + instrLen - 1
+
+                                            leftoverRegion =
+                                                { start = leftoverStart
+                                                , end = leftoverEnd
+                                                , regionType = Types.ByteRegion
+                                                }
+                                        in
+                                        mergeRegion leftoverRegion model.regions
+                                    else
+                                        model.regions
+
+                                -- Advance cursor by 1
+                                newOffset =
+                                    if offset + 1 < Array.length model.bytes then
+                                        offset + 1
+                                    else
+                                        offset
+                            in
+                            ( ensureSelectionVisible
+                                { model
+                                    | bytes = newBytes
+                                    , patches = newPatches
+                                    , regions = newRegions
+                                    , selectedOffset = Just newOffset
+                                    , dirty = True
+                                }
+                            , Cmd.none
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         RequestQuit ->
             if model.dirty then
@@ -1956,6 +2031,7 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "T / Shift+T" ], text "Mark/Clear text" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "S / Shift+S" ], text "Mark/Clear segment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "R" ], text "Restart (peel byte)" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "N" ], text "NOP current byte" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "File" ]

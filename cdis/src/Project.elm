@@ -16,7 +16,7 @@ import Types exposing (Model, Region, RegionType(..), Segment, initModel)
 
 currentVersion : Int
 currentVersion =
-    4
+    5
 
 
 type alias SaveData =
@@ -28,6 +28,7 @@ type alias SaveData =
     , regions : List { start : Int, end : Int, regionType : String }
     , segments : List { start : Int, end : Int }
     , majorComments : List ( Int, String )
+    , patches : List ( Int, Int ) -- (offset, newByte) for byte modifications
     }
 
 
@@ -46,6 +47,15 @@ encode data =
         , ( "regions", JE.list encodeRegion data.regions )
         , ( "segments", JE.list encodeSegment data.segments )
         , ( "majorComments", JE.list encodeMajorComment data.majorComments )
+        , ( "patches", JE.list encodePatch data.patches )
+        ]
+
+
+encodePatch : ( Int, Int ) -> JE.Value
+encodePatch ( offset, byte ) =
+    JE.object
+        [ ( "offset", JE.int offset )
+        , ( "byte", JE.int byte )
         ]
 
 
@@ -115,13 +125,16 @@ decoderForVersion version =
         4 ->
             decodeV4
 
+        5 ->
+            decodeV5
+
         _ ->
             JD.fail ("Unknown save file version: " ++ String.fromInt version)
 
 
 decodeV1 : JD.Decoder SaveData
 decodeV1 =
-    JD.map8 SaveData
+    JD.map8 toSaveDataWithPatches
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
@@ -132,9 +145,23 @@ decodeV1 =
         (JD.succeed [])
 
 
+toSaveDataWithPatches : Int -> String -> Int -> List ( Int, String ) -> List ( Int, String ) -> List { start : Int, end : Int, regionType : String } -> List { start : Int, end : Int } -> List ( Int, String ) -> SaveData
+toSaveDataWithPatches version fileName loadAddress comments labels regions segments majorComments =
+    { version = version
+    , fileName = fileName
+    , loadAddress = loadAddress
+    , comments = comments
+    , labels = labels
+    , regions = regions
+    , segments = segments
+    , majorComments = majorComments
+    , patches = []
+    }
+
+
 decodeV2 : JD.Decoder SaveData
 decodeV2 =
-    JD.map8 SaveData
+    JD.map8 toSaveDataWithPatches
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
@@ -148,7 +175,7 @@ decodeV2 =
 decodeV3 : JD.Decoder SaveData
 decodeV3 =
     -- Backward compat: convert dataRegions to regions with type "byte"
-    JD.map8 SaveData
+    JD.map8 toSaveDataWithPatches
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
@@ -161,7 +188,7 @@ decodeV3 =
 
 decodeV4 : JD.Decoder SaveData
 decodeV4 =
-    JD.map8 SaveData
+    JD.map8 toSaveDataWithPatches
         (JD.succeed currentVersion)
         (JD.field "fileName" JD.string)
         (JD.field "loadAddress" JD.int)
@@ -170,6 +197,31 @@ decodeV4 =
         (optionalField "regions" (JD.list decodeRegion) [])
         (optionalField "segments" (JD.list decodeSegment) [])
         (optionalField "majorComments" (JD.list decodeMajorComment) [])
+
+
+decodeV5 : JD.Decoder SaveData
+decodeV5 =
+    JD.map8 toSaveDataWithPatches
+        (JD.succeed currentVersion)
+        (JD.field "fileName" JD.string)
+        (JD.field "loadAddress" JD.int)
+        (optionalField "comments" (JD.list decodeComment) [])
+        (optionalField "labels" (JD.list decodeLabel) [])
+        (optionalField "regions" (JD.list decodeRegion) [])
+        (optionalField "segments" (JD.list decodeSegment) [])
+        (optionalField "majorComments" (JD.list decodeMajorComment) [])
+        |> JD.andThen
+            (\partial ->
+                optionalField "patches" (JD.list decodePatch) []
+                    |> JD.map (\p -> { partial | patches = p })
+            )
+
+
+decodePatch : JD.Decoder ( Int, Int )
+decodePatch =
+    JD.map2 Tuple.pair
+        (JD.field "offset" JD.int)
+        (JD.field "byte" JD.int)
 
 
 decodeDataRegionAsRegion : JD.Decoder { start : Int, end : Int, regionType : String }
@@ -263,11 +315,23 @@ fromModel model =
             model.regions
     , segments = List.map (\s -> { start = s.start, end = s.end }) model.segments
     , majorComments = Dict.toList model.majorComments
+    , patches = Dict.toList model.patches
     }
 
 
 toModel : SaveData -> Model -> Model
 toModel data model =
+    let
+        patchesDict =
+            Dict.fromList data.patches
+
+        -- Apply patches to bytes
+        patchedBytes =
+            List.foldl
+                (\( offset, byte ) bytes -> Array.set offset byte bytes)
+                model.bytes
+                data.patches
+    in
     { model
         | fileName = data.fileName
         , loadAddress = data.loadAddress
@@ -284,4 +348,6 @@ toModel data model =
                 data.regions
         , segments = List.map (\s -> { start = s.start, end = s.end }) data.segments
         , majorComments = Dict.fromList data.majorComments
+        , patches = patchesDict
+        , bytes = patchedBytes
     }

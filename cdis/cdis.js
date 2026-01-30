@@ -5206,7 +5206,7 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, confirmQuit: false, dirty: false, editingComment: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, editingMajorComment: $elm$core$Maybe$Nothing, fileName: '', gotoError: false, gotoInput: '', gotoMode: false, helpExpanded: false, jumpHistory: _List_Nil, labels: $elm$core$Dict$empty, loadAddress: 0, majorComments: $elm$core$Dict$empty, mark: $elm$core$Maybe$Nothing, outlineMode: false, outlineSelection: 0, regions: _List_Nil, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
+var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, confirmQuit: false, dirty: false, editingComment: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, editingMajorComment: $elm$core$Maybe$Nothing, fileName: '', gotoError: false, gotoInput: '', gotoMode: false, helpExpanded: false, jumpHistory: _List_Nil, labels: $elm$core$Dict$empty, loadAddress: 0, majorComments: $elm$core$Dict$empty, mark: $elm$core$Maybe$Nothing, outlineMode: false, outlineSelection: 0, patches: $elm$core$Dict$empty, regions: _List_Nil, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
 		$author$project$Types$initModel,
@@ -5689,6 +5689,7 @@ var $author$project$Main$MarkSelectionAsBytes = {$: 'MarkSelectionAsBytes'};
 var $author$project$Main$MarkSelectionAsSegment = {$: 'MarkSelectionAsSegment'};
 var $author$project$Main$MarkSelectionAsText = {$: 'MarkSelectionAsText'};
 var $author$project$Main$NoOp = {$: 'NoOp'};
+var $author$project$Main$NopCurrentByte = {$: 'NopCurrentByte'};
 var $author$project$Main$OutlineNext = {$: 'OutlineNext'};
 var $author$project$Main$OutlinePrev = {$: 'OutlinePrev'};
 var $author$project$Main$OutlineSelect = {$: 'OutlineSelect'};
@@ -5788,11 +5789,7 @@ var $author$project$Main$centerSelectedLine = function (model) {
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $elm$json$Json$Decode$andThen = _Json_andThen;
-var $author$project$Project$SaveData = F8(
-	function (version, fileName, loadAddress, comments, labels, regions, segments, majorComments) {
-		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, majorComments: majorComments, regions: regions, segments: segments, version: version};
-	});
-var $author$project$Project$currentVersion = 4;
+var $author$project$Project$currentVersion = 5;
 var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
@@ -5835,9 +5832,13 @@ var $author$project$Project$optionalField = F3(
 			$elm$json$Json$Decode$maybe(
 				A2($elm$json$Json$Decode$field, field, dec)));
 	});
+var $author$project$Project$toSaveDataWithPatches = F8(
+	function (version, fileName, loadAddress, comments, labels, regions, segments, majorComments) {
+		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, majorComments: majorComments, patches: _List_Nil, regions: regions, segments: segments, version: version};
+	});
 var $author$project$Project$decodeV1 = A9(
 	$elm$json$Json$Decode$map8,
-	$author$project$Project$SaveData,
+	$author$project$Project$toSaveDataWithPatches,
 	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
 	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
 	A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
@@ -5856,7 +5857,7 @@ var $author$project$Project$decodeV1 = A9(
 	$elm$json$Json$Decode$succeed(_List_Nil));
 var $author$project$Project$decodeV2 = A9(
 	$elm$json$Json$Decode$map8,
-	$author$project$Project$SaveData,
+	$author$project$Project$toSaveDataWithPatches,
 	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
 	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
 	A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
@@ -5883,7 +5884,7 @@ var $author$project$Project$decodeDataRegionAsRegion = A3(
 	A2($elm$json$Json$Decode$field, 'end', $elm$json$Json$Decode$int));
 var $author$project$Project$decodeV3 = A9(
 	$elm$json$Json$Decode$map8,
-	$author$project$Project$SaveData,
+	$author$project$Project$toSaveDataWithPatches,
 	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
 	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
 	A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
@@ -5929,7 +5930,7 @@ var $author$project$Project$decodeSegment = A3(
 	A2($elm$json$Json$Decode$field, 'end', $elm$json$Json$Decode$int));
 var $author$project$Project$decodeV4 = A9(
 	$elm$json$Json$Decode$map8,
-	$author$project$Project$SaveData,
+	$author$project$Project$toSaveDataWithPatches,
 	$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
 	A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
 	A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
@@ -5958,6 +5959,58 @@ var $author$project$Project$decodeV4 = A9(
 		'majorComments',
 		$elm$json$Json$Decode$list($author$project$Project$decodeMajorComment),
 		_List_Nil));
+var $author$project$Project$decodePatch = A3(
+	$elm$json$Json$Decode$map2,
+	$elm$core$Tuple$pair,
+	A2($elm$json$Json$Decode$field, 'offset', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'byte', $elm$json$Json$Decode$int));
+var $author$project$Project$decodeV5 = A2(
+	$elm$json$Json$Decode$andThen,
+	function (partial) {
+		return A2(
+			$elm$json$Json$Decode$map,
+			function (p) {
+				return _Utils_update(
+					partial,
+					{patches: p});
+			},
+			A3(
+				$author$project$Project$optionalField,
+				'patches',
+				$elm$json$Json$Decode$list($author$project$Project$decodePatch),
+				_List_Nil));
+	},
+	A9(
+		$elm$json$Json$Decode$map8,
+		$author$project$Project$toSaveDataWithPatches,
+		$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
+		A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
+		A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
+		A3(
+			$author$project$Project$optionalField,
+			'comments',
+			$elm$json$Json$Decode$list($author$project$Project$decodeComment),
+			_List_Nil),
+		A3(
+			$author$project$Project$optionalField,
+			'labels',
+			$elm$json$Json$Decode$list($author$project$Project$decodeLabel),
+			_List_Nil),
+		A3(
+			$author$project$Project$optionalField,
+			'regions',
+			$elm$json$Json$Decode$list($author$project$Project$decodeRegion),
+			_List_Nil),
+		A3(
+			$author$project$Project$optionalField,
+			'segments',
+			$elm$json$Json$Decode$list($author$project$Project$decodeSegment),
+			_List_Nil),
+		A3(
+			$author$project$Project$optionalField,
+			'majorComments',
+			$elm$json$Json$Decode$list($author$project$Project$decodeMajorComment),
+			_List_Nil)));
 var $elm$json$Json$Decode$fail = _Json_fail;
 var $author$project$Project$decoderForVersion = function (version) {
 	switch (version) {
@@ -5969,6 +6022,8 @@ var $author$project$Project$decoderForVersion = function (version) {
 			return $author$project$Project$decodeV3;
 		case 4:
 			return $author$project$Project$decodeV4;
+		case 5:
+			return $author$project$Project$decodeV5;
 		default:
 			return $elm$json$Json$Decode$fail(
 				'Unknown save file version: ' + $elm$core$String$fromInt(version));
@@ -7508,6 +7563,20 @@ var $author$project$Project$encodeMajorComment = function (_v0) {
 				$elm$json$Json$Encode$string(text))
 			]));
 };
+var $author$project$Project$encodePatch = function (_v0) {
+	var offset = _v0.a;
+	var _byte = _v0.b;
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'offset',
+				$elm$json$Json$Encode$int(offset)),
+				_Utils_Tuple2(
+				'byte',
+				$elm$json$Json$Encode$int(_byte))
+			]));
+};
 var $author$project$Project$encodeRegion = function (region) {
 	return $elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -7571,7 +7640,10 @@ var $author$project$Project$encode = function (data) {
 				A2($elm$json$Json$Encode$list, $author$project$Project$encodeSegment, data.segments)),
 				_Utils_Tuple2(
 				'majorComments',
-				A2($elm$json$Json$Encode$list, $author$project$Project$encodeMajorComment, data.majorComments))
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodeMajorComment, data.majorComments)),
+				_Utils_Tuple2(
+				'patches',
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodePatch, data.patches))
 			]));
 };
 var $author$project$Opcodes$opcodeBytes = function (_byte) {
@@ -7698,6 +7770,7 @@ var $author$project$Project$fromModel = function (model) {
 		labels: $elm$core$Dict$toList(model.labels),
 		loadAddress: model.loadAddress,
 		majorComments: $elm$core$Dict$toList(model.majorComments),
+		patches: $elm$core$Dict$toList(model.patches),
 		regions: A2(
 			$elm$core$List$map,
 			function (r) {
@@ -8618,6 +8691,49 @@ var $author$project$Main$requestPrgFile = _Platform_outgoingPort(
 		return $elm$json$Json$Encode$null;
 	});
 var $author$project$Main$saveCdisFile = _Platform_outgoingPort('saveCdisFile', $elm$json$Json$Encode$string);
+var $elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
+var $elm$core$Array$setHelp = F4(
+	function (shift, index, value, tree) {
+		var pos = $elm$core$Array$bitMask & (index >>> shift);
+		var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
+		if (_v0.$ === 'SubTree') {
+			var subTree = _v0.a;
+			var newSub = A4($elm$core$Array$setHelp, shift - $elm$core$Array$shiftStep, index, value, subTree);
+			return A3(
+				$elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				$elm$core$Array$SubTree(newSub),
+				tree);
+		} else {
+			var values = _v0.a;
+			var newLeaf = A3($elm$core$Elm$JsArray$unsafeSet, $elm$core$Array$bitMask & index, value, values);
+			return A3(
+				$elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				$elm$core$Array$Leaf(newLeaf),
+				tree);
+		}
+	});
+var $elm$core$Array$set = F3(
+	function (index, value, array) {
+		var len = array.a;
+		var startShift = array.b;
+		var tree = array.c;
+		var tail = array.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? array : ((_Utils_cmp(
+			index,
+			$elm$core$Array$tailIndex(len)) > -1) ? A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			tree,
+			A3($elm$core$Elm$JsArray$unsafeSet, $elm$core$Array$bitMask & index, value, tail)) : A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			A4($elm$core$Array$setHelp, startShift, index, value, tree),
+			tail));
+	});
 var $elm$core$List$takeReverse = F3(
 	function (n, list, kept) {
 		takeReverse:
@@ -8753,14 +8869,27 @@ var $author$project$Project$stringToRegionType = function (s) {
 };
 var $author$project$Project$toModel = F2(
 	function (data, model) {
+		var patchesDict = $elm$core$Dict$fromList(data.patches);
+		var patchedBytes = A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, bytes) {
+					var offset = _v0.a;
+					var _byte = _v0.b;
+					return A3($elm$core$Array$set, offset, _byte, bytes);
+				}),
+			model.bytes,
+			data.patches);
 		return _Utils_update(
 			model,
 			{
+				bytes: patchedBytes,
 				comments: $elm$core$Dict$fromList(data.comments),
 				fileName: data.fileName,
 				labels: $elm$core$Dict$fromList(data.labels),
 				loadAddress: data.loadAddress,
 				majorComments: $elm$core$Dict$fromList(data.majorComments),
+				patches: patchesDict,
 				regions: A2(
 					$elm$core$List$map,
 					function (r) {
@@ -9418,6 +9547,12 @@ var $author$project$Main$update = F2(
 											msg = $temp$msg;
 											model = $temp$model;
 											continue update;
+										case 'n':
+											var $temp$msg = $author$project$Main$NopCurrentByte,
+												$temp$model = model;
+											msg = $temp$msg;
+											model = $temp$model;
+											continue update;
 										default:
 											return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									}
@@ -9859,6 +9994,59 @@ var $author$project$Main$update = F2(
 								viewStart: instrStart
 							}),
 						$elm$core$Platform$Cmd$none);
+				case 'NopCurrentByte':
+					var _v58 = model.selectedOffset;
+					if (_v58.$ === 'Just') {
+						var offset = _v58.a;
+						var _v59 = A2($elm$core$Array$get, offset, model.bytes);
+						if (_v59.$ === 'Just') {
+							var currentByte = _v59.a;
+							var newPatches = A3($elm$core$Dict$insert, offset, 234, model.patches);
+							var newOffset = (_Utils_cmp(
+								offset + 1,
+								$elm$core$Array$length(model.bytes)) < 0) ? (offset + 1) : offset;
+							var newBytes = A3($elm$core$Array$set, offset, 234, model.bytes);
+							var inTextRegion = A2(
+								$elm$core$List$any,
+								function (r) {
+									return _Utils_eq(r.regionType, $author$project$Types$TextRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+								},
+								model.regions);
+							var inByteRegion = A2(
+								$elm$core$List$any,
+								function (r) {
+									return _Utils_eq(r.regionType, $author$project$Types$ByteRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+								},
+								model.regions);
+							var instrLen = (inByteRegion || inTextRegion) ? 1 : $author$project$Opcodes$opcodeBytes(currentByte);
+							var newRegions = function () {
+								if ((instrLen > 1) && ((!inByteRegion) && (!inTextRegion))) {
+									var leftoverStart = offset + 1;
+									var leftoverEnd = (offset + instrLen) - 1;
+									var leftoverRegion = {end: leftoverEnd, regionType: $author$project$Types$ByteRegion, start: leftoverStart};
+									return A2($author$project$Main$mergeRegion, leftoverRegion, model.regions);
+								} else {
+									return model.regions;
+								}
+							}();
+							return _Utils_Tuple2(
+								$author$project$Main$ensureSelectionVisible(
+									_Utils_update(
+										model,
+										{
+											bytes: newBytes,
+											dirty: true,
+											patches: newPatches,
+											regions: newRegions,
+											selectedOffset: $elm$core$Maybe$Just(newOffset)
+										})),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				case 'RequestQuit':
 					return model.dirty ? _Utils_Tuple2(
 						_Utils_update(
@@ -12090,6 +12278,26 @@ var $author$project$Main$viewFooter = function (model) {
 																$elm$html$Html$text('R')
 															])),
 														$elm$html$Html$text('Restart (peel byte)')
+													])),
+												A2(
+												$elm$html$Html$div,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('help-row')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$span,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('key')
+															]),
+														_List_fromArray(
+															[
+																$elm$html$Html$text('N')
+															])),
+														$elm$html$Html$text('NOP current byte')
 													]))
 											])),
 										A2(
