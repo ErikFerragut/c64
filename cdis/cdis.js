@@ -10364,7 +10364,7 @@ var $author$project$Main$update = F2(
 											msg = $temp$msg;
 											model = $temp$model;
 											continue update;
-										case 'e':
+										case 'Enter':
 											var _v35 = model.selectedOffset;
 											if (_v35.$ === 'Just') {
 												var offset = _v35.a;
@@ -10924,6 +10924,7 @@ var $author$project$Main$update = F2(
 								return _Utils_eq(r.regionType, $author$project$Types$ByteRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
 							},
 							model.regions);
+						var fileSize = $elm$core$Array$length(model.bytes);
 						var currentByte = A2(
 							$elm$core$Maybe$withDefault,
 							0,
@@ -10943,24 +10944,32 @@ var $author$project$Main$update = F2(
 								$elm$core$Platform$Cmd$none);
 						} else {
 							var result = _v66.a;
-							if (_Utils_cmp(result.size, oldSize) > 0) {
+							if (_Utils_cmp(offset + result.size, fileSize) > 0) {
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
 										{
-											editError: $elm$core$Maybe$Just(
-												'Instruction too large: needs ' + ($elm$core$String$fromInt(result.size) + (' bytes, only ' + ($elm$core$String$fromInt(oldSize) + ' available'))))
+											editError: $elm$core$Maybe$Just('Instruction extends past end of file')
 										}),
 									$elm$core$Platform$Cmd$none);
 							} else {
+								var nextOffset = offset + result.size;
+								var newSelectedOffset = (_Utils_cmp(nextOffset, fileSize) < 0) ? $elm$core$Maybe$Just(nextOffset) : $elm$core$Maybe$Just(offset);
+								var newEnd = (offset + result.size) - 1;
+								var regionsWithoutOverlap = A2(
+									$elm$core$List$filter,
+									function (r) {
+										return (_Utils_cmp(r.end, offset) < 0) || (_Utils_cmp(r.start, newEnd) > 0);
+									},
+									model.regions);
 								var newRegions = function () {
 									if (_Utils_cmp(result.size, oldSize) < 0) {
 										var leftoverStart = offset + result.size;
 										var leftoverEnd = (offset + oldSize) - 1;
 										var leftoverRegion = {end: leftoverEnd, regionType: $author$project$Types$ByteRegion, start: leftoverStart};
-										return A2($author$project$Main$mergeRegion, leftoverRegion, model.regions);
+										return A2($author$project$Main$mergeRegion, leftoverRegion, regionsWithoutOverlap);
 									} else {
-										return model.regions;
+										return regionsWithoutOverlap;
 									}
 								}();
 								var _v67 = A3(
@@ -10983,7 +10992,7 @@ var $author$project$Main$update = F2(
 									$author$project$Main$ensureSelectionVisible(
 										_Utils_update(
 											model,
-											{bytes: newBytes, dirty: true, editError: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, patches: newPatches, regions: newRegions})),
+											{bytes: newBytes, dirty: true, editError: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, patches: newPatches, regions: newRegions, selectedOffset: newSelectedOffset})),
 									A2(
 										$elm$core$Task$attempt,
 										function (_v70) {
@@ -13331,7 +13340,7 @@ var $author$project$Main$viewFooter = function (model) {
 															]),
 														_List_fromArray(
 															[
-																$elm$html$Html$text('E')
+																$elm$html$Html$text('Enter')
 															])),
 														$elm$html$Html$text('Edit instruction')
 													]))

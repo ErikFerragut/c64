@@ -665,7 +665,7 @@ update msg model =
                     "n" ->
                         update NopCurrentByte model
 
-                    "e" ->
+                    "Enter" ->
                         -- Enter edit mode
                         case model.selectedOffset of
                             Just offset ->
@@ -1207,15 +1207,17 @@ update msg model =
                                 1
                             else
                                 opcodeBytes currentByte
+                        fileSize =
+                            Array.length model.bytes
                     in
                     case assemble currentAddress text of
                         Err err ->
                             ( { model | editError = Just (formatAssembleError err) }, Cmd.none )
 
                         Ok result ->
-                            if result.size > oldSize then
-                                -- New instruction is larger than available space
-                                ( { model | editError = Just ("Instruction too large: needs " ++ String.fromInt result.size ++ " bytes, only " ++ String.fromInt oldSize ++ " available") }
+                            if offset + result.size > fileSize then
+                                -- New instruction extends past end of file
+                                ( { model | editError = Just ("Instruction extends past end of file") }
                                 , Cmd.none
                                 )
 
@@ -1232,7 +1234,16 @@ update msg model =
                                             ( model.bytes, model.patches )
                                             (List.indexedMap Tuple.pair result.bytes)
 
-                                    -- If new instruction is smaller, leftover bytes become .byte regions
+                                    -- Remove any regions that overlap with the new instruction
+                                    newEnd =
+                                        offset + result.size - 1
+
+                                    regionsWithoutOverlap =
+                                        List.filter
+                                            (\r -> r.end < offset || r.start > newEnd)
+                                            model.regions
+
+                                    -- If new instruction is smaller than old, leftover bytes become .byte regions
                                     newRegions =
                                         if result.size < oldSize then
                                             let
@@ -1248,15 +1259,25 @@ update msg model =
                                                     , regionType = Types.ByteRegion
                                                     }
                                             in
-                                            mergeRegion leftoverRegion model.regions
+                                            mergeRegion leftoverRegion regionsWithoutOverlap
                                         else
-                                            model.regions
+                                            regionsWithoutOverlap
+                                    -- Move to next instruction
+                                    nextOffset =
+                                        offset + result.size
+
+                                    newSelectedOffset =
+                                        if nextOffset < fileSize then
+                                            Just nextOffset
+                                        else
+                                            Just offset
                                 in
                                 ( ensureSelectionVisible
                                     { model
                                         | bytes = newBytes
                                         , patches = newPatches
                                         , regions = newRegions
+                                        , selectedOffset = newSelectedOffset
                                         , editingInstruction = Nothing
                                         , editError = Nothing
                                         , dirty = True
@@ -2211,7 +2232,7 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "S / Shift+S" ], text "Mark/Clear segment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "R" ], text "Restart (peel byte)" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "N" ], text "NOP current byte" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "E" ], text "Edit instruction" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Edit instruction" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "File" ]
