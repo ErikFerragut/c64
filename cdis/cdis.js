@@ -5206,7 +5206,7 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, confirmQuit: false, dirty: false, editingComment: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, editingMajorComment: $elm$core$Maybe$Nothing, fileName: '', gotoError: false, gotoInput: '', gotoMode: false, helpExpanded: false, jumpHistory: _List_Nil, labels: $elm$core$Dict$empty, loadAddress: 0, majorComments: $elm$core$Dict$empty, mark: $elm$core$Maybe$Nothing, outlineMode: false, outlineSelection: 0, patches: $elm$core$Dict$empty, regions: _List_Nil, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
+var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, confirmQuit: false, dirty: false, editError: $elm$core$Maybe$Nothing, editingComment: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, editingMajorComment: $elm$core$Maybe$Nothing, fileName: '', gotoError: false, gotoInput: '', gotoMode: false, helpExpanded: false, jumpHistory: _List_Nil, labels: $elm$core$Dict$empty, loadAddress: 0, majorComments: $elm$core$Dict$empty, mark: $elm$core$Maybe$Nothing, outlineMode: false, outlineSelection: 0, patches: $elm$core$Dict$empty, regions: _List_Nil, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
 		$author$project$Types$initModel,
@@ -5703,6 +5703,9 @@ var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
 var $author$project$Main$StartEditComment = function (a) {
 	return {$: 'StartEditComment', a: a};
 };
+var $author$project$Main$StartEditInstruction = function (a) {
+	return {$: 'StartEditInstruction', a: a};
+};
 var $author$project$Main$StartEditLabel = function (a) {
 	return {$: 'StartEditLabel', a: a};
 };
@@ -5730,6 +5733,903 @@ var $elm$core$List$any = F2(
 					list = $temp$list;
 					continue any;
 				}
+			}
+		}
+	});
+var $author$project$Assembler$BranchOutOfRange = function (a) {
+	return {$: 'BranchOutOfRange', a: a};
+};
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $author$project$Assembler$encodeInstruction = F4(
+	function (currentAddress, opcode, mode, operand) {
+		switch (mode.$) {
+			case 'Implied':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode]),
+						size: 1
+					});
+			case 'Accumulator':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode]),
+						size: 1
+					});
+			case 'Immediate':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, operand]),
+						size: 2
+					});
+			case 'ZeroPage':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, operand]),
+						size: 2
+					});
+			case 'ZeroPageX':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, operand]),
+						size: 2
+					});
+			case 'ZeroPageY':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, operand]),
+						size: 2
+					});
+			case 'Absolute':
+				var lo = A2($elm$core$Basics$modBy, 256, operand);
+				var hi = (operand / 256) | 0;
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, lo, hi]),
+						size: 3
+					});
+			case 'AbsoluteX':
+				var lo = A2($elm$core$Basics$modBy, 256, operand);
+				var hi = (operand / 256) | 0;
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, lo, hi]),
+						size: 3
+					});
+			case 'AbsoluteY':
+				var lo = A2($elm$core$Basics$modBy, 256, operand);
+				var hi = (operand / 256) | 0;
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, lo, hi]),
+						size: 3
+					});
+			case 'Indirect':
+				var lo = A2($elm$core$Basics$modBy, 256, operand);
+				var hi = (operand / 256) | 0;
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, lo, hi]),
+						size: 3
+					});
+			case 'IndirectX':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, operand]),
+						size: 2
+					});
+			case 'IndirectY':
+				return $elm$core$Result$Ok(
+					{
+						bytes: _List_fromArray(
+							[opcode, operand]),
+						size: 2
+					});
+			default:
+				var nextAddr = currentAddress + 2;
+				var offset = operand - nextAddr;
+				if ((_Utils_cmp(offset, -128) < 0) || (offset > 127)) {
+					return $elm$core$Result$Err(
+						$author$project$Assembler$BranchOutOfRange(offset));
+				} else {
+					var signedByte = (offset < 0) ? (256 + offset) : offset;
+					return $elm$core$Result$Ok(
+						{
+							bytes: _List_fromArray(
+								[opcode, signedByte]),
+							size: 2
+						});
+				}
+		}
+	});
+var $author$project$Assembler$addressingModeToInt = function (mode) {
+	switch (mode.$) {
+		case 'Implied':
+			return 0;
+		case 'Accumulator':
+			return 1;
+		case 'Immediate':
+			return 2;
+		case 'ZeroPage':
+			return 3;
+		case 'ZeroPageX':
+			return 4;
+		case 'ZeroPageY':
+			return 5;
+		case 'Absolute':
+			return 6;
+		case 'AbsoluteX':
+			return 7;
+		case 'AbsoluteY':
+			return 8;
+		case 'Indirect':
+			return 9;
+		case 'IndirectX':
+			return 10;
+		case 'IndirectY':
+			return 11;
+		default:
+			return 12;
+	}
+};
+var $elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
+				switch (_v1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return $elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
+			}
+		}
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $author$project$Types$Absolute = {$: 'Absolute'};
+var $author$project$Types$AbsoluteX = {$: 'AbsoluteX'};
+var $author$project$Types$AbsoluteY = {$: 'AbsoluteY'};
+var $author$project$Types$Accumulator = {$: 'Accumulator'};
+var $author$project$Types$Immediate = {$: 'Immediate'};
+var $author$project$Types$Implied = {$: 'Implied'};
+var $author$project$Types$Indirect = {$: 'Indirect'};
+var $author$project$Types$IndirectX = {$: 'IndirectX'};
+var $author$project$Types$IndirectY = {$: 'IndirectY'};
+var $author$project$Types$Relative = {$: 'Relative'};
+var $author$project$Types$ZeroPage = {$: 'ZeroPage'};
+var $author$project$Types$ZeroPageX = {$: 'ZeroPageX'};
+var $author$project$Types$ZeroPageY = {$: 'ZeroPageY'};
+var $author$project$Assembler$opcodeList = _List_fromArray(
+	[
+		_Utils_Tuple2('BRK', $author$project$Types$Implied),
+		_Utils_Tuple2('ORA', $author$project$Types$IndirectX),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('SLO', $author$project$Types$IndirectX),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('ORA', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('ASL', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('SLO', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('PHP', $author$project$Types$Implied),
+		_Utils_Tuple2('ORA', $author$project$Types$Immediate),
+		_Utils_Tuple2('ASL', $author$project$Types$Accumulator),
+		_Utils_Tuple2('ANC', $author$project$Types$Immediate),
+		_Utils_Tuple2('NOP', $author$project$Types$Absolute),
+		_Utils_Tuple2('ORA', $author$project$Types$Absolute),
+		_Utils_Tuple2('ASL', $author$project$Types$Absolute),
+		_Utils_Tuple2('SLO', $author$project$Types$Absolute),
+		_Utils_Tuple2('BPL', $author$project$Types$Relative),
+		_Utils_Tuple2('ORA', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('SLO', $author$project$Types$IndirectY),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('ORA', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('ASL', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('SLO', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('CLC', $author$project$Types$Implied),
+		_Utils_Tuple2('ORA', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('SLO', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('ORA', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('ASL', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('SLO', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('JSR', $author$project$Types$Absolute),
+		_Utils_Tuple2('AND', $author$project$Types$IndirectX),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('RLA', $author$project$Types$IndirectX),
+		_Utils_Tuple2('BIT', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('AND', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('ROL', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('RLA', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('PLP', $author$project$Types$Implied),
+		_Utils_Tuple2('AND', $author$project$Types$Immediate),
+		_Utils_Tuple2('ROL', $author$project$Types$Accumulator),
+		_Utils_Tuple2('ANC', $author$project$Types$Immediate),
+		_Utils_Tuple2('BIT', $author$project$Types$Absolute),
+		_Utils_Tuple2('AND', $author$project$Types$Absolute),
+		_Utils_Tuple2('ROL', $author$project$Types$Absolute),
+		_Utils_Tuple2('RLA', $author$project$Types$Absolute),
+		_Utils_Tuple2('BMI', $author$project$Types$Relative),
+		_Utils_Tuple2('AND', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('RLA', $author$project$Types$IndirectY),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('AND', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('ROL', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('RLA', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('SEC', $author$project$Types$Implied),
+		_Utils_Tuple2('AND', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('RLA', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('AND', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('ROL', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('RLA', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('RTI', $author$project$Types$Implied),
+		_Utils_Tuple2('EOR', $author$project$Types$IndirectX),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('SRE', $author$project$Types$IndirectX),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('EOR', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('LSR', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('SRE', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('PHA', $author$project$Types$Implied),
+		_Utils_Tuple2('EOR', $author$project$Types$Immediate),
+		_Utils_Tuple2('LSR', $author$project$Types$Accumulator),
+		_Utils_Tuple2('ALR', $author$project$Types$Immediate),
+		_Utils_Tuple2('JMP', $author$project$Types$Absolute),
+		_Utils_Tuple2('EOR', $author$project$Types$Absolute),
+		_Utils_Tuple2('LSR', $author$project$Types$Absolute),
+		_Utils_Tuple2('SRE', $author$project$Types$Absolute),
+		_Utils_Tuple2('BVC', $author$project$Types$Relative),
+		_Utils_Tuple2('EOR', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('SRE', $author$project$Types$IndirectY),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('EOR', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('LSR', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('SRE', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('CLI', $author$project$Types$Implied),
+		_Utils_Tuple2('EOR', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('SRE', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('EOR', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('LSR', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('SRE', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('RTS', $author$project$Types$Implied),
+		_Utils_Tuple2('ADC', $author$project$Types$IndirectX),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('RRA', $author$project$Types$IndirectX),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('ADC', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('ROR', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('RRA', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('PLA', $author$project$Types$Implied),
+		_Utils_Tuple2('ADC', $author$project$Types$Immediate),
+		_Utils_Tuple2('ROR', $author$project$Types$Accumulator),
+		_Utils_Tuple2('ARR', $author$project$Types$Immediate),
+		_Utils_Tuple2('JMP', $author$project$Types$Indirect),
+		_Utils_Tuple2('ADC', $author$project$Types$Absolute),
+		_Utils_Tuple2('ROR', $author$project$Types$Absolute),
+		_Utils_Tuple2('RRA', $author$project$Types$Absolute),
+		_Utils_Tuple2('BVS', $author$project$Types$Relative),
+		_Utils_Tuple2('ADC', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('RRA', $author$project$Types$IndirectY),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('ADC', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('ROR', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('RRA', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('SEI', $author$project$Types$Implied),
+		_Utils_Tuple2('ADC', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('RRA', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('ADC', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('ROR', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('RRA', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('NOP', $author$project$Types$Immediate),
+		_Utils_Tuple2('STA', $author$project$Types$IndirectX),
+		_Utils_Tuple2('NOP', $author$project$Types$Immediate),
+		_Utils_Tuple2('SAX', $author$project$Types$IndirectX),
+		_Utils_Tuple2('STY', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('STA', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('STX', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('SAX', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('DEY', $author$project$Types$Implied),
+		_Utils_Tuple2('NOP', $author$project$Types$Immediate),
+		_Utils_Tuple2('TXA', $author$project$Types$Implied),
+		_Utils_Tuple2('ANE', $author$project$Types$Immediate),
+		_Utils_Tuple2('STY', $author$project$Types$Absolute),
+		_Utils_Tuple2('STA', $author$project$Types$Absolute),
+		_Utils_Tuple2('STX', $author$project$Types$Absolute),
+		_Utils_Tuple2('SAX', $author$project$Types$Absolute),
+		_Utils_Tuple2('BCC', $author$project$Types$Relative),
+		_Utils_Tuple2('STA', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('SHA', $author$project$Types$IndirectY),
+		_Utils_Tuple2('STY', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('STA', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('STX', $author$project$Types$ZeroPageY),
+		_Utils_Tuple2('SAX', $author$project$Types$ZeroPageY),
+		_Utils_Tuple2('TYA', $author$project$Types$Implied),
+		_Utils_Tuple2('STA', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('TXS', $author$project$Types$Implied),
+		_Utils_Tuple2('TAS', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('SHY', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('STA', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('SHX', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('SHA', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('LDY', $author$project$Types$Immediate),
+		_Utils_Tuple2('LDA', $author$project$Types$IndirectX),
+		_Utils_Tuple2('LDX', $author$project$Types$Immediate),
+		_Utils_Tuple2('LAX', $author$project$Types$IndirectX),
+		_Utils_Tuple2('LDY', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('LDA', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('LDX', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('LAX', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('TAY', $author$project$Types$Implied),
+		_Utils_Tuple2('LDA', $author$project$Types$Immediate),
+		_Utils_Tuple2('TAX', $author$project$Types$Implied),
+		_Utils_Tuple2('LXA', $author$project$Types$Immediate),
+		_Utils_Tuple2('LDY', $author$project$Types$Absolute),
+		_Utils_Tuple2('LDA', $author$project$Types$Absolute),
+		_Utils_Tuple2('LDX', $author$project$Types$Absolute),
+		_Utils_Tuple2('LAX', $author$project$Types$Absolute),
+		_Utils_Tuple2('BCS', $author$project$Types$Relative),
+		_Utils_Tuple2('LDA', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('LAX', $author$project$Types$IndirectY),
+		_Utils_Tuple2('LDY', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('LDA', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('LDX', $author$project$Types$ZeroPageY),
+		_Utils_Tuple2('LAX', $author$project$Types$ZeroPageY),
+		_Utils_Tuple2('CLV', $author$project$Types$Implied),
+		_Utils_Tuple2('LDA', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('TSX', $author$project$Types$Implied),
+		_Utils_Tuple2('LAS', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('LDY', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('LDA', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('LDX', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('LAX', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('CPY', $author$project$Types$Immediate),
+		_Utils_Tuple2('CMP', $author$project$Types$IndirectX),
+		_Utils_Tuple2('NOP', $author$project$Types$Immediate),
+		_Utils_Tuple2('DCP', $author$project$Types$IndirectX),
+		_Utils_Tuple2('CPY', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('CMP', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('DEC', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('DCP', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('INY', $author$project$Types$Implied),
+		_Utils_Tuple2('CMP', $author$project$Types$Immediate),
+		_Utils_Tuple2('DEX', $author$project$Types$Implied),
+		_Utils_Tuple2('SBX', $author$project$Types$Immediate),
+		_Utils_Tuple2('CPY', $author$project$Types$Absolute),
+		_Utils_Tuple2('CMP', $author$project$Types$Absolute),
+		_Utils_Tuple2('DEC', $author$project$Types$Absolute),
+		_Utils_Tuple2('DCP', $author$project$Types$Absolute),
+		_Utils_Tuple2('BNE', $author$project$Types$Relative),
+		_Utils_Tuple2('CMP', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('DCP', $author$project$Types$IndirectY),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('CMP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('DEC', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('DCP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('CLD', $author$project$Types$Implied),
+		_Utils_Tuple2('CMP', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('DCP', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('CMP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('DEC', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('DCP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('CPX', $author$project$Types$Immediate),
+		_Utils_Tuple2('SBC', $author$project$Types$IndirectX),
+		_Utils_Tuple2('NOP', $author$project$Types$Immediate),
+		_Utils_Tuple2('ISC', $author$project$Types$IndirectX),
+		_Utils_Tuple2('CPX', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('SBC', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('INC', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('ISC', $author$project$Types$ZeroPage),
+		_Utils_Tuple2('INX', $author$project$Types$Implied),
+		_Utils_Tuple2('SBC', $author$project$Types$Immediate),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('SBC', $author$project$Types$Immediate),
+		_Utils_Tuple2('CPX', $author$project$Types$Absolute),
+		_Utils_Tuple2('SBC', $author$project$Types$Absolute),
+		_Utils_Tuple2('INC', $author$project$Types$Absolute),
+		_Utils_Tuple2('ISC', $author$project$Types$Absolute),
+		_Utils_Tuple2('BEQ', $author$project$Types$Relative),
+		_Utils_Tuple2('SBC', $author$project$Types$IndirectY),
+		_Utils_Tuple2('JAM', $author$project$Types$Implied),
+		_Utils_Tuple2('ISC', $author$project$Types$IndirectY),
+		_Utils_Tuple2('NOP', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('SBC', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('INC', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('ISC', $author$project$Types$ZeroPageX),
+		_Utils_Tuple2('SED', $author$project$Types$Implied),
+		_Utils_Tuple2('SBC', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$Implied),
+		_Utils_Tuple2('ISC', $author$project$Types$AbsoluteY),
+		_Utils_Tuple2('NOP', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('SBC', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('INC', $author$project$Types$AbsoluteX),
+		_Utils_Tuple2('ISC', $author$project$Types$AbsoluteX)
+	]);
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $author$project$Assembler$opcodeDict = $elm$core$Dict$fromList(
+	A2(
+		$elm$core$List$filterMap,
+		function (_v0) {
+			var _byte = _v0.a;
+			var _v1 = _v0.b;
+			var mnemonic = _v1.a;
+			var mode = _v1.b;
+			return ((mnemonic !== '???') && (mnemonic !== 'JAM')) ? $elm$core$Maybe$Just(
+				_Utils_Tuple2(
+					_Utils_Tuple2(
+						mnemonic,
+						$author$project$Assembler$addressingModeToInt(mode)),
+					_byte)) : $elm$core$Maybe$Nothing;
+		},
+		A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, $author$project$Assembler$opcodeList)));
+var $author$project$Assembler$lookupOpcode = F2(
+	function (mnemonic, mode) {
+		return A2(
+			$elm$core$Dict$get,
+			_Utils_Tuple2(
+				mnemonic,
+				$author$project$Assembler$addressingModeToInt(mode)),
+			$author$project$Assembler$opcodeDict);
+	});
+var $author$project$Assembler$UnknownMnemonic = function (a) {
+	return {$: 'UnknownMnemonic', a: a};
+};
+var $elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Assembler$InvalidOperand = function (a) {
+	return {$: 'InvalidOperand', a: a};
+};
+var $elm$core$String$filter = _String_filter;
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$Assembler$isBranchMnemonic = function (mnemonic) {
+	return A2(
+		$elm$core$List$member,
+		mnemonic,
+		_List_fromArray(
+			['BCC', 'BCS', 'BEQ', 'BMI', 'BNE', 'BPL', 'BVC', 'BVS']));
+};
+var $elm$core$Char$isHexDigit = function (_char) {
+	var code = $elm$core$Char$toCode(_char);
+	return ((48 <= code) && (code <= 57)) || (((65 <= code) && (code <= 70)) || ((97 <= code) && (code <= 102)));
+};
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $elm$core$String$toUpper = _String_toUpper;
+var $author$project$Assembler$parseHex = function (str) {
+	var toDigit = function (c) {
+		switch (c.valueOf()) {
+			case '0':
+				return $elm$core$Maybe$Just(0);
+			case '1':
+				return $elm$core$Maybe$Just(1);
+			case '2':
+				return $elm$core$Maybe$Just(2);
+			case '3':
+				return $elm$core$Maybe$Just(3);
+			case '4':
+				return $elm$core$Maybe$Just(4);
+			case '5':
+				return $elm$core$Maybe$Just(5);
+			case '6':
+				return $elm$core$Maybe$Just(6);
+			case '7':
+				return $elm$core$Maybe$Just(7);
+			case '8':
+				return $elm$core$Maybe$Just(8);
+			case '9':
+				return $elm$core$Maybe$Just(9);
+			case 'A':
+				return $elm$core$Maybe$Just(10);
+			case 'B':
+				return $elm$core$Maybe$Just(11);
+			case 'C':
+				return $elm$core$Maybe$Just(12);
+			case 'D':
+				return $elm$core$Maybe$Just(13);
+			case 'E':
+				return $elm$core$Maybe$Just(14);
+			case 'F':
+				return $elm$core$Maybe$Just(15);
+			default:
+				return $elm$core$Maybe$Nothing;
+		}
+	};
+	var hexChars = $elm$core$String$toList(
+		$elm$core$String$toUpper(str));
+	var folder = F2(
+		function (c, acc) {
+			var _v0 = _Utils_Tuple2(
+				acc,
+				toDigit(c));
+			if ((_v0.a.$ === 'Just') && (_v0.b.$ === 'Just')) {
+				var n = _v0.a.a;
+				var d = _v0.b.a;
+				return $elm$core$Maybe$Just((n * 16) + d);
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		});
+	return $elm$core$String$isEmpty(str) ? $elm$core$Maybe$Nothing : A3(
+		$elm$core$List$foldl,
+		folder,
+		$elm$core$Maybe$Just(0),
+		hexChars);
+};
+var $elm$core$String$trim = _String_trim;
+var $author$project$Assembler$parseValue = function (str) {
+	var cleaned = $elm$core$String$trim(str);
+	return A2($elm$core$String$startsWith, '$', cleaned) ? $author$project$Assembler$parseHex(
+		A2($elm$core$String$dropLeft, 1, cleaned)) : $elm$core$String$toInt(cleaned);
+};
+var $author$project$Assembler$parseDirect = F2(
+	function (mnemonic, valueStr) {
+		var _v0 = $author$project$Assembler$parseValue(valueStr);
+		if (_v0.$ === 'Just') {
+			var value = _v0.a;
+			return $author$project$Assembler$isBranchMnemonic(mnemonic) ? $elm$core$Result$Ok(
+				_Utils_Tuple3(mnemonic, $author$project$Types$Relative, value)) : (((value < 256) && ($elm$core$String$length(
+				A2($elm$core$String$filter, $elm$core$Char$isHexDigit, valueStr)) <= 2)) ? $elm$core$Result$Ok(
+				_Utils_Tuple3(mnemonic, $author$project$Types$ZeroPage, value)) : $elm$core$Result$Ok(
+				_Utils_Tuple3(mnemonic, $author$project$Types$Absolute, value)));
+		} else {
+			return $elm$core$Result$Err(
+				$author$project$Assembler$InvalidOperand(valueStr));
+		}
+	});
+var $author$project$Assembler$OperandOutOfRange = function (a) {
+	return {$: 'OperandOutOfRange', a: a};
+};
+var $author$project$Assembler$parseImmediate = F2(
+	function (mnemonic, valueStr) {
+		var _v0 = $author$project$Assembler$parseValue(valueStr);
+		if (_v0.$ === 'Just') {
+			var value = _v0.a;
+			return (value < 256) ? $elm$core$Result$Ok(
+				_Utils_Tuple3(mnemonic, $author$project$Types$Immediate, value)) : $elm$core$Result$Err(
+				$author$project$Assembler$OperandOutOfRange(value));
+		} else {
+			return $elm$core$Result$Err(
+				$author$project$Assembler$InvalidOperand(valueStr));
+		}
+	});
+var $author$project$Assembler$parseIndexed = F2(
+	function (mnemonic, operand) {
+		var parts = A2(
+			$elm$core$List$map,
+			$elm$core$String$trim,
+			A2($elm$core$String$split, ',', operand));
+		_v0$2:
+		while (true) {
+			if ((parts.b && parts.b.b) && (!parts.b.b.b)) {
+				switch (parts.b.a) {
+					case 'X':
+						var valueStr = parts.a;
+						var _v1 = parts.b;
+						var _v2 = $author$project$Assembler$parseValue(valueStr);
+						if (_v2.$ === 'Just') {
+							var value = _v2.a;
+							return (value < 256) ? $elm$core$Result$Ok(
+								_Utils_Tuple3(mnemonic, $author$project$Types$ZeroPageX, value)) : $elm$core$Result$Ok(
+								_Utils_Tuple3(mnemonic, $author$project$Types$AbsoluteX, value));
+						} else {
+							return $elm$core$Result$Err(
+								$author$project$Assembler$InvalidOperand(valueStr));
+						}
+					case 'Y':
+						var valueStr = parts.a;
+						var _v3 = parts.b;
+						var _v4 = $author$project$Assembler$parseValue(valueStr);
+						if (_v4.$ === 'Just') {
+							var value = _v4.a;
+							return (value < 256) ? $elm$core$Result$Ok(
+								_Utils_Tuple3(mnemonic, $author$project$Types$ZeroPageY, value)) : $elm$core$Result$Ok(
+								_Utils_Tuple3(mnemonic, $author$project$Types$AbsoluteY, value));
+						} else {
+							return $elm$core$Result$Err(
+								$author$project$Assembler$InvalidOperand(valueStr));
+						}
+					default:
+						break _v0$2;
+				}
+			} else {
+				break _v0$2;
+			}
+		}
+		return $elm$core$Result$Err(
+			$author$project$Assembler$InvalidOperand(operand));
+	});
+var $elm$core$String$dropRight = F2(
+	function (n, string) {
+		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+	});
+var $elm$core$String$endsWith = _String_endsWith;
+var $author$project$Assembler$parseIndirect = F2(
+	function (mnemonic, operand) {
+		if (A2($elm$core$String$endsWith, ',X)', operand)) {
+			var valueStr = $elm$core$String$trim(
+				A2(
+					$elm$core$String$dropRight,
+					3,
+					A2($elm$core$String$dropLeft, 1, operand)));
+			var _v0 = $author$project$Assembler$parseValue(valueStr);
+			if (_v0.$ === 'Just') {
+				var value = _v0.a;
+				return (value < 256) ? $elm$core$Result$Ok(
+					_Utils_Tuple3(mnemonic, $author$project$Types$IndirectX, value)) : $elm$core$Result$Err(
+					$author$project$Assembler$OperandOutOfRange(value));
+			} else {
+				return $elm$core$Result$Err(
+					$author$project$Assembler$InvalidOperand(valueStr));
+			}
+		} else {
+			if (A2($elm$core$String$endsWith, '),Y', operand)) {
+				var valueStr = $elm$core$String$trim(
+					A2(
+						$elm$core$String$dropRight,
+						3,
+						A2($elm$core$String$dropLeft, 1, operand)));
+				var _v1 = $author$project$Assembler$parseValue(valueStr);
+				if (_v1.$ === 'Just') {
+					var value = _v1.a;
+					return (value < 256) ? $elm$core$Result$Ok(
+						_Utils_Tuple3(mnemonic, $author$project$Types$IndirectY, value)) : $elm$core$Result$Err(
+						$author$project$Assembler$OperandOutOfRange(value));
+				} else {
+					return $elm$core$Result$Err(
+						$author$project$Assembler$InvalidOperand(valueStr));
+				}
+			} else {
+				if (A2($elm$core$String$endsWith, ')', operand)) {
+					var valueStr = $elm$core$String$trim(
+						A2(
+							$elm$core$String$dropRight,
+							1,
+							A2($elm$core$String$dropLeft, 1, operand)));
+					var _v2 = $author$project$Assembler$parseValue(valueStr);
+					if (_v2.$ === 'Just') {
+						var value = _v2.a;
+						return $elm$core$Result$Ok(
+							_Utils_Tuple3(mnemonic, $author$project$Types$Indirect, value));
+					} else {
+						return $elm$core$Result$Err(
+							$author$project$Assembler$InvalidOperand(valueStr));
+					}
+				} else {
+					return $elm$core$Result$Err(
+						$author$project$Assembler$InvalidOperand(operand));
+				}
+			}
+		}
+	});
+var $author$project$Assembler$parseOperand = F2(
+	function (mnemonic, operandStr) {
+		var operand = $elm$core$String$trim(operandStr);
+		return (operand === 'A') ? $elm$core$Result$Ok(
+			_Utils_Tuple3(mnemonic, $author$project$Types$Accumulator, 0)) : (A2($elm$core$String$startsWith, '#', operand) ? A2(
+			$author$project$Assembler$parseImmediate,
+			mnemonic,
+			A2($elm$core$String$dropLeft, 1, operand)) : (A2($elm$core$String$startsWith, '(', operand) ? A2($author$project$Assembler$parseIndirect, mnemonic, operand) : (A2($elm$core$String$contains, ',', operand) ? A2($author$project$Assembler$parseIndexed, mnemonic, operand) : A2($author$project$Assembler$parseDirect, mnemonic, operand))));
+	});
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $elm$core$String$words = _String_words;
+var $author$project$Assembler$parseInstruction = function (input) {
+	var parts = $elm$core$String$words(input);
+	if (!parts.b) {
+		return $elm$core$Result$Err(
+			$author$project$Assembler$UnknownMnemonic(''));
+	} else {
+		if (!parts.b.b) {
+			var mnemonic = parts.a;
+			return $elm$core$Result$Ok(
+				_Utils_Tuple3(mnemonic, $author$project$Types$Implied, 0));
+		} else {
+			if (!parts.b.b.b) {
+				var mnemonic = parts.a;
+				var _v1 = parts.b;
+				var operandStr = _v1.a;
+				return A2($author$project$Assembler$parseOperand, mnemonic, operandStr);
+			} else {
+				return A2(
+					$author$project$Assembler$parseOperand,
+					A2(
+						$elm$core$Maybe$withDefault,
+						'',
+						$elm$core$List$head(parts)),
+					A2(
+						$elm$core$String$join,
+						'',
+						A2($elm$core$List$drop, 1, parts)));
+			}
+		}
+	}
+};
+var $author$project$Assembler$InvalidAddressingMode = F2(
+	function (a, b) {
+		return {$: 'InvalidAddressingMode', a: a, b: b};
+	});
+var $elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Assembler$mnemonicExists = function (mnemonic) {
+	return A2(
+		$elm$core$List$any,
+		function (_v0) {
+			var m = _v0.a;
+			return _Utils_eq(m, mnemonic);
+		},
+		$author$project$Assembler$opcodeList);
+};
+var $elm$core$Result$toMaybe = function (result) {
+	if (result.$ === 'Ok') {
+		var v = result.a;
+		return $elm$core$Maybe$Just(v);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Assembler$tryAlternativeModes = F4(
+	function (currentAddress, mnemonic, mode, operand) {
+		var tryMode = function (m) {
+			return A2(
+				$elm$core$Maybe$andThen,
+				function (op) {
+					return $elm$core$Result$toMaybe(
+						A4($author$project$Assembler$encodeInstruction, currentAddress, op, m, operand));
+				},
+				A2($author$project$Assembler$lookupOpcode, mnemonic, m));
+		};
+		var alternatives = function () {
+			switch (mode.$) {
+				case 'ZeroPage':
+					return _List_fromArray(
+						[$author$project$Types$Absolute]);
+				case 'Absolute':
+					return (operand < 256) ? _List_fromArray(
+						[$author$project$Types$ZeroPage]) : _List_Nil;
+				case 'ZeroPageX':
+					return _List_fromArray(
+						[$author$project$Types$AbsoluteX]);
+				case 'AbsoluteX':
+					return (operand < 256) ? _List_fromArray(
+						[$author$project$Types$ZeroPageX]) : _List_Nil;
+				case 'ZeroPageY':
+					return _List_fromArray(
+						[$author$project$Types$AbsoluteY]);
+				case 'AbsoluteY':
+					return (operand < 256) ? _List_fromArray(
+						[$author$project$Types$ZeroPageY]) : _List_Nil;
+				default:
+					return _List_Nil;
+			}
+		}();
+		var _v0 = A2($elm$core$List$filterMap, tryMode, alternatives);
+		if (_v0.b) {
+			var result = _v0.a;
+			return $elm$core$Result$Ok(result);
+		} else {
+			return $author$project$Assembler$mnemonicExists(mnemonic) ? $elm$core$Result$Err(
+				A2($author$project$Assembler$InvalidAddressingMode, mnemonic, mode)) : $elm$core$Result$Err(
+				$author$project$Assembler$UnknownMnemonic(mnemonic));
+		}
+	});
+var $author$project$Assembler$assemble = F2(
+	function (currentAddress, input) {
+		var cleaned = $elm$core$String$toUpper(
+			$elm$core$String$trim(input));
+		var _v0 = $author$project$Assembler$parseInstruction(cleaned);
+		if (_v0.$ === 'Err') {
+			var err = _v0.a;
+			return $elm$core$Result$Err(err);
+		} else {
+			var _v1 = _v0.a;
+			var mnemonic = _v1.a;
+			var mode = _v1.b;
+			var operand = _v1.c;
+			var _v2 = A2($author$project$Assembler$lookupOpcode, mnemonic, mode);
+			if (_v2.$ === 'Nothing') {
+				return A4($author$project$Assembler$tryAlternativeModes, currentAddress, mnemonic, mode, operand);
+			} else {
+				var opcode = _v2.a;
+				return A4($author$project$Assembler$encodeInstruction, currentAddress, opcode, mode, operand);
 			}
 		}
 	});
@@ -5790,10 +6690,6 @@ var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $author$project$Project$currentVersion = 5;
-var $elm$core$Tuple$pair = F2(
-	function (a, b) {
-		return _Utils_Tuple2(a, b);
-	});
 var $author$project$Project$decodeComment = A3(
 	$elm$json$Json$Decode$map2,
 	$elm$core$Tuple$pair,
@@ -5815,15 +6711,6 @@ var $elm$json$Json$Decode$maybe = function (decoder) {
 				$elm$json$Json$Decode$succeed($elm$core$Maybe$Nothing)
 			]));
 };
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
 var $author$project$Project$optionalField = F3(
 	function (field, dec, _default) {
 		return A2(
@@ -6181,7 +7068,6 @@ var $elm$core$String$padLeft = F3(
 				$elm$core$String$fromChar(_char)),
 			string);
 	});
-var $elm$core$Basics$modBy = _Basics_modBy;
 var $elm$core$Basics$not = _Basics_not;
 var $author$project$Disassembler$toHexHelper = F2(
 	function (n, acc) {
@@ -6221,7 +7107,6 @@ var $author$project$Disassembler$toHexHelper = F2(
 			}
 		}
 	});
-var $elm$core$String$toUpper = _String_toUpper;
 var $author$project$Disassembler$toHex = F2(
 	function (width, n) {
 		var hex = A2($author$project$Disassembler$toHexHelper, n, '');
@@ -6235,37 +7120,6 @@ var $author$project$Disassembler$toHex = F2(
 var $author$project$Disassembler$formatByte = function (n) {
 	return '$' + A2($author$project$Disassembler$toHex, 2, n);
 };
-var $elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
-				switch (_v1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return $elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-				}
-			}
-		}
-	});
 var $elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -6999,23 +7853,10 @@ var $author$project$Disassembler$getInstructionBytes = F3(
 			},
 			A2($elm$core$List$range, offset, (offset + numBytes) - 1));
 	});
-var $author$project$Types$Absolute = {$: 'Absolute'};
-var $author$project$Types$AbsoluteX = {$: 'AbsoluteX'};
-var $author$project$Types$AbsoluteY = {$: 'AbsoluteY'};
-var $author$project$Types$Accumulator = {$: 'Accumulator'};
-var $author$project$Types$Immediate = {$: 'Immediate'};
-var $author$project$Types$Implied = {$: 'Implied'};
-var $author$project$Types$Indirect = {$: 'Indirect'};
-var $author$project$Types$IndirectX = {$: 'IndirectX'};
-var $author$project$Types$IndirectY = {$: 'IndirectY'};
 var $author$project$Types$OpcodeInfo = F5(
 	function (mnemonic, mode, bytes, cycles, undocumented) {
 		return {bytes: bytes, cycles: cycles, mnemonic: mnemonic, mode: mode, undocumented: undocumented};
 	});
-var $author$project$Types$Relative = {$: 'Relative'};
-var $author$project$Types$ZeroPage = {$: 'ZeroPage'};
-var $author$project$Types$ZeroPageX = {$: 'ZeroPageX'};
-var $author$project$Types$ZeroPageY = {$: 'ZeroPageY'};
 var $elm$core$Array$fromListHelp = F3(
 	function (list, nodeList, nodeListSize) {
 		fromListHelp:
@@ -7343,15 +8184,6 @@ var $author$project$Disassembler$getOperandValue = function (instrBytes) {
 	}
 	return 0;
 };
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $author$project$Disassembler$isInByteRegion = F2(
 	function (offset, regions) {
 		return A2(
@@ -7477,34 +8309,6 @@ var $author$project$Disassembler$disassembleLine = F8(
 var $author$project$Disassembler$disassemble = F8(
 	function (loadAddress, offset, bytes, comments, labels, regions, segments, majorComments) {
 		return A8($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, regions, segments, majorComments);
-	});
-var $elm$core$List$drop = F2(
-	function (n, list) {
-		drop:
-		while (true) {
-			if (n <= 0) {
-				return list;
-			} else {
-				if (!list.b) {
-					return list;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs;
-					n = $temp$n;
-					list = $temp$list;
-					continue drop;
-				}
-			}
-		}
-	});
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var $elm$core$String$dropRight = F2(
-	function (n, string) {
-		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
 	});
 var $elm$json$Json$Encode$int = _Json_wrap;
 var $elm$json$Json$Encode$object = function (pairs) {
@@ -7754,8 +8558,26 @@ var $author$project$Main$ensureSelectionVisible = function (model) {
 	}
 };
 var $author$project$Main$exportAsmFile = _Platform_outgoingPort('exportAsmFile', $elm$json$Json$Encode$string);
-var $elm$core$String$filter = _String_filter;
 var $elm$browser$Browser$Dom$focus = _Browser_call('focus');
+var $author$project$Main$formatAssembleError = function (err) {
+	switch (err.$) {
+		case 'UnknownMnemonic':
+			var m = err.a;
+			return 'Unknown mnemonic: ' + m;
+		case 'InvalidOperand':
+			var o = err.a;
+			return 'Invalid operand: ' + o;
+		case 'InvalidAddressingMode':
+			var m = err.a;
+			return 'Invalid addressing mode for ' + m;
+		case 'OperandOutOfRange':
+			var v = err.a;
+			return 'Operand out of range: ' + $elm$core$String$fromInt(v);
+		default:
+			var o = err.a;
+			return 'Branch out of range: ' + ($elm$core$String$fromInt(o) + ' bytes');
+	}
+};
 var $author$project$Project$regionTypeToString = function (rt) {
 	if (rt.$ === 'ByteRegion') {
 		return 'byte';
@@ -7950,7 +8772,6 @@ var $author$project$Main$generateTextLine = F3(
 		var bytesConsumed = (regionEnd - offset) + 1;
 		return _Utils_Tuple2('.text \"' + (textStr + '\"'), bytesConsumed);
 	});
-var $elm$core$String$words = _String_words;
 var $author$project$Main$getSegmentName = F2(
 	function (model, segment) {
 		var _v0 = A2($elm$core$Dict$get, segment.start, model.majorComments);
@@ -8091,10 +8912,6 @@ var $elm$core$List$isEmpty = function (xs) {
 		return false;
 	}
 };
-var $elm$core$Char$isHexDigit = function (_char) {
-	var code = $elm$core$Char$toCode(_char);
-	return ((48 <= code) && (code <= 57)) || (((65 <= code) && (code <= 70)) || ((97 <= code) && (code <= 102)));
-};
 var $elm$core$List$sortBy = _List_sortBy;
 var $author$project$Main$mergeRegion = F2(
 	function (newRegion, regions) {
@@ -8203,7 +9020,6 @@ var $author$project$Main$mergeSegment = F2(
 					},
 					segments)));
 	});
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$Main$hexDigitValue = function (c) {
 	switch (c.valueOf()) {
 		case '0':
@@ -8272,11 +9088,6 @@ var $elm$core$String$replace = F3(
 			after,
 			A2($elm$core$String$split, before, string));
 	});
-var $elm$core$String$foldr = _String_foldr;
-var $elm$core$String$toList = function (string) {
-	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
-};
-var $elm$core$String$trim = _String_trim;
 var $author$project$Main$parseHex = function (str) {
 	var cleaned = A3(
 		$elm$core$String$replace,
@@ -9243,7 +10054,7 @@ var $author$project$Main$update = F2(
 							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'KeyPressed':
 					var event = msg.a;
-					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || ((!_Utils_eq(model.editingLabel, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.editingMajorComment, $elm$core$Maybe$Nothing)))) {
+					if ((!_Utils_eq(model.editingComment, $elm$core$Maybe$Nothing)) || ((!_Utils_eq(model.editingLabel, $elm$core$Maybe$Nothing)) || ((!_Utils_eq(model.editingMajorComment, $elm$core$Maybe$Nothing)) || (!_Utils_eq(model.editingInstruction, $elm$core$Maybe$Nothing))))) {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
 						if (model.gotoMode) {
@@ -9553,6 +10364,18 @@ var $author$project$Main$update = F2(
 											msg = $temp$msg;
 											model = $temp$model;
 											continue update;
+										case 'e':
+											var _v35 = model.selectedOffset;
+											if (_v35.$ === 'Just') {
+												var offset = _v35.a;
+												var $temp$msg = $author$project$Main$StartEditInstruction(offset),
+													$temp$model = model;
+												msg = $temp$msg;
+												model = $temp$model;
+												continue update;
+											} else {
+												return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+											}
 										default:
 											return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									}
@@ -9567,9 +10390,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v35 = model.selectedOffset;
-					if (_v35.$ === 'Just') {
-						var offset = _v35.a;
+					var _v36 = model.selectedOffset;
+					if (_v36.$ === 'Just') {
+						var offset = _v36.a;
 						var textRegion = $elm$core$List$head(
 							A2(
 								$elm$core$List$filter,
@@ -9618,13 +10441,13 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v37 = model.selectedOffset;
-					if (_v37.$ === 'Just') {
-						var offset = _v37.a;
+					var _v38 = model.selectedOffset;
+					if (_v38.$ === 'Just') {
+						var offset = _v38.a;
 						if (offset > 0) {
-							var _v38 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, offset);
-							var currentStart = _v38.a;
-							var prevStart = _v38.b;
+							var _v39 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, offset);
+							var currentStart = _v39.a;
+							var prevStart = _v39.b;
 							var newOffset = (_Utils_cmp(currentStart, offset) < 0) ? currentStart : prevStart;
 							return _Utils_Tuple2(
 								$author$project$Main$ensureSelectionVisible(
@@ -9670,9 +10493,9 @@ var $author$project$Main$update = F2(
 					var errorMsg = msg.a;
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				case 'ToggleMark':
-					var _v39 = model.selectedOffset;
-					if (_v39.$ === 'Just') {
-						var offset = _v39.a;
+					var _v40 = model.selectedOffset;
+					if (_v40.$ === 'Just') {
+						var offset = _v40.a;
 						return _Utils_eq(
 							model.mark,
 							$elm$core$Maybe$Just(offset)) ? _Utils_Tuple2(
@@ -9690,10 +10513,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'MarkSelectionAsBytes':
-					var _v40 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v40.a.$ === 'Just') && (_v40.b.$ === 'Just')) {
-						var markOffset = _v40.a.a;
-						var cursorOffset = _v40.b.a;
+					var _v41 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v41.a.$ === 'Just') && (_v41.b.$ === 'Just')) {
+						var markOffset = _v41.a.a;
+						var cursorOffset = _v41.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newRegion = {end: endOff, regionType: $author$project$Types$ByteRegion, start: startOff};
@@ -9707,10 +10530,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'MarkSelectionAsText':
-					var _v41 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v41.a.$ === 'Just') && (_v41.b.$ === 'Just')) {
-						var markOffset = _v41.a.a;
-						var cursorOffset = _v41.b.a;
+					var _v42 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v42.a.$ === 'Just') && (_v42.b.$ === 'Just')) {
+						var markOffset = _v42.a.a;
+						var cursorOffset = _v42.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newRegion = {end: endOff, regionType: $author$project$Types$TextRegion, start: startOff};
@@ -9750,10 +10573,10 @@ var $author$project$Main$update = F2(
 							{dirty: true, regions: newRegions}),
 						$elm$core$Platform$Cmd$none);
 				case 'MarkSelectionAsSegment':
-					var _v42 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v42.a.$ === 'Just') && (_v42.b.$ === 'Just')) {
-						var markOffset = _v42.a.a;
-						var cursorOffset = _v42.b.a;
+					var _v43 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v43.a.$ === 'Just') && (_v43.b.$ === 'Just')) {
+						var markOffset = _v43.a.a;
+						var cursorOffset = _v43.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newSegment = {end: endOff, start: startOff};
@@ -9794,16 +10617,16 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v43) {
+							function (_v44) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('major-comment-input')));
 				case 'UpdateEditMajorComment':
 					var text = msg.a;
-					var _v44 = model.editingMajorComment;
-					if (_v44.$ === 'Just') {
-						var _v45 = _v44.a;
-						var offset = _v45.a;
+					var _v45 = model.editingMajorComment;
+					if (_v45.$ === 'Just') {
+						var _v46 = _v45.a;
+						var offset = _v46.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9816,11 +10639,11 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveMajorComment':
-					var _v46 = model.editingMajorComment;
-					if (_v46.$ === 'Just') {
-						var _v47 = _v46.a;
-						var offset = _v47.a;
-						var text = _v47.b;
+					var _v47 = model.editingMajorComment;
+					if (_v47.$ === 'Just') {
+						var _v48 = _v47.a;
+						var offset = _v48.a;
+						var text = _v48.b;
 						var newMajorComments = $elm$core$String$isEmpty(
 							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.majorComments) : A3($elm$core$Dict$insert, offset, text, model.majorComments);
 						return _Utils_Tuple2(
@@ -9829,7 +10652,7 @@ var $author$project$Main$update = F2(
 								{dirty: true, editingMajorComment: $elm$core$Maybe$Nothing, majorComments: newMajorComments}),
 							A2(
 								$elm$core$Task$attempt,
-								function (_v48) {
+								function (_v49) {
 									return $author$project$Main$FocusResult;
 								},
 								$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -9843,7 +10666,7 @@ var $author$project$Main$update = F2(
 							{editingMajorComment: $elm$core$Maybe$Nothing}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v49) {
+							function (_v50) {
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -9861,8 +10684,8 @@ var $author$project$Main$update = F2(
 								$elm$core$List$head(
 									A2(
 										$elm$core$List$filter,
-										function (_v50) {
-											var s = _v50.b;
+										function (_v51) {
+											var s = _v51.b;
 											return (_Utils_cmp(currentOffset, s.start) > -1) && (_Utils_cmp(currentOffset, s.end) < 1);
 										},
 										A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, model.segments)))));
@@ -9903,7 +10726,7 @@ var $author$project$Main$update = F2(
 									})),
 							A2(
 								$elm$core$Task$attempt,
-								function (_v52) {
+								function (_v53) {
 									return $author$project$Main$FocusResult;
 								},
 								$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -9921,14 +10744,14 @@ var $author$project$Main$update = F2(
 							{outlineMode: false}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v53) {
+							function (_v54) {
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'RestartDisassembly':
-					var _v54 = model.selectedOffset;
-					if (_v54.$ === 'Just') {
-						var offset = _v54.a;
+					var _v55 = model.selectedOffset;
+					if (_v55.$ === 'Just') {
+						var offset = _v55.a;
 						if (_Utils_cmp(
 							offset,
 							$elm$core$Array$length(model.bytes) - 1) < 0) {
@@ -9952,10 +10775,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'JumpBack':
-					var _v55 = model.jumpHistory;
-					if (_v55.b) {
-						var prevOffset = _v55.a;
-						var rest = _v55.b;
+					var _v56 = model.jumpHistory;
+					if (_v56.b) {
+						var prevOffset = _v56.a;
+						var rest = _v56.b;
 						return _Utils_Tuple2(
 							$author$project$Main$ensureSelectionVisible(
 								_Utils_update(
@@ -9971,8 +10794,8 @@ var $author$project$Main$update = F2(
 					}
 				case 'PageUp':
 					var newViewStart = A2($elm$core$Basics$max, 0, model.viewStart - model.viewLines);
-					var _v56 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
-					var instrStart = _v56.a;
+					var _v57 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
+					var instrStart = _v57.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -9984,8 +10807,8 @@ var $author$project$Main$update = F2(
 				case 'PageDown':
 					var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 					var newViewStart = A2($elm$core$Basics$min, maxOffset, model.viewStart + model.viewLines);
-					var _v57 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
-					var instrStart = _v57.a;
+					var _v58 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
+					var instrStart = _v58.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -9995,12 +10818,12 @@ var $author$project$Main$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'NopCurrentByte':
-					var _v58 = model.selectedOffset;
-					if (_v58.$ === 'Just') {
-						var offset = _v58.a;
-						var _v59 = A2($elm$core$Array$get, offset, model.bytes);
-						if (_v59.$ === 'Just') {
-							var currentByte = _v59.a;
+					var _v59 = model.selectedOffset;
+					if (_v59.$ === 'Just') {
+						var offset = _v59.a;
+						var _v60 = A2($elm$core$Array$get, offset, model.bytes);
+						if (_v60.$ === 'Just') {
+							var currentByte = _v60.a;
 							var newPatches = A3($elm$core$Dict$insert, offset, 234, model.patches);
 							var newOffset = (_Utils_cmp(
 								offset + 1,
@@ -10047,6 +10870,142 @@ var $author$project$Main$update = F2(
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
+				case 'StartEditInstruction':
+					var offset = msg.a;
+					var line = A8($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments);
+					var initialText = A2($elm$core$String$startsWith, '*', line.disassembly) ? A2($elm$core$String$dropLeft, 1, line.disassembly) : line.disassembly;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								editError: $elm$core$Maybe$Nothing,
+								editingInstruction: $elm$core$Maybe$Just(
+									_Utils_Tuple2(offset, initialText))
+							}),
+						A2(
+							$elm$core$Task$attempt,
+							function (_v61) {
+								return $author$project$Main$NoOp;
+							},
+							$elm$browser$Browser$Dom$focus('instruction-input')));
+				case 'UpdateEditInstruction':
+					var text = msg.a;
+					var _v62 = model.editingInstruction;
+					if (_v62.$ === 'Just') {
+						var _v63 = _v62.a;
+						var offset = _v63.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									editError: $elm$core$Maybe$Nothing,
+									editingInstruction: $elm$core$Maybe$Just(
+										_Utils_Tuple2(offset, text))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'SaveInstruction':
+					var _v64 = model.editingInstruction;
+					if (_v64.$ === 'Just') {
+						var _v65 = _v64.a;
+						var offset = _v65.a;
+						var text = _v65.b;
+						var inTextRegion = A2(
+							$elm$core$List$any,
+							function (r) {
+								return _Utils_eq(r.regionType, $author$project$Types$TextRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+							},
+							model.regions);
+						var inByteRegion = A2(
+							$elm$core$List$any,
+							function (r) {
+								return _Utils_eq(r.regionType, $author$project$Types$ByteRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+							},
+							model.regions);
+						var currentByte = A2(
+							$elm$core$Maybe$withDefault,
+							0,
+							A2($elm$core$Array$get, offset, model.bytes));
+						var oldSize = (inByteRegion || inTextRegion) ? 1 : $author$project$Opcodes$opcodeBytes(currentByte);
+						var currentAddress = model.loadAddress + offset;
+						var _v66 = A2($author$project$Assembler$assemble, currentAddress, text);
+						if (_v66.$ === 'Err') {
+							var err = _v66.a;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										editError: $elm$core$Maybe$Just(
+											$author$project$Main$formatAssembleError(err))
+									}),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							var result = _v66.a;
+							if (_Utils_cmp(result.size, oldSize) > 0) {
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{
+											editError: $elm$core$Maybe$Just(
+												'Instruction too large: needs ' + ($elm$core$String$fromInt(result.size) + (' bytes, only ' + ($elm$core$String$fromInt(oldSize) + ' available'))))
+										}),
+									$elm$core$Platform$Cmd$none);
+							} else {
+								var newRegions = function () {
+									if (_Utils_cmp(result.size, oldSize) < 0) {
+										var leftoverStart = offset + result.size;
+										var leftoverEnd = (offset + oldSize) - 1;
+										var leftoverRegion = {end: leftoverEnd, regionType: $author$project$Types$ByteRegion, start: leftoverStart};
+										return A2($author$project$Main$mergeRegion, leftoverRegion, model.regions);
+									} else {
+										return model.regions;
+									}
+								}();
+								var _v67 = A3(
+									$elm$core$List$foldl,
+									F2(
+										function (_v68, _v69) {
+											var idx = _v68.a;
+											var _byte = _v68.b;
+											var bytes = _v69.a;
+											var patches = _v69.b;
+											return _Utils_Tuple2(
+												A3($elm$core$Array$set, offset + idx, _byte, bytes),
+												A3($elm$core$Dict$insert, offset + idx, _byte, patches));
+										}),
+									_Utils_Tuple2(model.bytes, model.patches),
+									A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, result.bytes));
+								var newBytes = _v67.a;
+								var newPatches = _v67.b;
+								return _Utils_Tuple2(
+									$author$project$Main$ensureSelectionVisible(
+										_Utils_update(
+											model,
+											{bytes: newBytes, dirty: true, editError: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, patches: newPatches, regions: newRegions})),
+									A2(
+										$elm$core$Task$attempt,
+										function (_v70) {
+											return $author$project$Main$FocusResult;
+										},
+										$elm$browser$Browser$Dom$focus('cdis-main')));
+							}
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CancelEditInstruction':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{editError: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing}),
+						A2(
+							$elm$core$Task$attempt,
+							function (_v71) {
+								return $author$project$Main$FocusResult;
+							},
+							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'RequestQuit':
 					return model.dirty ? _Utils_Tuple2(
 						_Utils_update(
@@ -10130,15 +11089,6 @@ var $author$project$Main$KeyPressed = function (a) {
 };
 var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $elm$json$Json$Decode$map4 = _Json_map4;
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
 var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
 	return {$: 'MayPreventDefault', a: a};
 };
@@ -11307,6 +12257,20 @@ var $author$project$Main$viewComment = F2(
 			return $author$project$Main$viewCommentText(line.comment);
 		}
 	});
+var $author$project$Main$SaveInstruction = {$: 'SaveInstruction'};
+var $author$project$Main$UpdateEditInstruction = function (a) {
+	return {$: 'UpdateEditInstruction', a: a};
+};
+var $author$project$Main$CancelEditInstruction = {$: 'CancelEditInstruction'};
+var $author$project$Main$onKeyDownInstruction = A2(
+	$elm$html$Html$Events$stopPropagationOn,
+	'keydown',
+	A2(
+		$elm$json$Json$Decode$map,
+		function (key) {
+			return (key === 'Enter') ? _Utils_Tuple2($author$project$Main$SaveInstruction, true) : ((key === 'Escape') ? _Utils_Tuple2($author$project$Main$CancelEditInstruction, true) : _Utils_Tuple2($author$project$Main$NoOp, true));
+		},
+		A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 var $author$project$Main$viewDisasm = F2(
 	function (line, labels) {
 		var _v0 = line.targetAddress;
@@ -11377,6 +12341,58 @@ var $author$project$Main$viewDisasm = F2(
 			}
 		}
 	});
+var $author$project$Main$viewDisasmOrEdit = F2(
+	function (model, line) {
+		var _v0 = model.editingInstruction;
+		if (_v0.$ === 'Just') {
+			var _v1 = _v0.a;
+			var editOffset = _v1.a;
+			var editText = _v1.b;
+			return _Utils_eq(editOffset, line.offset) ? A2(
+				$elm$html$Html$span,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('col-disasm editing')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(editText),
+								$elm$html$Html$Events$onInput($author$project$Main$UpdateEditInstruction),
+								$elm$html$Html$Events$onBlur($author$project$Main$SaveInstruction),
+								$author$project$Main$onKeyDownInstruction,
+								$elm$html$Html$Attributes$id('instruction-input'),
+								$elm$html$Html$Attributes$autofocus(true),
+								$elm$html$Html$Attributes$class('instruction-input')
+							]),
+						_List_Nil),
+						function () {
+						var _v2 = model.editError;
+						if (_v2.$ === 'Just') {
+							var err = _v2.a;
+							return A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('edit-error')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(err)
+									]));
+						} else {
+							return $elm$html$Html$text('');
+						}
+					}()
+					])) : A2($author$project$Main$viewDisasm, line, model.labels);
+		} else {
+			return A2($author$project$Main$viewDisasm, line, model.labels);
+		}
+	});
 var $author$project$Main$viewLine = F2(
 	function (model, line) {
 		var isSelected = _Utils_eq(
@@ -11443,7 +12459,7 @@ var $author$project$Main$viewLine = F2(
 							$elm$html$Html$text(
 							$author$project$Main$formatBytes(line.bytes))
 						])),
-					A2($author$project$Main$viewDisasm, line, model.labels),
+					A2($author$project$Main$viewDisasmOrEdit, model, line),
 					A2($author$project$Main$viewComment, model, line)
 				]));
 	});
@@ -12298,6 +13314,26 @@ var $author$project$Main$viewFooter = function (model) {
 																$elm$html$Html$text('N')
 															])),
 														$elm$html$Html$text('NOP current byte')
+													])),
+												A2(
+												$elm$html$Html$div,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('help-row')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$span,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('key')
+															]),
+														_List_fromArray(
+															[
+																$elm$html$Html$text('E')
+															])),
+														$elm$html$Html$text('Edit instruction')
 													]))
 											])),
 										A2(

@@ -5,6 +5,7 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events
 import Dict exposing (Dict)
+import Assembler exposing (AssembleError(..), assemble)
 import Disassembler exposing (disassemble, disassembleRange)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -208,6 +209,10 @@ type Msg
     | PageUp
     | PageDown
     | NopCurrentByte
+    | StartEditInstruction Int
+    | UpdateEditInstruction String
+    | SaveInstruction
+    | CancelEditInstruction
     | RequestQuit
     | ConfirmQuit
     | CancelQuit
@@ -453,7 +458,7 @@ update msg model =
             )
 
         KeyPressed event ->
-            if model.editingComment /= Nothing || model.editingLabel /= Nothing || model.editingMajorComment /= Nothing then
+            if model.editingComment /= Nothing || model.editingLabel /= Nothing || model.editingMajorComment /= Nothing || model.editingInstruction /= Nothing then
                 ( model, Cmd.none )
 
             else if model.gotoMode then
@@ -659,6 +664,15 @@ update msg model =
 
                     "n" ->
                         update NopCurrentByte model
+
+                    "e" ->
+                        -- Enter edit mode
+                        case model.selectedOffset of
+                            Just offset ->
+                                update (StartEditInstruction offset) model
+
+                            Nothing ->
+                                ( model, Cmd.none )
 
                     _ ->
                         ( model, Cmd.none )
@@ -1142,6 +1156,121 @@ update msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        StartEditInstruction offset ->
+            let
+                -- Get current disassembly text to pre-populate
+                line =
+                    disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
+
+                -- Strip the leading * from undocumented opcodes for editing
+                initialText =
+                    if String.startsWith "*" line.disassembly then
+                        String.dropLeft 1 line.disassembly
+                    else
+                        line.disassembly
+            in
+            ( { model
+                | editingInstruction = Just ( offset, initialText )
+                , editError = Nothing
+              }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "instruction-input")
+            )
+
+        UpdateEditInstruction text ->
+            case model.editingInstruction of
+                Just ( offset, _ ) ->
+                    ( { model | editingInstruction = Just ( offset, text ), editError = Nothing }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        SaveInstruction ->
+            case model.editingInstruction of
+                Just ( offset, text ) ->
+                    let
+                        currentAddress =
+                            model.loadAddress + offset
+
+                        -- Get the size of the current instruction
+                        inByteRegion =
+                            List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+                        inTextRegion =
+                            List.any (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+
+                        currentByte =
+                            Array.get offset model.bytes |> Maybe.withDefault 0
+
+                        oldSize =
+                            if inByteRegion || inTextRegion then
+                                1
+                            else
+                                opcodeBytes currentByte
+                    in
+                    case assemble currentAddress text of
+                        Err err ->
+                            ( { model | editError = Just (formatAssembleError err) }, Cmd.none )
+
+                        Ok result ->
+                            if result.size > oldSize then
+                                -- New instruction is larger than available space
+                                ( { model | editError = Just ("Instruction too large: needs " ++ String.fromInt result.size ++ " bytes, only " ++ String.fromInt oldSize ++ " available") }
+                                , Cmd.none
+                                )
+
+                            else
+                                let
+                                    -- Apply the new bytes
+                                    ( newBytes, newPatches ) =
+                                        List.foldl
+                                            (\( idx, byte ) ( bytes, patches ) ->
+                                                ( Array.set (offset + idx) byte bytes
+                                                , Dict.insert (offset + idx) byte patches
+                                                )
+                                            )
+                                            ( model.bytes, model.patches )
+                                            (List.indexedMap Tuple.pair result.bytes)
+
+                                    -- If new instruction is smaller, leftover bytes become .byte regions
+                                    newRegions =
+                                        if result.size < oldSize then
+                                            let
+                                                leftoverStart =
+                                                    offset + result.size
+
+                                                leftoverEnd =
+                                                    offset + oldSize - 1
+
+                                                leftoverRegion =
+                                                    { start = leftoverStart
+                                                    , end = leftoverEnd
+                                                    , regionType = Types.ByteRegion
+                                                    }
+                                            in
+                                            mergeRegion leftoverRegion model.regions
+                                        else
+                                            model.regions
+                                in
+                                ( ensureSelectionVisible
+                                    { model
+                                        | bytes = newBytes
+                                        , patches = newPatches
+                                        , regions = newRegions
+                                        , editingInstruction = Nothing
+                                        , editError = Nothing
+                                        , dirty = True
+                                    }
+                                , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                                )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        CancelEditInstruction ->
+            ( { model | editingInstruction = Nothing, editError = Nothing }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
 
         RequestQuit ->
             if model.dirty then
@@ -1703,9 +1832,59 @@ viewLine model line =
         ]
         [ span [ class "col-address" ] [ text ("$" ++ toHex 4 line.address) ]
         , span [ class "col-bytes" ] [ text (formatBytes line.bytes) ]
-        , viewDisasm line model.labels
+        , viewDisasmOrEdit model line
         , viewComment model line
         ]
+
+
+viewDisasmOrEdit : Model -> Line -> Html Msg
+viewDisasmOrEdit model line =
+    case model.editingInstruction of
+        Just ( editOffset, editText ) ->
+            if editOffset == line.offset then
+                span [ class "col-disasm editing" ]
+                    [ input
+                        [ type_ "text"
+                        , value editText
+                        , onInput UpdateEditInstruction
+                        , onBlur SaveInstruction
+                        , onKeyDownInstruction
+                        , id "instruction-input"
+                        , autofocus True
+                        , class "instruction-input"
+                        ]
+                        []
+                    , case model.editError of
+                        Just err ->
+                            span [ class "edit-error" ] [ text err ]
+
+                        Nothing ->
+                            text ""
+                    ]
+
+            else
+                viewDisasm line model.labels
+
+        Nothing ->
+            viewDisasm line model.labels
+
+
+onKeyDownInstruction : Attribute Msg
+onKeyDownInstruction =
+    stopPropagationOn "keydown"
+        (JD.field "key" JD.string
+            |> JD.map
+                (\key ->
+                    if key == "Enter" then
+                        ( SaveInstruction, True )
+
+                    else if key == "Escape" then
+                        ( CancelEditInstruction, True )
+
+                    else
+                        ( NoOp, True )
+                )
+        )
 
 
 {-| Render a line with its label (if any) above it, and major comment above label
@@ -2032,6 +2211,7 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "S / Shift+S" ], text "Mark/Clear segment" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "R" ], text "Restart (peel byte)" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "N" ], text "NOP current byte" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "E" ], text "Edit instruction" ]
                     ]
                 , div [ class "help-section" ]
                     [ div [ class "help-title" ] [ text "File" ]
@@ -2329,6 +2509,25 @@ generateOperand model offset info =
 
 
 -- HELPERS
+
+
+formatAssembleError : AssembleError -> String
+formatAssembleError err =
+    case err of
+        UnknownMnemonic m ->
+            "Unknown mnemonic: " ++ m
+
+        InvalidOperand o ->
+            "Invalid operand: " ++ o
+
+        InvalidAddressingMode m _ ->
+            "Invalid addressing mode for " ++ m
+
+        OperandOutOfRange v ->
+            "Operand out of range: " ++ String.fromInt v
+
+        BranchOutOfRange o ->
+            "Branch out of range: " ++ String.fromInt o ++ " bytes"
 
 
 formatBytes : List Int -> String

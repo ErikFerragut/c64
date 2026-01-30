@@ -50,6 +50,8 @@ type alias Model =
     , outlineSelection : Int -- Index in segment list
     , jumpHistory : List Int -- Stack of offsets to jump back to
     , patches : Dict Int Int -- offset -> new byte value (for persistence)
+    , editingInstruction : Maybe ( Int, String ) -- (offset, current input text)
+    , editError : Maybe String -- Error message from assembler
     }
 
 
@@ -121,4 +123,6 @@ initModel =
     , outlineSelection = 0
     , jumpHistory = []
     , patches = Dict.empty
+    , editingInstruction = Nothing
+    , editError = Nothing
     }
