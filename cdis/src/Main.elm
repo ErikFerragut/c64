@@ -10,7 +10,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
-import Opcodes exposing (opcodeBytes)
+import Opcodes exposing (addressingModeString, getOpcode, getOpcodeDescription, getOpcodeFlags, opcodeBytes)
 import Project
 import Task
 import Types exposing (..)
@@ -868,6 +868,7 @@ view model =
             ]
             [ viewHeader model
             , viewToolbar model
+            , viewCheatsheet model
             , viewDisassembly model
             , viewFooter model
             ]
@@ -913,6 +914,73 @@ viewToolbar model =
             , text (" | Size: " ++ String.fromInt (Array.length model.bytes) ++ " bytes")
             ]
         ]
+
+
+viewCheatsheet : Model -> Html Msg
+viewCheatsheet model =
+    case model.selectedOffset of
+        Nothing ->
+            div [ class "cheatsheet" ]
+                [ span [ class "cheatsheet-empty" ] [ text "Select a line to see opcode info" ]
+                ]
+
+        Just offset ->
+            let
+                -- Check if in data region
+                inDataRegion =
+                    List.any (\r -> offset >= r.start && offset <= r.end) model.dataRegions
+            in
+            if inDataRegion then
+                div [ class "cheatsheet" ]
+                    [ span [ class "cheatsheet-mnemonic" ] [ text ".byte" ]
+                    , span [ class "cheatsheet-sep" ] [ text " | " ]
+                    , span [ class "cheatsheet-desc" ] [ text "Data byte (not code)" ]
+                    ]
+
+            else
+                case Array.get offset model.bytes of
+                    Nothing ->
+                        div [ class "cheatsheet" ]
+                            [ span [ class "cheatsheet-empty" ] [ text "End of file" ]
+                            ]
+
+                    Just opcodeByte ->
+                        let
+                            info =
+                                getOpcode opcodeByte
+
+                            mnemonic =
+                                if info.undocumented then
+                                    "*" ++ info.mnemonic
+
+                                else
+                                    info.mnemonic
+
+                            description =
+                                getOpcodeDescription info.mnemonic
+
+                            flags =
+                                getOpcodeFlags info.mnemonic
+
+                            mode =
+                                addressingModeString info.mode
+
+                            cycles =
+                                String.fromInt info.cycles
+                        in
+                        div [ class "cheatsheet" ]
+                            [ span [ class "cheatsheet-mnemonic" ] [ text mnemonic ]
+                            , span [ class "cheatsheet-sep" ] [ text " | " ]
+                            , span [ class "cheatsheet-mode" ] [ text mode ]
+                            , span [ class "cheatsheet-sep" ] [ text " | " ]
+                            , span [ class "cheatsheet-desc" ] [ text description ]
+                            , span [ class "cheatsheet-sep" ] [ text " | " ]
+                            , span [ class "cheatsheet-label" ] [ text "Flags: " ]
+                            , span [ class "cheatsheet-flags" ] [ text flags ]
+                            , span [ class "cheatsheet-sep" ] [ text " | " ]
+                            , span [ class "cheatsheet-label" ] [ text "Cycles: " ]
+                            , span [ class "cheatsheet-cycles" ] [ text cycles ]
+                            ]
 
 
 viewDisassembly : Model -> Html Msg

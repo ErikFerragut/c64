@@ -1,4 +1,4 @@
-module Opcodes exposing (getOpcode, opcodeBytes)
+module Opcodes exposing (getOpcode, opcodeBytes, getOpcodeDescription, getOpcodeFlags, addressingModeString)
 
 import Array exposing (Array)
 import Types exposing (AddressingMode(..), OpcodeInfo)
@@ -17,6 +17,218 @@ getOpcode byte =
 opcodeBytes : Int -> Int
 opcodeBytes byte =
     (getOpcode byte).bytes
+
+
+{-| Get description of what an opcode does
+-}
+getOpcodeDescription : String -> String
+getOpcodeDescription mnemonic =
+    case String.toUpper mnemonic of
+        -- Load/Store
+        "LDA" -> "Load Accumulator from memory"
+        "LDX" -> "Load X register from memory"
+        "LDY" -> "Load Y register from memory"
+        "STA" -> "Store Accumulator to memory"
+        "STX" -> "Store X register to memory"
+        "STY" -> "Store Y register to memory"
+        -- Transfer
+        "TAX" -> "Transfer Accumulator to X"
+        "TAY" -> "Transfer Accumulator to Y"
+        "TXA" -> "Transfer X to Accumulator"
+        "TYA" -> "Transfer Y to Accumulator"
+        "TSX" -> "Transfer Stack Pointer to X"
+        "TXS" -> "Transfer X to Stack Pointer"
+        -- Stack
+        "PHA" -> "Push Accumulator to stack"
+        "PHP" -> "Push Processor Status to stack"
+        "PLA" -> "Pull Accumulator from stack"
+        "PLP" -> "Pull Processor Status from stack"
+        -- Arithmetic
+        "ADC" -> "Add to Accumulator with Carry"
+        "SBC" -> "Subtract from Accumulator with Borrow"
+        "INC" -> "Increment memory by one"
+        "INX" -> "Increment X by one"
+        "INY" -> "Increment Y by one"
+        "DEC" -> "Decrement memory by one"
+        "DEX" -> "Decrement X by one"
+        "DEY" -> "Decrement Y by one"
+        -- Logic
+        "AND" -> "Logical AND with Accumulator"
+        "ORA" -> "Logical OR with Accumulator"
+        "EOR" -> "Exclusive OR with Accumulator"
+        "BIT" -> "Test bits in memory with Accumulator"
+        -- Shift
+        "ASL" -> "Arithmetic Shift Left (C <- [76543210] <- 0)"
+        "LSR" -> "Logical Shift Right (0 -> [76543210] -> C)"
+        "ROL" -> "Rotate Left (C <- [76543210] <- C)"
+        "ROR" -> "Rotate Right (C -> [76543210] -> C)"
+        -- Compare
+        "CMP" -> "Compare Accumulator with memory"
+        "CPX" -> "Compare X with memory"
+        "CPY" -> "Compare Y with memory"
+        -- Branch
+        "BCC" -> "Branch if Carry Clear (C=0)"
+        "BCS" -> "Branch if Carry Set (C=1)"
+        "BEQ" -> "Branch if Equal (Z=1)"
+        "BMI" -> "Branch if Minus (N=1)"
+        "BNE" -> "Branch if Not Equal (Z=0)"
+        "BPL" -> "Branch if Plus (N=0)"
+        "BVC" -> "Branch if Overflow Clear (V=0)"
+        "BVS" -> "Branch if Overflow Set (V=1)"
+        -- Jump/Call
+        "JMP" -> "Jump to address"
+        "JSR" -> "Jump to Subroutine (push return address)"
+        "RTS" -> "Return from Subroutine"
+        "RTI" -> "Return from Interrupt"
+        "BRK" -> "Force Break (software interrupt)"
+        -- Flags
+        "CLC" -> "Clear Carry flag"
+        "CLD" -> "Clear Decimal mode"
+        "CLI" -> "Clear Interrupt Disable"
+        "CLV" -> "Clear Overflow flag"
+        "SEC" -> "Set Carry flag"
+        "SED" -> "Set Decimal mode"
+        "SEI" -> "Set Interrupt Disable"
+        -- Misc
+        "NOP" -> "No Operation"
+        -- Undocumented
+        "LAX" -> "LDA + LDX (load A and X)"
+        "SAX" -> "Store A AND X to memory"
+        "DCP" -> "DEC + CMP (decrement then compare)"
+        "ISC" -> "INC + SBC (increment then subtract)"
+        "SLO" -> "ASL + ORA (shift left then OR)"
+        "RLA" -> "ROL + AND (rotate left then AND)"
+        "SRE" -> "LSR + EOR (shift right then XOR)"
+        "RRA" -> "ROR + ADC (rotate right then add)"
+        "ANC" -> "AND + set Carry from bit 7"
+        "ALR" -> "AND + LSR (AND then shift right)"
+        "ARR" -> "AND + ROR (AND then rotate right)"
+        "SBX" -> "(A AND X) minus operand -> X"
+        "ANE" -> "A = (A OR magic) AND X AND operand"
+        "LXA" -> "A = X = (A OR magic) AND operand"
+        "SHA" -> "Store A AND X AND (addr_hi + 1)"
+        "SHX" -> "Store X AND (addr_hi + 1)"
+        "SHY" -> "Store Y AND (addr_hi + 1)"
+        "TAS" -> "S = A AND X; store S AND (addr_hi + 1)"
+        "LAS" -> "A = X = S = memory AND S"
+        "JAM" -> "Halt processor (freeze/crash)"
+        _ -> "Unknown opcode"
+
+
+{-| Get flags affected by an opcode
+-}
+getOpcodeFlags : String -> String
+getOpcodeFlags mnemonic =
+    case String.toUpper mnemonic of
+        -- Load/Store
+        "LDA" -> "N Z"
+        "LDX" -> "N Z"
+        "LDY" -> "N Z"
+        "STA" -> "-"
+        "STX" -> "-"
+        "STY" -> "-"
+        -- Transfer
+        "TAX" -> "N Z"
+        "TAY" -> "N Z"
+        "TXA" -> "N Z"
+        "TYA" -> "N Z"
+        "TSX" -> "N Z"
+        "TXS" -> "-"
+        -- Stack
+        "PHA" -> "-"
+        "PHP" -> "-"
+        "PLA" -> "N Z"
+        "PLP" -> "all"
+        -- Arithmetic
+        "ADC" -> "N V Z C"
+        "SBC" -> "N V Z C"
+        "INC" -> "N Z"
+        "INX" -> "N Z"
+        "INY" -> "N Z"
+        "DEC" -> "N Z"
+        "DEX" -> "N Z"
+        "DEY" -> "N Z"
+        -- Logic
+        "AND" -> "N Z"
+        "ORA" -> "N Z"
+        "EOR" -> "N Z"
+        "BIT" -> "N V Z"
+        -- Shift
+        "ASL" -> "N Z C"
+        "LSR" -> "N Z C"
+        "ROL" -> "N Z C"
+        "ROR" -> "N Z C"
+        -- Compare
+        "CMP" -> "N Z C"
+        "CPX" -> "N Z C"
+        "CPY" -> "N Z C"
+        -- Branch
+        "BCC" -> "-"
+        "BCS" -> "-"
+        "BEQ" -> "-"
+        "BMI" -> "-"
+        "BNE" -> "-"
+        "BPL" -> "-"
+        "BVC" -> "-"
+        "BVS" -> "-"
+        -- Jump/Call
+        "JMP" -> "-"
+        "JSR" -> "-"
+        "RTS" -> "-"
+        "RTI" -> "all"
+        "BRK" -> "B I"
+        -- Flags
+        "CLC" -> "C"
+        "CLD" -> "D"
+        "CLI" -> "I"
+        "CLV" -> "V"
+        "SEC" -> "C"
+        "SED" -> "D"
+        "SEI" -> "I"
+        -- Misc
+        "NOP" -> "-"
+        -- Undocumented (approximations)
+        "LAX" -> "N Z"
+        "SAX" -> "-"
+        "DCP" -> "N Z C"
+        "ISC" -> "N V Z C"
+        "SLO" -> "N Z C"
+        "RLA" -> "N Z C"
+        "SRE" -> "N Z C"
+        "RRA" -> "N V Z C"
+        "ANC" -> "N Z C"
+        "ALR" -> "N Z C"
+        "ARR" -> "N V Z C"
+        "SBX" -> "N Z C"
+        "ANE" -> "N Z"
+        "LXA" -> "N Z"
+        "SHA" -> "-"
+        "SHX" -> "-"
+        "SHY" -> "-"
+        "TAS" -> "-"
+        "LAS" -> "N Z"
+        "JAM" -> "-"
+        _ -> "?"
+
+
+{-| Get human-readable addressing mode string
+-}
+addressingModeString : AddressingMode -> String
+addressingModeString mode =
+    case mode of
+        Implied -> "Implied"
+        Accumulator -> "Accumulator"
+        Immediate -> "Immediate"
+        ZeroPage -> "Zero Page"
+        ZeroPageX -> "Zero Page,X"
+        ZeroPageY -> "Zero Page,Y"
+        Absolute -> "Absolute"
+        AbsoluteX -> "Absolute,X"
+        AbsoluteY -> "Absolute,Y"
+        Indirect -> "Indirect"
+        IndirectX -> "Indirect,X"
+        IndirectY -> "Indirect,Y"
+        Relative -> "Relative"
 
 
 unknownOpcode : OpcodeInfo

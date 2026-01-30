@@ -8080,6 +8080,580 @@ var $elm$html$Html$Attributes$tabindex = function (n) {
 		'tabIndex',
 		$elm$core$String$fromInt(n));
 };
+var $author$project$Opcodes$addressingModeString = function (mode) {
+	switch (mode.$) {
+		case 'Implied':
+			return 'Implied';
+		case 'Accumulator':
+			return 'Accumulator';
+		case 'Immediate':
+			return 'Immediate';
+		case 'ZeroPage':
+			return 'Zero Page';
+		case 'ZeroPageX':
+			return 'Zero Page,X';
+		case 'ZeroPageY':
+			return 'Zero Page,Y';
+		case 'Absolute':
+			return 'Absolute';
+		case 'AbsoluteX':
+			return 'Absolute,X';
+		case 'AbsoluteY':
+			return 'Absolute,Y';
+		case 'Indirect':
+			return 'Indirect';
+		case 'IndirectX':
+			return 'Indirect,X';
+		case 'IndirectY':
+			return 'Indirect,Y';
+		default:
+			return 'Relative';
+	}
+};
+var $author$project$Opcodes$getOpcodeDescription = function (mnemonic) {
+	var _v0 = $elm$core$String$toUpper(mnemonic);
+	switch (_v0) {
+		case 'LDA':
+			return 'Load Accumulator from memory';
+		case 'LDX':
+			return 'Load X register from memory';
+		case 'LDY':
+			return 'Load Y register from memory';
+		case 'STA':
+			return 'Store Accumulator to memory';
+		case 'STX':
+			return 'Store X register to memory';
+		case 'STY':
+			return 'Store Y register to memory';
+		case 'TAX':
+			return 'Transfer Accumulator to X';
+		case 'TAY':
+			return 'Transfer Accumulator to Y';
+		case 'TXA':
+			return 'Transfer X to Accumulator';
+		case 'TYA':
+			return 'Transfer Y to Accumulator';
+		case 'TSX':
+			return 'Transfer Stack Pointer to X';
+		case 'TXS':
+			return 'Transfer X to Stack Pointer';
+		case 'PHA':
+			return 'Push Accumulator to stack';
+		case 'PHP':
+			return 'Push Processor Status to stack';
+		case 'PLA':
+			return 'Pull Accumulator from stack';
+		case 'PLP':
+			return 'Pull Processor Status from stack';
+		case 'ADC':
+			return 'Add to Accumulator with Carry';
+		case 'SBC':
+			return 'Subtract from Accumulator with Borrow';
+		case 'INC':
+			return 'Increment memory by one';
+		case 'INX':
+			return 'Increment X by one';
+		case 'INY':
+			return 'Increment Y by one';
+		case 'DEC':
+			return 'Decrement memory by one';
+		case 'DEX':
+			return 'Decrement X by one';
+		case 'DEY':
+			return 'Decrement Y by one';
+		case 'AND':
+			return 'Logical AND with Accumulator';
+		case 'ORA':
+			return 'Logical OR with Accumulator';
+		case 'EOR':
+			return 'Exclusive OR with Accumulator';
+		case 'BIT':
+			return 'Test bits in memory with Accumulator';
+		case 'ASL':
+			return 'Arithmetic Shift Left (C <- [76543210] <- 0)';
+		case 'LSR':
+			return 'Logical Shift Right (0 -> [76543210] -> C)';
+		case 'ROL':
+			return 'Rotate Left (C <- [76543210] <- C)';
+		case 'ROR':
+			return 'Rotate Right (C -> [76543210] -> C)';
+		case 'CMP':
+			return 'Compare Accumulator with memory';
+		case 'CPX':
+			return 'Compare X with memory';
+		case 'CPY':
+			return 'Compare Y with memory';
+		case 'BCC':
+			return 'Branch if Carry Clear (C=0)';
+		case 'BCS':
+			return 'Branch if Carry Set (C=1)';
+		case 'BEQ':
+			return 'Branch if Equal (Z=1)';
+		case 'BMI':
+			return 'Branch if Minus (N=1)';
+		case 'BNE':
+			return 'Branch if Not Equal (Z=0)';
+		case 'BPL':
+			return 'Branch if Plus (N=0)';
+		case 'BVC':
+			return 'Branch if Overflow Clear (V=0)';
+		case 'BVS':
+			return 'Branch if Overflow Set (V=1)';
+		case 'JMP':
+			return 'Jump to address';
+		case 'JSR':
+			return 'Jump to Subroutine (push return address)';
+		case 'RTS':
+			return 'Return from Subroutine';
+		case 'RTI':
+			return 'Return from Interrupt';
+		case 'BRK':
+			return 'Force Break (software interrupt)';
+		case 'CLC':
+			return 'Clear Carry flag';
+		case 'CLD':
+			return 'Clear Decimal mode';
+		case 'CLI':
+			return 'Clear Interrupt Disable';
+		case 'CLV':
+			return 'Clear Overflow flag';
+		case 'SEC':
+			return 'Set Carry flag';
+		case 'SED':
+			return 'Set Decimal mode';
+		case 'SEI':
+			return 'Set Interrupt Disable';
+		case 'NOP':
+			return 'No Operation';
+		case 'LAX':
+			return 'LDA + LDX (load A and X)';
+		case 'SAX':
+			return 'Store A AND X to memory';
+		case 'DCP':
+			return 'DEC + CMP (decrement then compare)';
+		case 'ISC':
+			return 'INC + SBC (increment then subtract)';
+		case 'SLO':
+			return 'ASL + ORA (shift left then OR)';
+		case 'RLA':
+			return 'ROL + AND (rotate left then AND)';
+		case 'SRE':
+			return 'LSR + EOR (shift right then XOR)';
+		case 'RRA':
+			return 'ROR + ADC (rotate right then add)';
+		case 'ANC':
+			return 'AND + set Carry from bit 7';
+		case 'ALR':
+			return 'AND + LSR (AND then shift right)';
+		case 'ARR':
+			return 'AND + ROR (AND then rotate right)';
+		case 'SBX':
+			return '(A AND X) minus operand -> X';
+		case 'ANE':
+			return 'A = (A OR magic) AND X AND operand';
+		case 'LXA':
+			return 'A = X = (A OR magic) AND operand';
+		case 'SHA':
+			return 'Store A AND X AND (addr_hi + 1)';
+		case 'SHX':
+			return 'Store X AND (addr_hi + 1)';
+		case 'SHY':
+			return 'Store Y AND (addr_hi + 1)';
+		case 'TAS':
+			return 'S = A AND X; store S AND (addr_hi + 1)';
+		case 'LAS':
+			return 'A = X = S = memory AND S';
+		case 'JAM':
+			return 'Halt processor (freeze/crash)';
+		default:
+			return 'Unknown opcode';
+	}
+};
+var $author$project$Opcodes$getOpcodeFlags = function (mnemonic) {
+	var _v0 = $elm$core$String$toUpper(mnemonic);
+	switch (_v0) {
+		case 'LDA':
+			return 'N Z';
+		case 'LDX':
+			return 'N Z';
+		case 'LDY':
+			return 'N Z';
+		case 'STA':
+			return '-';
+		case 'STX':
+			return '-';
+		case 'STY':
+			return '-';
+		case 'TAX':
+			return 'N Z';
+		case 'TAY':
+			return 'N Z';
+		case 'TXA':
+			return 'N Z';
+		case 'TYA':
+			return 'N Z';
+		case 'TSX':
+			return 'N Z';
+		case 'TXS':
+			return '-';
+		case 'PHA':
+			return '-';
+		case 'PHP':
+			return '-';
+		case 'PLA':
+			return 'N Z';
+		case 'PLP':
+			return 'all';
+		case 'ADC':
+			return 'N V Z C';
+		case 'SBC':
+			return 'N V Z C';
+		case 'INC':
+			return 'N Z';
+		case 'INX':
+			return 'N Z';
+		case 'INY':
+			return 'N Z';
+		case 'DEC':
+			return 'N Z';
+		case 'DEX':
+			return 'N Z';
+		case 'DEY':
+			return 'N Z';
+		case 'AND':
+			return 'N Z';
+		case 'ORA':
+			return 'N Z';
+		case 'EOR':
+			return 'N Z';
+		case 'BIT':
+			return 'N V Z';
+		case 'ASL':
+			return 'N Z C';
+		case 'LSR':
+			return 'N Z C';
+		case 'ROL':
+			return 'N Z C';
+		case 'ROR':
+			return 'N Z C';
+		case 'CMP':
+			return 'N Z C';
+		case 'CPX':
+			return 'N Z C';
+		case 'CPY':
+			return 'N Z C';
+		case 'BCC':
+			return '-';
+		case 'BCS':
+			return '-';
+		case 'BEQ':
+			return '-';
+		case 'BMI':
+			return '-';
+		case 'BNE':
+			return '-';
+		case 'BPL':
+			return '-';
+		case 'BVC':
+			return '-';
+		case 'BVS':
+			return '-';
+		case 'JMP':
+			return '-';
+		case 'JSR':
+			return '-';
+		case 'RTS':
+			return '-';
+		case 'RTI':
+			return 'all';
+		case 'BRK':
+			return 'B I';
+		case 'CLC':
+			return 'C';
+		case 'CLD':
+			return 'D';
+		case 'CLI':
+			return 'I';
+		case 'CLV':
+			return 'V';
+		case 'SEC':
+			return 'C';
+		case 'SED':
+			return 'D';
+		case 'SEI':
+			return 'I';
+		case 'NOP':
+			return '-';
+		case 'LAX':
+			return 'N Z';
+		case 'SAX':
+			return '-';
+		case 'DCP':
+			return 'N Z C';
+		case 'ISC':
+			return 'N V Z C';
+		case 'SLO':
+			return 'N Z C';
+		case 'RLA':
+			return 'N Z C';
+		case 'SRE':
+			return 'N Z C';
+		case 'RRA':
+			return 'N V Z C';
+		case 'ANC':
+			return 'N Z C';
+		case 'ALR':
+			return 'N Z C';
+		case 'ARR':
+			return 'N V Z C';
+		case 'SBX':
+			return 'N Z C';
+		case 'ANE':
+			return 'N Z';
+		case 'LXA':
+			return 'N Z';
+		case 'SHA':
+			return '-';
+		case 'SHX':
+			return '-';
+		case 'SHY':
+			return '-';
+		case 'TAS':
+			return '-';
+		case 'LAS':
+			return 'N Z';
+		case 'JAM':
+			return '-';
+		default:
+			return '?';
+	}
+};
+var $elm$html$Html$span = _VirtualDom_node('span');
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $author$project$Main$viewCheatsheet = function (model) {
+	var _v0 = model.selectedOffset;
+	if (_v0.$ === 'Nothing') {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('cheatsheet')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('cheatsheet-empty')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Select a line to see opcode info')
+						]))
+				]));
+	} else {
+		var offset = _v0.a;
+		var inDataRegion = A2(
+			$elm$core$List$any,
+			function (r) {
+				return (_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1);
+			},
+			model.dataRegions);
+		if (inDataRegion) {
+			return A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('cheatsheet')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$span,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('cheatsheet-mnemonic')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('.byte')
+							])),
+						A2(
+						$elm$html$Html$span,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('cheatsheet-sep')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(' | ')
+							])),
+						A2(
+						$elm$html$Html$span,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('cheatsheet-desc')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Data byte (not code)')
+							]))
+					]));
+		} else {
+			var _v1 = A2($elm$core$Array$get, offset, model.bytes);
+			if (_v1.$ === 'Nothing') {
+				return A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('cheatsheet')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-empty')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('End of file')
+								]))
+						]));
+			} else {
+				var opcodeByte = _v1.a;
+				var info = $author$project$Opcodes$getOpcode(opcodeByte);
+				var mnemonic = info.undocumented ? ('*' + info.mnemonic) : info.mnemonic;
+				var mode = $author$project$Opcodes$addressingModeString(info.mode);
+				var flags = $author$project$Opcodes$getOpcodeFlags(info.mnemonic);
+				var description = $author$project$Opcodes$getOpcodeDescription(info.mnemonic);
+				var cycles = $elm$core$String$fromInt(info.cycles);
+				return A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('cheatsheet')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-mnemonic')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(mnemonic)
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-sep')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(' | ')
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-mode')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(mode)
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-sep')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(' | ')
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-desc')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(description)
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-sep')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(' | ')
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-label')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Flags: ')
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-flags')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(flags)
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-sep')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(' | ')
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-label')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Cycles: ')
+								])),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cheatsheet-cycles')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(cycles)
+								]))
+						]));
+			}
+		}
+	}
+};
 var $author$project$Main$Scroll = function (a) {
 	return {$: 'Scroll', a: a};
 };
@@ -8157,9 +8731,6 @@ var $author$project$Main$onWheel = function (toMsg) {
 			},
 			A2($elm$json$Json$Decode$field, 'deltaY', $elm$json$Json$Decode$float)));
 };
-var $elm$html$Html$span = _VirtualDom_node('span');
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$viewDisassemblyHeader = A2(
 	$elm$html$Html$div,
 	_List_fromArray(
@@ -9349,6 +9920,7 @@ var $author$project$Main$view = function (model) {
 			[
 				$author$project$Main$viewHeader(model),
 				$author$project$Main$viewToolbar(model),
+				$author$project$Main$viewCheatsheet(model),
 				$author$project$Main$viewDisassembly(model),
 				$author$project$Main$viewFooter(model)
 			]));
