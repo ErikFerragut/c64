@@ -5783,6 +5783,16 @@ var $elm$core$Dict$get = F2(
 			}
 		}
 	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
 var $elm$core$Dict$Black = {$: 'Black'};
 var $elm$core$Dict$RBNode_elm_builtin = F5(
 	function (a, b, c, d, e) {
@@ -5906,223 +5916,656 @@ var $elm$core$Dict$fromList = function (assocs) {
 var $author$project$Symbols$symbolTable = $elm$core$Dict$fromList(
 	_List_fromArray(
 		[
-			_Utils_Tuple2(1, 'CPU_PORT'),
-			_Utils_Tuple2(3, 'ADRAY1'),
-			_Utils_Tuple2(5, 'ADRAY2'),
-			_Utils_Tuple2(20, 'TXTPTR'),
-			_Utils_Tuple2(43, 'TXTTAB'),
-			_Utils_Tuple2(45, 'VARTAB'),
-			_Utils_Tuple2(49, 'STRTAB'),
-			_Utils_Tuple2(51, 'FRETOP'),
-			_Utils_Tuple2(55, 'MEMSIZ'),
-			_Utils_Tuple2(57, 'CURLIN'),
-			_Utils_Tuple2(61, 'FORPNT'),
-			_Utils_Tuple2(97, 'FAC1'),
-			_Utils_Tuple2(105, 'FAC2'),
-			_Utils_Tuple2(122, 'CHRGET'),
-			_Utils_Tuple2(139, 'CHRGOT'),
-			_Utils_Tuple2(144, 'STATUS'),
-			_Utils_Tuple2(145, 'STKEY'),
-			_Utils_Tuple2(147, 'VERCK'),
-			_Utils_Tuple2(148, 'C3PO'),
-			_Utils_Tuple2(151, 'XSAV'),
-			_Utils_Tuple2(157, 'MSGFLG'),
-			_Utils_Tuple2(160, 'JIFFY_CLOCK'),
-			_Utils_Tuple2(163, 'BESSION'),
-			_Utils_Tuple2(164, 'TLNIDX'),
-			_Utils_Tuple2(178, 'EAL'),
-			_Utils_Tuple2(183, 'FNLEN'),
-			_Utils_Tuple2(186, 'FA'),
-			_Utils_Tuple2(187, 'FNADR'),
-			_Utils_Tuple2(197, 'LSTX'),
-			_Utils_Tuple2(198, 'NDX'),
-			_Utils_Tuple2(203, 'SFDX'),
-			_Utils_Tuple2(204, 'BLNSW'),
-			_Utils_Tuple2(206, 'GDBLN'),
-			_Utils_Tuple2(211, 'PNTR'),
-			_Utils_Tuple2(214, 'LNMX'),
-			_Utils_Tuple2(1024, 'SCREEN_RAM'),
-			_Utils_Tuple2(40960, 'BASIC_COLD_START'),
-			_Utils_Tuple2(40972, 'BASIC_WARM_START'),
-			_Utils_Tuple2(42291, 'BASIC_PRINT'),
-			_Utils_Tuple2(42336, 'BASIC_PRINT_INT'),
-			_Utils_Tuple2(43256, 'BASIC_GETBYT'),
-			_Utils_Tuple2(44446, 'BASIC_FRMNUM'),
-			_Utils_Tuple2(44675, 'BASIC_GETADR'),
-			_Utils_Tuple2(47095, 'BASIC_MOVMF'),
-			_Utils_Tuple2(48589, 'BASIC_PRINTSTR'),
-			_Utils_Tuple2(58624, 'CINT'),
-			_Utils_Tuple2(58648, 'IOINIT_SCREEN'),
-			_Utils_Tuple2(58692, 'CLEAR_SCREEN'),
-			_Utils_Tuple2(58726, 'HOME'),
-			_Utils_Tuple2(58784, 'SET_CURSOR'),
-			_Utils_Tuple2(59626, 'SCROLL_UP'),
-			_Utils_Tuple2(59953, 'IRQ_HANDLER'),
-			_Utils_Tuple2(60039, 'SCNKEY'),
-			_Utils_Tuple2(62622, 'LOAD_RAM'),
-			_Utils_Tuple2(62957, 'SAVE'),
-			_Utils_Tuple2(63131, 'SETHDR'),
-			_Utils_Tuple2(64789, 'RESTOR'),
-			_Utils_Tuple2(64848, 'RAMTAS'),
-			_Utils_Tuple2(64931, 'IOINIT'),
-			_Utils_Tuple2(65017, 'SETMSG'),
-			_Utils_Tuple2(65061, 'NMI_HANDLER'),
-			_Utils_Tuple2(65347, 'IRQ_ENTRY'),
-			_Utils_Tuple2(65352, 'NMI_ENTRY'),
-			_Utils_Tuple2(65409, 'CINT_JUMP'),
-			_Utils_Tuple2(65412, 'IOINIT_JUMP'),
-			_Utils_Tuple2(65415, 'RAMTAS_JUMP'),
-			_Utils_Tuple2(65418, 'RESTOR_JUMP'),
-			_Utils_Tuple2(65421, 'VECTOR'),
-			_Utils_Tuple2(65424, 'SETMSG_JUMP'),
-			_Utils_Tuple2(65427, 'SECOND'),
-			_Utils_Tuple2(65430, 'TKSA'),
-			_Utils_Tuple2(65433, 'MEMTOP'),
-			_Utils_Tuple2(65436, 'MEMBOT'),
-			_Utils_Tuple2(65439, 'SCNKEY_JUMP'),
-			_Utils_Tuple2(65442, 'SETTMO'),
-			_Utils_Tuple2(65445, 'ACPTR'),
-			_Utils_Tuple2(65448, 'CIOUT'),
-			_Utils_Tuple2(65451, 'UNTLK'),
-			_Utils_Tuple2(65454, 'UNLSN'),
-			_Utils_Tuple2(65457, 'LISTEN'),
-			_Utils_Tuple2(65460, 'TALK'),
-			_Utils_Tuple2(65463, 'READST'),
-			_Utils_Tuple2(65466, 'SETLFS'),
-			_Utils_Tuple2(65469, 'SETNAM'),
-			_Utils_Tuple2(65472, 'OPEN'),
-			_Utils_Tuple2(65475, 'CLOSE'),
-			_Utils_Tuple2(65478, 'CHKIN'),
-			_Utils_Tuple2(65481, 'CHKOUT'),
-			_Utils_Tuple2(65484, 'CLRCHN'),
-			_Utils_Tuple2(65487, 'CHRIN'),
-			_Utils_Tuple2(65490, 'CHROUT'),
-			_Utils_Tuple2(65493, 'LOAD'),
-			_Utils_Tuple2(65496, 'SAVE'),
-			_Utils_Tuple2(65499, 'SETTIM'),
-			_Utils_Tuple2(65502, 'RDTIM'),
-			_Utils_Tuple2(65505, 'STOP'),
-			_Utils_Tuple2(65508, 'GETIN'),
-			_Utils_Tuple2(65511, 'CLALL'),
-			_Utils_Tuple2(65514, 'UDTIM'),
-			_Utils_Tuple2(65517, 'SCREEN'),
-			_Utils_Tuple2(65520, 'PLOT'),
-			_Utils_Tuple2(65523, 'IOBASE'),
-			_Utils_Tuple2(65530, 'NMI_VECTOR'),
-			_Utils_Tuple2(65532, 'RESET_VECTOR'),
-			_Utils_Tuple2(65534, 'IRQ_VECTOR'),
-			_Utils_Tuple2(53248, 'VIC_SPRITE0_X'),
-			_Utils_Tuple2(53249, 'VIC_SPRITE0_Y'),
-			_Utils_Tuple2(53250, 'VIC_SPRITE1_X'),
-			_Utils_Tuple2(53251, 'VIC_SPRITE1_Y'),
-			_Utils_Tuple2(53252, 'VIC_SPRITE2_X'),
-			_Utils_Tuple2(53253, 'VIC_SPRITE2_Y'),
-			_Utils_Tuple2(53254, 'VIC_SPRITE3_X'),
-			_Utils_Tuple2(53255, 'VIC_SPRITE3_Y'),
-			_Utils_Tuple2(53256, 'VIC_SPRITE4_X'),
-			_Utils_Tuple2(53257, 'VIC_SPRITE4_Y'),
-			_Utils_Tuple2(53258, 'VIC_SPRITE5_X'),
-			_Utils_Tuple2(53259, 'VIC_SPRITE5_Y'),
-			_Utils_Tuple2(53260, 'VIC_SPRITE6_X'),
-			_Utils_Tuple2(53261, 'VIC_SPRITE6_Y'),
-			_Utils_Tuple2(53262, 'VIC_SPRITE7_X'),
-			_Utils_Tuple2(53263, 'VIC_SPRITE7_Y'),
-			_Utils_Tuple2(53264, 'VIC_SPRITES_X_MSB'),
-			_Utils_Tuple2(53265, 'VIC_CONTROL1'),
-			_Utils_Tuple2(53266, 'VIC_RASTER'),
-			_Utils_Tuple2(53267, 'VIC_LIGHT_PEN_X'),
-			_Utils_Tuple2(53268, 'VIC_LIGHT_PEN_Y'),
-			_Utils_Tuple2(53269, 'VIC_SPRITE_ENABLE'),
-			_Utils_Tuple2(53270, 'VIC_CONTROL2'),
-			_Utils_Tuple2(53271, 'VIC_SPRITE_EXPAND_Y'),
-			_Utils_Tuple2(53272, 'VIC_MEMORY_SETUP'),
-			_Utils_Tuple2(53273, 'VIC_IRQ_STATUS'),
-			_Utils_Tuple2(53274, 'VIC_IRQ_ENABLE'),
-			_Utils_Tuple2(53275, 'VIC_SPRITE_PRIORITY'),
-			_Utils_Tuple2(53276, 'VIC_SPRITE_MULTICOLOR'),
-			_Utils_Tuple2(53277, 'VIC_SPRITE_EXPAND_X'),
-			_Utils_Tuple2(53278, 'VIC_SPRITE_COLLISION'),
-			_Utils_Tuple2(53279, 'VIC_SPRITE_BG_COLLISION'),
-			_Utils_Tuple2(53280, 'VIC_BORDER_COLOR'),
-			_Utils_Tuple2(53281, 'VIC_BG_COLOR0'),
-			_Utils_Tuple2(53282, 'VIC_BG_COLOR1'),
-			_Utils_Tuple2(53283, 'VIC_BG_COLOR2'),
-			_Utils_Tuple2(53284, 'VIC_BG_COLOR3'),
-			_Utils_Tuple2(53285, 'VIC_SPRITE_MC0'),
-			_Utils_Tuple2(53286, 'VIC_SPRITE_MC1'),
-			_Utils_Tuple2(53287, 'VIC_SPRITE0_COLOR'),
-			_Utils_Tuple2(53288, 'VIC_SPRITE1_COLOR'),
-			_Utils_Tuple2(53289, 'VIC_SPRITE2_COLOR'),
-			_Utils_Tuple2(53290, 'VIC_SPRITE3_COLOR'),
-			_Utils_Tuple2(53291, 'VIC_SPRITE4_COLOR'),
-			_Utils_Tuple2(53292, 'VIC_SPRITE5_COLOR'),
-			_Utils_Tuple2(53293, 'VIC_SPRITE6_COLOR'),
-			_Utils_Tuple2(53294, 'VIC_SPRITE7_COLOR'),
-			_Utils_Tuple2(54272, 'SID_V1_FREQ_LO'),
-			_Utils_Tuple2(54273, 'SID_V1_FREQ_HI'),
-			_Utils_Tuple2(54274, 'SID_V1_PW_LO'),
-			_Utils_Tuple2(54275, 'SID_V1_PW_HI'),
-			_Utils_Tuple2(54276, 'SID_V1_CONTROL'),
-			_Utils_Tuple2(54277, 'SID_V1_ATTACK_DECAY'),
-			_Utils_Tuple2(54278, 'SID_V1_SUSTAIN_RELEASE'),
-			_Utils_Tuple2(54279, 'SID_V2_FREQ_LO'),
-			_Utils_Tuple2(54280, 'SID_V2_FREQ_HI'),
-			_Utils_Tuple2(54281, 'SID_V2_PW_LO'),
-			_Utils_Tuple2(54282, 'SID_V2_PW_HI'),
-			_Utils_Tuple2(54283, 'SID_V2_CONTROL'),
-			_Utils_Tuple2(54284, 'SID_V2_ATTACK_DECAY'),
-			_Utils_Tuple2(54285, 'SID_V2_SUSTAIN_RELEASE'),
-			_Utils_Tuple2(54286, 'SID_V3_FREQ_LO'),
-			_Utils_Tuple2(54287, 'SID_V3_FREQ_HI'),
-			_Utils_Tuple2(54288, 'SID_V3_PW_LO'),
-			_Utils_Tuple2(54289, 'SID_V3_PW_HI'),
-			_Utils_Tuple2(54290, 'SID_V3_CONTROL'),
-			_Utils_Tuple2(54291, 'SID_V3_ATTACK_DECAY'),
-			_Utils_Tuple2(54292, 'SID_V3_SUSTAIN_RELEASE'),
-			_Utils_Tuple2(54293, 'SID_FILTER_FREQ_LO'),
-			_Utils_Tuple2(54294, 'SID_FILTER_FREQ_HI'),
-			_Utils_Tuple2(54295, 'SID_FILTER_RESONANCE'),
-			_Utils_Tuple2(54296, 'SID_VOLUME_FILTER'),
-			_Utils_Tuple2(54297, 'SID_POT_X'),
-			_Utils_Tuple2(54298, 'SID_POT_Y'),
-			_Utils_Tuple2(54299, 'SID_OSC3_RANDOM'),
-			_Utils_Tuple2(54300, 'SID_ENV3'),
-			_Utils_Tuple2(56320, 'CIA1_PORT_A'),
-			_Utils_Tuple2(56321, 'CIA1_PORT_B'),
-			_Utils_Tuple2(56322, 'CIA1_DDR_A'),
-			_Utils_Tuple2(56323, 'CIA1_DDR_B'),
-			_Utils_Tuple2(56324, 'CIA1_TIMER_A_LO'),
-			_Utils_Tuple2(56325, 'CIA1_TIMER_A_HI'),
-			_Utils_Tuple2(56326, 'CIA1_TIMER_B_LO'),
-			_Utils_Tuple2(56327, 'CIA1_TIMER_B_HI'),
-			_Utils_Tuple2(56328, 'CIA1_TOD_TENTHS'),
-			_Utils_Tuple2(56329, 'CIA1_TOD_SEC'),
-			_Utils_Tuple2(56330, 'CIA1_TOD_MIN'),
-			_Utils_Tuple2(56331, 'CIA1_TOD_HR'),
-			_Utils_Tuple2(56332, 'CIA1_SERIAL'),
-			_Utils_Tuple2(56333, 'CIA1_IRQ_CONTROL'),
-			_Utils_Tuple2(56334, 'CIA1_CONTROL_A'),
-			_Utils_Tuple2(56335, 'CIA1_CONTROL_B'),
-			_Utils_Tuple2(56576, 'CIA2_PORT_A'),
-			_Utils_Tuple2(56577, 'CIA2_PORT_B'),
-			_Utils_Tuple2(56578, 'CIA2_DDR_A'),
-			_Utils_Tuple2(56579, 'CIA2_DDR_B'),
-			_Utils_Tuple2(56580, 'CIA2_TIMER_A_LO'),
-			_Utils_Tuple2(56581, 'CIA2_TIMER_A_HI'),
-			_Utils_Tuple2(56582, 'CIA2_TIMER_B_LO'),
-			_Utils_Tuple2(56583, 'CIA2_TIMER_B_HI'),
-			_Utils_Tuple2(56584, 'CIA2_TOD_TENTHS'),
-			_Utils_Tuple2(56585, 'CIA2_TOD_SEC'),
-			_Utils_Tuple2(56586, 'CIA2_TOD_MIN'),
-			_Utils_Tuple2(56587, 'CIA2_TOD_HR'),
-			_Utils_Tuple2(56588, 'CIA2_SERIAL'),
-			_Utils_Tuple2(56589, 'CIA2_NMI_CONTROL'),
-			_Utils_Tuple2(56590, 'CIA2_CONTROL_A'),
-			_Utils_Tuple2(56591, 'CIA2_CONTROL_B'),
-			_Utils_Tuple2(55296, 'COLOR_RAM')
+			_Utils_Tuple2(
+			1,
+			{description: 'Processor port data direction and data registers', name: 'CPU_PORT'}),
+			_Utils_Tuple2(
+			3,
+			{description: 'Vector to convert FAC to integer', name: 'ADRAY1'}),
+			_Utils_Tuple2(
+			5,
+			{description: 'Vector to convert integer to FAC', name: 'ADRAY2'}),
+			_Utils_Tuple2(
+			20,
+			{description: 'Pointer to current BASIC text character', name: 'TXTPTR'}),
+			_Utils_Tuple2(
+			43,
+			{description: 'Pointer to start of BASIC program', name: 'TXTTAB'}),
+			_Utils_Tuple2(
+			45,
+			{description: 'Pointer to start of BASIC variables', name: 'VARTAB'}),
+			_Utils_Tuple2(
+			49,
+			{description: 'Pointer to start of string storage', name: 'STRTAB'}),
+			_Utils_Tuple2(
+			51,
+			{description: 'Pointer to top of string free space', name: 'FRETOP'}),
+			_Utils_Tuple2(
+			55,
+			{description: 'Pointer to highest BASIC RAM address', name: 'MEMSIZ'}),
+			_Utils_Tuple2(
+			57,
+			{description: 'Current BASIC line number', name: 'CURLIN'}),
+			_Utils_Tuple2(
+			61,
+			{description: 'Pointer to current FOR/NEXT variable', name: 'FORPNT'}),
+			_Utils_Tuple2(
+			97,
+			{description: 'Floating point accumulator 1', name: 'FAC1'}),
+			_Utils_Tuple2(
+			105,
+			{description: 'Floating point accumulator 2', name: 'FAC2'}),
+			_Utils_Tuple2(
+			122,
+			{description: 'Get next BASIC character subroutine', name: 'CHRGET'}),
+			_Utils_Tuple2(
+			139,
+			{description: 'Get current BASIC character subroutine', name: 'CHRGOT'}),
+			_Utils_Tuple2(
+			144,
+			{description: 'I/O operation status byte', name: 'STATUS'}),
+			_Utils_Tuple2(
+			145,
+			{description: 'STOP key flag', name: 'STKEY'}),
+			_Utils_Tuple2(
+			147,
+			{description: 'Load/verify flag (0=load, 1=verify)', name: 'VERCK'}),
+			_Utils_Tuple2(
+			148,
+			{description: 'IEEE output character buffer flag', name: 'C3PO'}),
+			_Utils_Tuple2(
+			151,
+			{description: 'Temp storage for X register', name: 'XSAV'}),
+			_Utils_Tuple2(
+			157,
+			{description: 'Direct mode flag (bit 7) / error msg flag (bit 6)', name: 'MSGFLG'}),
+			_Utils_Tuple2(
+			160,
+			{description: '60Hz jiffy clock (3 bytes, approx 24hr)', name: 'JIFFY_CLOCK'}),
+			_Utils_Tuple2(
+			163,
+			{description: 'Bit count for serial I/O', name: 'BESSION'}),
+			_Utils_Tuple2(
+			164,
+			{description: 'Physical line number', name: 'TLNIDX'}),
+			_Utils_Tuple2(
+			178,
+			{description: 'End address (low byte) for load/save', name: 'EAL'}),
+			_Utils_Tuple2(
+			183,
+			{description: 'Length of current filename', name: 'FNLEN'}),
+			_Utils_Tuple2(
+			186,
+			{description: 'Current device number', name: 'FA'}),
+			_Utils_Tuple2(
+			187,
+			{description: 'Pointer to current filename', name: 'FNADR'}),
+			_Utils_Tuple2(
+			197,
+			{description: 'Matrix coordinate of last keypress', name: 'LSTX'}),
+			_Utils_Tuple2(
+			198,
+			{description: 'Number of characters in keyboard buffer', name: 'NDX'}),
+			_Utils_Tuple2(
+			203,
+			{description: 'Current key pressed (matrix value)', name: 'SFDX'}),
+			_Utils_Tuple2(
+			204,
+			{description: 'Cursor blink enable (0=blink)', name: 'BLNSW'}),
+			_Utils_Tuple2(
+			206,
+			{description: 'Character under cursor', name: 'GDBLN'}),
+			_Utils_Tuple2(
+			211,
+			{description: 'Cursor column position', name: 'PNTR'}),
+			_Utils_Tuple2(
+			214,
+			{description: 'Max columns on current line', name: 'LNMX'}),
+			_Utils_Tuple2(
+			1024,
+			{description: 'Default screen memory (1000 bytes)', name: 'SCREEN_RAM'}),
+			_Utils_Tuple2(
+			40960,
+			{description: 'BASIC cold start entry point', name: 'BASIC_COLD_START'}),
+			_Utils_Tuple2(
+			40972,
+			{description: 'BASIC warm start entry point', name: 'BASIC_WARM_START'}),
+			_Utils_Tuple2(
+			42291,
+			{description: 'Print string routine', name: 'BASIC_PRINT'}),
+			_Utils_Tuple2(
+			42336,
+			{description: 'Print integer routine', name: 'BASIC_PRINT_INT'}),
+			_Utils_Tuple2(
+			43256,
+			{description: 'Get byte value from BASIC expression', name: 'BASIC_GETBYT'}),
+			_Utils_Tuple2(
+			44446,
+			{description: 'Evaluate numeric expression', name: 'BASIC_FRMNUM'}),
+			_Utils_Tuple2(
+			44675,
+			{description: 'Get 16-bit address from FAC', name: 'BASIC_GETADR'}),
+			_Utils_Tuple2(
+			47095,
+			{description: 'Move FAC to memory', name: 'BASIC_MOVMF'}),
+			_Utils_Tuple2(
+			48589,
+			{description: 'Print string from (Y,A)', name: 'BASIC_PRINTSTR'}),
+			_Utils_Tuple2(
+			58624,
+			{description: 'Initialize screen editor', name: 'CINT'}),
+			_Utils_Tuple2(
+			58648,
+			{description: 'Initialize I/O and screen', name: 'IOINIT_SCREEN'}),
+			_Utils_Tuple2(
+			58692,
+			{description: 'Clear screen', name: 'CLEAR_SCREEN'}),
+			_Utils_Tuple2(
+			58726,
+			{description: 'Move cursor to home position', name: 'HOME'}),
+			_Utils_Tuple2(
+			58784,
+			{description: 'Set cursor position', name: 'SET_CURSOR'}),
+			_Utils_Tuple2(
+			59626,
+			{description: 'Scroll screen up', name: 'SCROLL_UP'}),
+			_Utils_Tuple2(
+			59953,
+			{description: 'Default IRQ handler', name: 'IRQ_HANDLER'}),
+			_Utils_Tuple2(
+			60039,
+			{description: 'Scan keyboard', name: 'SCNKEY'}),
+			_Utils_Tuple2(
+			62622,
+			{description: 'Load file to RAM', name: 'LOAD_RAM'}),
+			_Utils_Tuple2(
+			62957,
+			{description: 'Save memory to file', name: 'SAVE'}),
+			_Utils_Tuple2(
+			63131,
+			{description: 'Set tape header', name: 'SETHDR'}),
+			_Utils_Tuple2(
+			64789,
+			{description: 'Restore I/O vectors to default', name: 'RESTOR'}),
+			_Utils_Tuple2(
+			64848,
+			{description: 'RAM test and set', name: 'RAMTAS'}),
+			_Utils_Tuple2(
+			64931,
+			{description: 'Initialize I/O devices', name: 'IOINIT'}),
+			_Utils_Tuple2(
+			65017,
+			{description: 'Set kernel message control', name: 'SETMSG'}),
+			_Utils_Tuple2(
+			65061,
+			{description: 'Default NMI handler', name: 'NMI_HANDLER'}),
+			_Utils_Tuple2(
+			65347,
+			{description: 'IRQ entry point (after push)', name: 'IRQ_ENTRY'}),
+			_Utils_Tuple2(
+			65352,
+			{description: 'NMI entry point', name: 'NMI_ENTRY'}),
+			_Utils_Tuple2(
+			65409,
+			{description: 'Initialize screen editor', name: 'CINT_JUMP'}),
+			_Utils_Tuple2(
+			65412,
+			{description: 'Initialize I/O devices', name: 'IOINIT_JUMP'}),
+			_Utils_Tuple2(
+			65415,
+			{description: 'RAM test and set pointers', name: 'RAMTAS_JUMP'}),
+			_Utils_Tuple2(
+			65418,
+			{description: 'Restore default I/O vectors', name: 'RESTOR_JUMP'}),
+			_Utils_Tuple2(
+			65421,
+			{description: 'Read/set I/O vector table', name: 'VECTOR'}),
+			_Utils_Tuple2(
+			65424,
+			{description: 'Control OS messages', name: 'SETMSG_JUMP'}),
+			_Utils_Tuple2(
+			65427,
+			{description: 'Send secondary address after LISTEN', name: 'SECOND'}),
+			_Utils_Tuple2(
+			65430,
+			{description: 'Send secondary address after TALK', name: 'TKSA'}),
+			_Utils_Tuple2(
+			65433,
+			{description: 'Read/set top of memory', name: 'MEMTOP'}),
+			_Utils_Tuple2(
+			65436,
+			{description: 'Read/set bottom of memory', name: 'MEMBOT'}),
+			_Utils_Tuple2(
+			65439,
+			{description: 'Scan keyboard', name: 'SCNKEY_JUMP'}),
+			_Utils_Tuple2(
+			65442,
+			{description: 'Set IEEE timeout', name: 'SETTMO'}),
+			_Utils_Tuple2(
+			65445,
+			{description: 'Input byte from serial bus', name: 'ACPTR'}),
+			_Utils_Tuple2(
+			65448,
+			{description: 'Output byte to serial bus', name: 'CIOUT'}),
+			_Utils_Tuple2(
+			65451,
+			{description: 'Command serial bus device to stop talking', name: 'UNTLK'}),
+			_Utils_Tuple2(
+			65454,
+			{description: 'Command serial bus device to stop listening', name: 'UNLSN'}),
+			_Utils_Tuple2(
+			65457,
+			{description: 'Command device to listen', name: 'LISTEN'}),
+			_Utils_Tuple2(
+			65460,
+			{description: 'Command device to talk', name: 'TALK'}),
+			_Utils_Tuple2(
+			65463,
+			{description: 'Read I/O status byte', name: 'READST'}),
+			_Utils_Tuple2(
+			65466,
+			{description: 'Set file parameters (logical/device/secondary)', name: 'SETLFS'}),
+			_Utils_Tuple2(
+			65469,
+			{description: 'Set filename', name: 'SETNAM'}),
+			_Utils_Tuple2(
+			65472,
+			{description: 'Open logical file', name: 'OPEN'}),
+			_Utils_Tuple2(
+			65475,
+			{description: 'Close logical file', name: 'CLOSE'}),
+			_Utils_Tuple2(
+			65478,
+			{description: 'Set input channel', name: 'CHKIN'}),
+			_Utils_Tuple2(
+			65481,
+			{description: 'Set output channel', name: 'CHKOUT'}),
+			_Utils_Tuple2(
+			65484,
+			{description: 'Restore default I/O channels', name: 'CLRCHN'}),
+			_Utils_Tuple2(
+			65487,
+			{description: 'Input character from channel', name: 'CHRIN'}),
+			_Utils_Tuple2(
+			65490,
+			{description: 'Output character to channel', name: 'CHROUT'}),
+			_Utils_Tuple2(
+			65493,
+			{description: 'Load RAM from device', name: 'LOAD'}),
+			_Utils_Tuple2(
+			65496,
+			{description: 'Save RAM to device', name: 'SAVE'}),
+			_Utils_Tuple2(
+			65499,
+			{description: 'Set jiffy clock', name: 'SETTIM'}),
+			_Utils_Tuple2(
+			65502,
+			{description: 'Read jiffy clock', name: 'RDTIM'}),
+			_Utils_Tuple2(
+			65505,
+			{description: 'Check STOP key', name: 'STOP'}),
+			_Utils_Tuple2(
+			65508,
+			{description: 'Get character from keyboard buffer', name: 'GETIN'}),
+			_Utils_Tuple2(
+			65511,
+			{description: 'Close all files', name: 'CLALL'}),
+			_Utils_Tuple2(
+			65514,
+			{description: 'Update jiffy clock', name: 'UDTIM'}),
+			_Utils_Tuple2(
+			65517,
+			{description: 'Get screen size (columns/rows)', name: 'SCREEN'}),
+			_Utils_Tuple2(
+			65520,
+			{description: 'Read/set cursor position', name: 'PLOT'}),
+			_Utils_Tuple2(
+			65523,
+			{description: 'Get I/O base address', name: 'IOBASE'}),
+			_Utils_Tuple2(
+			65530,
+			{description: 'Non-maskable interrupt vector', name: 'NMI_VECTOR'}),
+			_Utils_Tuple2(
+			65532,
+			{description: 'Reset vector', name: 'RESET_VECTOR'}),
+			_Utils_Tuple2(
+			65534,
+			{description: 'Interrupt request vector', name: 'IRQ_VECTOR'}),
+			_Utils_Tuple2(
+			53248,
+			{description: 'Sprite 0 X position (bits 0-7)', name: 'VIC_SPRITE0_X'}),
+			_Utils_Tuple2(
+			53249,
+			{description: 'Sprite 0 Y position', name: 'VIC_SPRITE0_Y'}),
+			_Utils_Tuple2(
+			53250,
+			{description: 'Sprite 1 X position (bits 0-7)', name: 'VIC_SPRITE1_X'}),
+			_Utils_Tuple2(
+			53251,
+			{description: 'Sprite 1 Y position', name: 'VIC_SPRITE1_Y'}),
+			_Utils_Tuple2(
+			53252,
+			{description: 'Sprite 2 X position (bits 0-7)', name: 'VIC_SPRITE2_X'}),
+			_Utils_Tuple2(
+			53253,
+			{description: 'Sprite 2 Y position', name: 'VIC_SPRITE2_Y'}),
+			_Utils_Tuple2(
+			53254,
+			{description: 'Sprite 3 X position (bits 0-7)', name: 'VIC_SPRITE3_X'}),
+			_Utils_Tuple2(
+			53255,
+			{description: 'Sprite 3 Y position', name: 'VIC_SPRITE3_Y'}),
+			_Utils_Tuple2(
+			53256,
+			{description: 'Sprite 4 X position (bits 0-7)', name: 'VIC_SPRITE4_X'}),
+			_Utils_Tuple2(
+			53257,
+			{description: 'Sprite 4 Y position', name: 'VIC_SPRITE4_Y'}),
+			_Utils_Tuple2(
+			53258,
+			{description: 'Sprite 5 X position (bits 0-7)', name: 'VIC_SPRITE5_X'}),
+			_Utils_Tuple2(
+			53259,
+			{description: 'Sprite 5 Y position', name: 'VIC_SPRITE5_Y'}),
+			_Utils_Tuple2(
+			53260,
+			{description: 'Sprite 6 X position (bits 0-7)', name: 'VIC_SPRITE6_X'}),
+			_Utils_Tuple2(
+			53261,
+			{description: 'Sprite 6 Y position', name: 'VIC_SPRITE6_Y'}),
+			_Utils_Tuple2(
+			53262,
+			{description: 'Sprite 7 X position (bits 0-7)', name: 'VIC_SPRITE7_X'}),
+			_Utils_Tuple2(
+			53263,
+			{description: 'Sprite 7 Y position', name: 'VIC_SPRITE7_Y'}),
+			_Utils_Tuple2(
+			53264,
+			{description: 'Sprites 0-7 X position bit 8', name: 'VIC_SPRITES_X_MSB'}),
+			_Utils_Tuple2(
+			53265,
+			{description: 'Screen control: Y scroll, screen height, mode, raster bit 8', name: 'VIC_CONTROL1'}),
+			_Utils_Tuple2(
+			53266,
+			{description: 'Raster line (bits 0-7, read) / IRQ trigger line (write)', name: 'VIC_RASTER'}),
+			_Utils_Tuple2(
+			53267,
+			{description: 'Light pen X position', name: 'VIC_LIGHT_PEN_X'}),
+			_Utils_Tuple2(
+			53268,
+			{description: 'Light pen Y position', name: 'VIC_LIGHT_PEN_Y'}),
+			_Utils_Tuple2(
+			53269,
+			{description: 'Sprite enable bits (1=enabled)', name: 'VIC_SPRITE_ENABLE'}),
+			_Utils_Tuple2(
+			53270,
+			{description: 'Screen control: X scroll, screen width, multicolor mode', name: 'VIC_CONTROL2'}),
+			_Utils_Tuple2(
+			53271,
+			{description: 'Sprite Y expansion (1=double height)', name: 'VIC_SPRITE_EXPAND_Y'}),
+			_Utils_Tuple2(
+			53272,
+			{description: 'Screen and character memory pointers', name: 'VIC_MEMORY_SETUP'}),
+			_Utils_Tuple2(
+			53273,
+			{description: 'Interrupt status (raster, sprite collision, etc.)', name: 'VIC_IRQ_STATUS'}),
+			_Utils_Tuple2(
+			53274,
+			{description: 'Interrupt enable mask', name: 'VIC_IRQ_ENABLE'}),
+			_Utils_Tuple2(
+			53275,
+			{description: 'Sprite-to-background priority (0=sprite in front)', name: 'VIC_SPRITE_PRIORITY'}),
+			_Utils_Tuple2(
+			53276,
+			{description: 'Sprite multicolor mode (1=multicolor)', name: 'VIC_SPRITE_MULTICOLOR'}),
+			_Utils_Tuple2(
+			53277,
+			{description: 'Sprite X expansion (1=double width)', name: 'VIC_SPRITE_EXPAND_X'}),
+			_Utils_Tuple2(
+			53278,
+			{description: 'Sprite-sprite collision (read to clear)', name: 'VIC_SPRITE_COLLISION'}),
+			_Utils_Tuple2(
+			53279,
+			{description: 'Sprite-background collision (read to clear)', name: 'VIC_SPRITE_BG_COLLISION'}),
+			_Utils_Tuple2(
+			53280,
+			{description: 'Border color (0-15)', name: 'VIC_BORDER_COLOR'}),
+			_Utils_Tuple2(
+			53281,
+			{description: 'Background color 0 (0-15)', name: 'VIC_BG_COLOR0'}),
+			_Utils_Tuple2(
+			53282,
+			{description: 'Background color 1 for multicolor (0-15)', name: 'VIC_BG_COLOR1'}),
+			_Utils_Tuple2(
+			53283,
+			{description: 'Background color 2 for multicolor (0-15)', name: 'VIC_BG_COLOR2'}),
+			_Utils_Tuple2(
+			53284,
+			{description: 'Background color 3 for ECM mode (0-15)', name: 'VIC_BG_COLOR3'}),
+			_Utils_Tuple2(
+			53285,
+			{description: 'Sprite multicolor 0 (shared color 1)', name: 'VIC_SPRITE_MC0'}),
+			_Utils_Tuple2(
+			53286,
+			{description: 'Sprite multicolor 1 (shared color 3)', name: 'VIC_SPRITE_MC1'}),
+			_Utils_Tuple2(
+			53287,
+			{description: 'Sprite 0 color', name: 'VIC_SPRITE0_COLOR'}),
+			_Utils_Tuple2(
+			53288,
+			{description: 'Sprite 1 color', name: 'VIC_SPRITE1_COLOR'}),
+			_Utils_Tuple2(
+			53289,
+			{description: 'Sprite 2 color', name: 'VIC_SPRITE2_COLOR'}),
+			_Utils_Tuple2(
+			53290,
+			{description: 'Sprite 3 color', name: 'VIC_SPRITE3_COLOR'}),
+			_Utils_Tuple2(
+			53291,
+			{description: 'Sprite 4 color', name: 'VIC_SPRITE4_COLOR'}),
+			_Utils_Tuple2(
+			53292,
+			{description: 'Sprite 5 color', name: 'VIC_SPRITE5_COLOR'}),
+			_Utils_Tuple2(
+			53293,
+			{description: 'Sprite 6 color', name: 'VIC_SPRITE6_COLOR'}),
+			_Utils_Tuple2(
+			53294,
+			{description: 'Sprite 7 color', name: 'VIC_SPRITE7_COLOR'}),
+			_Utils_Tuple2(
+			54272,
+			{description: 'Voice 1 frequency low byte', name: 'SID_V1_FREQ_LO'}),
+			_Utils_Tuple2(
+			54273,
+			{description: 'Voice 1 frequency high byte', name: 'SID_V1_FREQ_HI'}),
+			_Utils_Tuple2(
+			54274,
+			{description: 'Voice 1 pulse width low byte', name: 'SID_V1_PW_LO'}),
+			_Utils_Tuple2(
+			54275,
+			{description: 'Voice 1 pulse width high nybble (bits 0-3)', name: 'SID_V1_PW_HI'}),
+			_Utils_Tuple2(
+			54276,
+			{description: 'Voice 1 control: gate, sync, ring, waveform', name: 'SID_V1_CONTROL'}),
+			_Utils_Tuple2(
+			54277,
+			{description: 'Voice 1 attack (hi nybble) / decay (lo nybble)', name: 'SID_V1_ATTACK_DECAY'}),
+			_Utils_Tuple2(
+			54278,
+			{description: 'Voice 1 sustain (hi nybble) / release (lo nybble)', name: 'SID_V1_SUSTAIN_RELEASE'}),
+			_Utils_Tuple2(
+			54279,
+			{description: 'Voice 2 frequency low byte', name: 'SID_V2_FREQ_LO'}),
+			_Utils_Tuple2(
+			54280,
+			{description: 'Voice 2 frequency high byte', name: 'SID_V2_FREQ_HI'}),
+			_Utils_Tuple2(
+			54281,
+			{description: 'Voice 2 pulse width low byte', name: 'SID_V2_PW_LO'}),
+			_Utils_Tuple2(
+			54282,
+			{description: 'Voice 2 pulse width high nybble (bits 0-3)', name: 'SID_V2_PW_HI'}),
+			_Utils_Tuple2(
+			54283,
+			{description: 'Voice 2 control: gate, sync, ring, waveform', name: 'SID_V2_CONTROL'}),
+			_Utils_Tuple2(
+			54284,
+			{description: 'Voice 2 attack (hi nybble) / decay (lo nybble)', name: 'SID_V2_ATTACK_DECAY'}),
+			_Utils_Tuple2(
+			54285,
+			{description: 'Voice 2 sustain (hi nybble) / release (lo nybble)', name: 'SID_V2_SUSTAIN_RELEASE'}),
+			_Utils_Tuple2(
+			54286,
+			{description: 'Voice 3 frequency low byte', name: 'SID_V3_FREQ_LO'}),
+			_Utils_Tuple2(
+			54287,
+			{description: 'Voice 3 frequency high byte', name: 'SID_V3_FREQ_HI'}),
+			_Utils_Tuple2(
+			54288,
+			{description: 'Voice 3 pulse width low byte', name: 'SID_V3_PW_LO'}),
+			_Utils_Tuple2(
+			54289,
+			{description: 'Voice 3 pulse width high nybble (bits 0-3)', name: 'SID_V3_PW_HI'}),
+			_Utils_Tuple2(
+			54290,
+			{description: 'Voice 3 control: gate, sync, ring, waveform', name: 'SID_V3_CONTROL'}),
+			_Utils_Tuple2(
+			54291,
+			{description: 'Voice 3 attack (hi nybble) / decay (lo nybble)', name: 'SID_V3_ATTACK_DECAY'}),
+			_Utils_Tuple2(
+			54292,
+			{description: 'Voice 3 sustain (hi nybble) / release (lo nybble)', name: 'SID_V3_SUSTAIN_RELEASE'}),
+			_Utils_Tuple2(
+			54293,
+			{description: 'Filter cutoff frequency low byte (bits 0-2)', name: 'SID_FILTER_FREQ_LO'}),
+			_Utils_Tuple2(
+			54294,
+			{description: 'Filter cutoff frequency high byte', name: 'SID_FILTER_FREQ_HI'}),
+			_Utils_Tuple2(
+			54295,
+			{description: 'Filter resonance / voice routing', name: 'SID_FILTER_RESONANCE'}),
+			_Utils_Tuple2(
+			54296,
+			{description: 'Master volume (lo nybble) / filter mode (hi nybble)', name: 'SID_VOLUME_FILTER'}),
+			_Utils_Tuple2(
+			54297,
+			{description: 'Paddle X position (active joystick port)', name: 'SID_POT_X'}),
+			_Utils_Tuple2(
+			54298,
+			{description: 'Paddle Y position (active joystick port)', name: 'SID_POT_Y'}),
+			_Utils_Tuple2(
+			54299,
+			{description: 'Voice 3 oscillator output / random number', name: 'SID_OSC3_RANDOM'}),
+			_Utils_Tuple2(
+			54300,
+			{description: 'Voice 3 envelope output', name: 'SID_ENV3'}),
+			_Utils_Tuple2(
+			56320,
+			{description: 'Port A: keyboard column / joystick 2', name: 'CIA1_PORT_A'}),
+			_Utils_Tuple2(
+			56321,
+			{description: 'Port B: keyboard row / joystick 1', name: 'CIA1_PORT_B'}),
+			_Utils_Tuple2(
+			56322,
+			{description: 'Port A data direction (1=output)', name: 'CIA1_DDR_A'}),
+			_Utils_Tuple2(
+			56323,
+			{description: 'Port B data direction (1=output)', name: 'CIA1_DDR_B'}),
+			_Utils_Tuple2(
+			56324,
+			{description: 'Timer A low byte', name: 'CIA1_TIMER_A_LO'}),
+			_Utils_Tuple2(
+			56325,
+			{description: 'Timer A high byte', name: 'CIA1_TIMER_A_HI'}),
+			_Utils_Tuple2(
+			56326,
+			{description: 'Timer B low byte', name: 'CIA1_TIMER_B_LO'}),
+			_Utils_Tuple2(
+			56327,
+			{description: 'Timer B high byte', name: 'CIA1_TIMER_B_HI'}),
+			_Utils_Tuple2(
+			56328,
+			{description: 'Time of day: tenths of seconds', name: 'CIA1_TOD_TENTHS'}),
+			_Utils_Tuple2(
+			56329,
+			{description: 'Time of day: seconds (BCD)', name: 'CIA1_TOD_SEC'}),
+			_Utils_Tuple2(
+			56330,
+			{description: 'Time of day: minutes (BCD)', name: 'CIA1_TOD_MIN'}),
+			_Utils_Tuple2(
+			56331,
+			{description: 'Time of day: hours (BCD, bit 7=PM)', name: 'CIA1_TOD_HR'}),
+			_Utils_Tuple2(
+			56332,
+			{description: 'Serial shift register', name: 'CIA1_SERIAL'}),
+			_Utils_Tuple2(
+			56333,
+			{description: 'Interrupt control/status (timer, TOD, serial)', name: 'CIA1_IRQ_CONTROL'}),
+			_Utils_Tuple2(
+			56334,
+			{description: 'Timer A control (start, mode, etc.)', name: 'CIA1_CONTROL_A'}),
+			_Utils_Tuple2(
+			56335,
+			{description: 'Timer B control (start, mode, etc.)', name: 'CIA1_CONTROL_B'}),
+			_Utils_Tuple2(
+			56576,
+			{description: 'Port A: VIC bank, serial bus, RS-232', name: 'CIA2_PORT_A'}),
+			_Utils_Tuple2(
+			56577,
+			{description: 'Port B: user port', name: 'CIA2_PORT_B'}),
+			_Utils_Tuple2(
+			56578,
+			{description: 'Port A data direction (1=output)', name: 'CIA2_DDR_A'}),
+			_Utils_Tuple2(
+			56579,
+			{description: 'Port B data direction (1=output)', name: 'CIA2_DDR_B'}),
+			_Utils_Tuple2(
+			56580,
+			{description: 'Timer A low byte', name: 'CIA2_TIMER_A_LO'}),
+			_Utils_Tuple2(
+			56581,
+			{description: 'Timer A high byte', name: 'CIA2_TIMER_A_HI'}),
+			_Utils_Tuple2(
+			56582,
+			{description: 'Timer B low byte', name: 'CIA2_TIMER_B_LO'}),
+			_Utils_Tuple2(
+			56583,
+			{description: 'Timer B high byte', name: 'CIA2_TIMER_B_HI'}),
+			_Utils_Tuple2(
+			56584,
+			{description: 'Time of day: tenths of seconds', name: 'CIA2_TOD_TENTHS'}),
+			_Utils_Tuple2(
+			56585,
+			{description: 'Time of day: seconds (BCD)', name: 'CIA2_TOD_SEC'}),
+			_Utils_Tuple2(
+			56586,
+			{description: 'Time of day: minutes (BCD)', name: 'CIA2_TOD_MIN'}),
+			_Utils_Tuple2(
+			56587,
+			{description: 'Time of day: hours (BCD, bit 7=PM)', name: 'CIA2_TOD_HR'}),
+			_Utils_Tuple2(
+			56588,
+			{description: 'Serial shift register', name: 'CIA2_SERIAL'}),
+			_Utils_Tuple2(
+			56589,
+			{description: 'NMI control/status (timer, TOD, serial)', name: 'CIA2_NMI_CONTROL'}),
+			_Utils_Tuple2(
+			56590,
+			{description: 'Timer A control (start, mode, etc.)', name: 'CIA2_CONTROL_A'}),
+			_Utils_Tuple2(
+			56591,
+			{description: 'Timer B control (start, mode, etc.)', name: 'CIA2_CONTROL_B'}),
+			_Utils_Tuple2(
+			55296,
+			{description: 'Color memory (1000 nybbles, bits 0-3)', name: 'COLOR_RAM'})
 		]));
 var $author$project$Symbols$getSymbol = function (addr) {
-	return A2($elm$core$Dict$get, addr, $author$project$Symbols$symbolTable);
+	return A2(
+		$elm$core$Maybe$map,
+		function ($) {
+			return $.name;
+		},
+		A2($elm$core$Dict$get, addr, $author$project$Symbols$symbolTable));
 };
 var $author$project$Disassembler$formatByteWithSymbol = function (addr) {
 	var _v0 = $author$project$Symbols$getSymbol(addr);
@@ -6590,16 +7033,6 @@ var $author$project$Disassembler$isInTextRegion = F2(
 				return _Utils_eq(r.regionType, $author$project$Types$TextRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
 			},
 			regions);
-	});
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
 	});
 var $author$project$Disassembler$disassembleLine = F8(
 	function (loadAddress, offset, bytes, comments, labels, regions, segments, majorComments) {
@@ -9373,6 +9806,91 @@ var $author$project$Opcodes$getOpcodeFlags = function (mnemonic) {
 			return '?';
 	}
 };
+var $elm$core$Maybe$map2 = F3(
+	function (func, ma, mb) {
+		if (ma.$ === 'Nothing') {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				return $elm$core$Maybe$Just(
+					A2(func, a, b));
+			}
+		}
+	});
+var $author$project$Main$getOperandAddress = F3(
+	function (model, offset, info) {
+		var getByte = function (off) {
+			return A2($elm$core$Array$get, off, model.bytes);
+		};
+		var hi = getByte(offset + 2);
+		var lo = getByte(offset + 1);
+		var _v0 = info.mode;
+		switch (_v0.$) {
+			case 'ZeroPage':
+				return lo;
+			case 'ZeroPageX':
+				return lo;
+			case 'ZeroPageY':
+				return lo;
+			case 'Absolute':
+				return A3(
+					$elm$core$Maybe$map2,
+					F2(
+						function (l, h) {
+							return (h * 256) + l;
+						}),
+					lo,
+					hi);
+			case 'AbsoluteX':
+				return A3(
+					$elm$core$Maybe$map2,
+					F2(
+						function (l, h) {
+							return (h * 256) + l;
+						}),
+					lo,
+					hi);
+			case 'AbsoluteY':
+				return A3(
+					$elm$core$Maybe$map2,
+					F2(
+						function (l, h) {
+							return (h * 256) + l;
+						}),
+					lo,
+					hi);
+			case 'Indirect':
+				return A3(
+					$elm$core$Maybe$map2,
+					F2(
+						function (l, h) {
+							return (h * 256) + l;
+						}),
+					lo,
+					hi);
+			case 'IndirectX':
+				return lo;
+			case 'IndirectY':
+				return lo;
+			case 'Relative':
+				return A2(
+					$elm$core$Maybe$map,
+					function (_byte) {
+						var signedOffset = (_byte > 127) ? (_byte - 256) : _byte;
+						return ((model.loadAddress + offset) + 2) + signedOffset;
+					},
+					lo);
+			default:
+				return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Symbols$getSymbolInfo = function (addr) {
+	return A2($elm$core$Dict$get, addr, $author$project$Symbols$symbolTable);
+};
 var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
@@ -9520,6 +10038,63 @@ var $author$project$Main$viewCheatsheet = function (model) {
 					var info = $author$project$Opcodes$getOpcode(opcodeByte);
 					var mnemonic = info.undocumented ? ('*' + info.mnemonic) : info.mnemonic;
 					var mode = $author$project$Opcodes$addressingModeString(info.mode);
+					var operandAddr = A3($author$project$Main$getOperandAddress, model, offset, info);
+					var symbolInfoPart = function () {
+						if (operandAddr.$ === 'Just') {
+							var addr = operandAddr.a;
+							var _v3 = $author$project$Symbols$getSymbolInfo(addr);
+							if (_v3.$ === 'Just') {
+								var symInfo = _v3.a;
+								return _List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('cheatsheet-sep')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text(' | ')
+											])),
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('cheatsheet-symbol')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text(symInfo.name)
+											])),
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('cheatsheet-sep')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text(': ')
+											])),
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('cheatsheet-symbol-desc')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text(symInfo.description)
+											]))
+									]);
+							} else {
+								return _List_Nil;
+							}
+						} else {
+							return _List_Nil;
+						}
+					}();
 					var flags = $author$project$Opcodes$getOpcodeFlags(info.mnemonic);
 					var description = $author$project$Opcodes$getOpcodeDescription(info.mnemonic);
 					var cycles = $elm$core$String$fromInt(info.cycles);
@@ -9529,119 +10104,121 @@ var $author$project$Main$viewCheatsheet = function (model) {
 							[
 								$elm$html$Html$Attributes$class('cheatsheet')
 							]),
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-mnemonic')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(mnemonic)
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-sep')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(' | ')
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-mode')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(mode)
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-sep')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(' | ')
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-desc')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(description)
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-sep')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(' | ')
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-label')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Flags: ')
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-flags')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(flags)
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-sep')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(' | ')
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-label')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Cycles: ')
-									])),
-								A2(
-								$elm$html$Html$span,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cheatsheet-cycles')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text(cycles)
-									]))
-							]));
+						_Utils_ap(
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-mnemonic')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(mnemonic)
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-sep')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(' | ')
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-mode')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(mode)
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-sep')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(' | ')
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-desc')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(description)
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-sep')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(' | ')
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-label')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Flags: ')
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-flags')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(flags)
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-sep')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(' | ')
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-label')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Cycles: ')
+										])),
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cheatsheet-cycles')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(cycles)
+										]))
+								]),
+							symbolInfoPart));
 				}
 			}
 		}
@@ -11202,8 +11779,8 @@ var $author$project$Main$view = function (model) {
 			[
 				$author$project$Main$viewHeader(model),
 				$author$project$Main$viewToolbar(model),
-				$author$project$Main$viewCheatsheet(model),
 				$author$project$Main$viewDisassembly(model),
+				$author$project$Main$viewCheatsheet(model),
 				$author$project$Main$viewFooter(model)
 			]));
 };

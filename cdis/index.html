@@ -401,10 +401,12 @@
         .cheatsheet {
             background: var(--panel-bg);
             padding: 8px 20px;
-            border-bottom: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
             font-size: 13px;
+            min-height: 52px;  /* Fixed height for 2 lines */
             display: flex;
-            align-items: center;
+            align-items: flex-start;
+            align-content: flex-start;
             gap: 0;
             flex-wrap: wrap;
         }
@@ -443,6 +445,15 @@
         .cheatsheet-sep {
             color: #444;
             margin: 0 4px;
+        }
+
+        .cheatsheet-symbol {
+            color: var(--address-color);
+            font-weight: bold;
+        }
+
+        .cheatsheet-symbol-desc {
+            color: var(--comment-color);
         }
 
         .col-address {

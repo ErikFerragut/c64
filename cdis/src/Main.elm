@@ -11,6 +11,7 @@ import Html.Events exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Opcodes exposing (addressingModeString, getOpcode, getOpcodeDescription, getOpcodeFlags, opcodeBytes)
+import Symbols exposing (getSymbolInfo)
 import Project
 import Task
 import Types exposing (..)
@@ -1205,8 +1206,8 @@ view model =
             ]
             [ viewHeader model
             , viewToolbar model
-            , viewCheatsheet model
             , viewDisassembly model
+            , viewCheatsheet model
             , viewFooter model
             ]
 
@@ -1314,20 +1315,106 @@ viewCheatsheet model =
 
                             cycles =
                                 String.fromInt info.cycles
+
+                            -- Get operand bytes to find the address being referenced
+                            operandAddr =
+                                getOperandAddress model offset info
+
+                            -- Look up symbol info for the operand address
+                            symbolInfoPart =
+                                case operandAddr of
+                                    Just addr ->
+                                        case getSymbolInfo addr of
+                                            Just symInfo ->
+                                                [ span [ class "cheatsheet-sep" ] [ text " | " ]
+                                                , span [ class "cheatsheet-symbol" ] [ text symInfo.name ]
+                                                , span [ class "cheatsheet-sep" ] [ text ": " ]
+                                                , span [ class "cheatsheet-symbol-desc" ] [ text symInfo.description ]
+                                                ]
+
+                                            Nothing ->
+                                                []
+
+                                    Nothing ->
+                                        []
                         in
                         div [ class "cheatsheet" ]
-                            [ span [ class "cheatsheet-mnemonic" ] [ text mnemonic ]
-                            , span [ class "cheatsheet-sep" ] [ text " | " ]
-                            , span [ class "cheatsheet-mode" ] [ text mode ]
-                            , span [ class "cheatsheet-sep" ] [ text " | " ]
-                            , span [ class "cheatsheet-desc" ] [ text description ]
-                            , span [ class "cheatsheet-sep" ] [ text " | " ]
-                            , span [ class "cheatsheet-label" ] [ text "Flags: " ]
-                            , span [ class "cheatsheet-flags" ] [ text flags ]
-                            , span [ class "cheatsheet-sep" ] [ text " | " ]
-                            , span [ class "cheatsheet-label" ] [ text "Cycles: " ]
-                            , span [ class "cheatsheet-cycles" ] [ text cycles ]
-                            ]
+                            ([ span [ class "cheatsheet-mnemonic" ] [ text mnemonic ]
+                             , span [ class "cheatsheet-sep" ] [ text " | " ]
+                             , span [ class "cheatsheet-mode" ] [ text mode ]
+                             , span [ class "cheatsheet-sep" ] [ text " | " ]
+                             , span [ class "cheatsheet-desc" ] [ text description ]
+                             , span [ class "cheatsheet-sep" ] [ text " | " ]
+                             , span [ class "cheatsheet-label" ] [ text "Flags: " ]
+                             , span [ class "cheatsheet-flags" ] [ text flags ]
+                             , span [ class "cheatsheet-sep" ] [ text " | " ]
+                             , span [ class "cheatsheet-label" ] [ text "Cycles: " ]
+                             , span [ class "cheatsheet-cycles" ] [ text cycles ]
+                             ]
+                                ++ symbolInfoPart
+                            )
+
+
+{-| Extract the operand address from an instruction for symbol lookup
+-}
+getOperandAddress : Model -> Int -> Types.OpcodeInfo -> Maybe Int
+getOperandAddress model offset info =
+    let
+        getByte off =
+            Array.get off model.bytes
+
+        lo =
+            getByte (offset + 1)
+
+        hi =
+            getByte (offset + 2)
+    in
+    case info.mode of
+        Types.ZeroPage ->
+            lo
+
+        Types.ZeroPageX ->
+            lo
+
+        Types.ZeroPageY ->
+            lo
+
+        Types.Absolute ->
+            Maybe.map2 (\l h -> h * 256 + l) lo hi
+
+        Types.AbsoluteX ->
+            Maybe.map2 (\l h -> h * 256 + l) lo hi
+
+        Types.AbsoluteY ->
+            Maybe.map2 (\l h -> h * 256 + l) lo hi
+
+        Types.Indirect ->
+            Maybe.map2 (\l h -> h * 256 + l) lo hi
+
+        Types.IndirectX ->
+            lo
+
+        Types.IndirectY ->
+            lo
+
+        Types.Relative ->
+            -- Calculate branch target
+            lo
+                |> Maybe.map
+                    (\byte ->
+                        let
+                            signedOffset =
+                                if byte > 127 then
+                                    byte - 256
+
+                                else
+                                    byte
+                        in
+                        model.loadAddress + offset + 2 + signedOffset
+                    )
+
+        _ ->
+            Nothing
 
 
 viewDisassembly : Model -> Html Msg
