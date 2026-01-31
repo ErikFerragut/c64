@@ -5697,6 +5697,7 @@ var $author$project$Main$PageDown = {$: 'PageDown'};
 var $author$project$Main$PageUp = {$: 'PageUp'};
 var $author$project$Main$RequestQuit = {$: 'RequestQuit'};
 var $author$project$Main$RestartDisassembly = {$: 'RestartDisassembly'};
+var $author$project$Main$RunInVice = {$: 'RunInVice'};
 var $author$project$Main$SaveProject = {$: 'SaveProject'};
 var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
 var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
@@ -9501,6 +9502,20 @@ var $author$project$Main$requestPrgFile = _Platform_outgoingPort(
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
+var $author$project$Main$runInVice = _Platform_outgoingPort(
+	'runInVice',
+	function ($) {
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'bytes',
+					$elm$json$Json$Encode$list($elm$json$Json$Encode$int)($.bytes)),
+					_Utils_Tuple2(
+					'loadAddress',
+					$elm$json$Json$Encode$int($.loadAddress))
+				]));
+	});
 var $author$project$Main$saveCdisFile = _Platform_outgoingPort('saveCdisFile', $elm$json$Json$Encode$string);
 var $elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
 var $elm$core$Array$setHelp = F4(
@@ -10376,6 +10391,12 @@ var $author$project$Main$update = F2(
 											} else {
 												return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 											}
+										case 'v':
+											var $temp$msg = $author$project$Main$RunInVice,
+												$temp$model = model;
+											msg = $temp$msg;
+											model = $temp$model;
+											continue update;
 										default:
 											return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									}
@@ -11015,6 +11036,14 @@ var $author$project$Main$update = F2(
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
+				case 'RunInVice':
+					return $elm$core$Array$isEmpty(model.bytes) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+						model,
+						$author$project$Main$runInVice(
+							{
+								bytes: $elm$core$Array$toList(model.bytes),
+								loadAddress: model.loadAddress
+							}));
 				case 'RequestQuit':
 					return model.dirty ? _Utils_Tuple2(
 						_Utils_update(
@@ -13457,6 +13486,26 @@ var $author$project$Main$viewFooter = function (model) {
 																$elm$html$Html$text('A')
 															])),
 														$elm$html$Html$text('Export as .asm')
+													])),
+												A2(
+												$elm$html$Html$div,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('help-row')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$span,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$class('key')
+															]),
+														_List_fromArray(
+															[
+																$elm$html$Html$text('V')
+															])),
+														$elm$html$Html$text('Run in VICE')
 													])),
 												A2(
 												$elm$html$Html$div,

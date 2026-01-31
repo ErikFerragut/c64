@@ -125,6 +125,9 @@ port quitApp : () -> Cmd msg
 port exportAsmFile : String -> Cmd msg
 
 
+port runInVice : { loadAddress : Int, bytes : List Int } -> Cmd msg
+
+
 type alias KeyEvent =
     { key : String
     , ctrl : Bool
@@ -213,6 +216,7 @@ type Msg
     | UpdateEditInstruction String
     | SaveInstruction
     | CancelEditInstruction
+    | RunInVice
     | RequestQuit
     | ConfirmQuit
     | CancelQuit
@@ -673,6 +677,9 @@ update msg model =
 
                             Nothing ->
                                 ( model, Cmd.none )
+
+                    "v" ->
+                        update RunInVice model
 
                     _ ->
                         ( model, Cmd.none )
@@ -1292,6 +1299,17 @@ update msg model =
             ( { model | editingInstruction = Nothing, editError = Nothing }
             , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
             )
+
+        RunInVice ->
+            if Array.isEmpty model.bytes then
+                ( model, Cmd.none )
+            else
+                ( model
+                , runInVice
+                    { loadAddress = model.loadAddress
+                    , bytes = Array.toList model.bytes
+                    }
+                )
 
         RequestQuit ->
             if model.dirty then
@@ -2250,6 +2268,7 @@ viewFooter model =
                     [ div [ class "help-title" ] [ text "File" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Shift+S" ], text "Save project" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "A" ], text "Export as .asm" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "V" ], text "Run in VICE" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
                     ]
                 , div [ class "help-section" ]

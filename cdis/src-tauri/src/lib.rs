@@ -1,6 +1,7 @@
 use tauri::Manager;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 #[tauri::command]
 async fn read_prg_file(path: String) -> Result<PrgData, String> {
@@ -45,12 +46,44 @@ struct PrgData {
     cdis_path: String,
 }
 
+#[tauri::command]
+async fn run_in_vice(load_address: u16, bytes: Vec<u8>) -> Result<(), String> {
+    // Write temp PRG file
+    let temp_path = std::env::temp_dir().join("cdis-run.prg");
+
+    // PRG format: 2-byte load address (little endian) + program bytes
+    let mut prg_data = Vec::with_capacity(bytes.len() + 2);
+    prg_data.push((load_address & 0xFF) as u8);
+    prg_data.push((load_address >> 8) as u8);
+    prg_data.extend(&bytes);
+
+    fs::write(&temp_path, &prg_data)
+        .map_err(|e| format!("Failed to write temp PRG: {}", e))?;
+
+    // Try common VICE executable names
+    let vice_commands = ["x64sc", "x64", "vice"];
+
+    for cmd in &vice_commands {
+        if let Ok(child) = Command::new(cmd)
+            .arg(temp_path.to_string_lossy().to_string())
+            .spawn()
+        {
+            // Detach - don't wait for VICE to exit
+            std::mem::forget(child);
+            return Ok(());
+        }
+    }
+
+    Err("Could not find VICE emulator (tried x64sc, x64, vice). Make sure VICE is installed and in your PATH.".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![read_prg_file, save_cdis_file])
+        .plugin(tauri_plugin_shell::init())
+        .invoke_handler(tauri::generate_handler![read_prg_file, save_cdis_file, run_in_vice])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

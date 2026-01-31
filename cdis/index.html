@@ -777,6 +777,26 @@
                 window.close();
             }
         });
+
+        // Run in VICE
+        app.ports.runInVice.subscribe(async function(data) {
+            console.log('runInVice called', data);
+            if (runningInTauri) {
+                try {
+                    await invoke('run_in_vice', {
+                        loadAddress: data.loadAddress,
+                        bytes: data.bytes
+                    });
+                    console.log('VICE launched');
+                } catch (e) {
+                    console.error('Error running in VICE:', e);
+                    app.ports.showError.send('Failed to run in VICE: ' + e);
+                }
+            } else {
+                console.log('VICE not available outside Tauri');
+                app.ports.showError.send('VICE integration only available in desktop app');
+            }
+        });
     </script>
 </body>
 </html>
