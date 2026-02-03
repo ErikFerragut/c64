@@ -48,8 +48,9 @@ struct PrgData {
 
 #[tauri::command]
 async fn run_in_vice(load_address: u16, bytes: Vec<u8>) -> Result<(), String> {
-    // Write temp PRG file
-    let temp_path = std::env::temp_dir().join("cdis-run.prg");
+    // Write temp PRG file (not in /tmp - VICE doesn't autostart from there)
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    let temp_path = PathBuf::from(home).join(".cdis-run.prg");
 
     // PRG format: 2-byte load address (little endian) + program bytes
     let mut prg_data = Vec::with_capacity(bytes.len() + 2);
@@ -61,10 +62,11 @@ async fn run_in_vice(load_address: u16, bytes: Vec<u8>) -> Result<(), String> {
         .map_err(|e| format!("Failed to write temp PRG: {}", e))?;
 
     // Try common VICE executable names
-    let vice_commands = ["x64sc", "x64", "vice"];
+    let vice_commands = ["vice-jz.x64sc", "x64sc", "x64", "vice"];
 
     for cmd in &vice_commands {
         if let Ok(child) = Command::new(cmd)
+            .arg("-autostart")
             .arg(temp_path.to_string_lossy().to_string())
             .spawn()
         {
@@ -91,10 +93,6 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
-                // Open devtools in debug mode
-                if let Some(window) = app.get_webview_window("main") {
-                    window.open_devtools();
-                }
             }
             Ok(())
         })
