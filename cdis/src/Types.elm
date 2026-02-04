@@ -10,6 +10,17 @@ type RegionType
     | TextRegion -- .text "ABC" (PETSCII)
 
 
+type EditType
+    = EditByte
+    | EditText
+    | EditInstruction
+
+
+type ConverterMode
+    = DecToHex
+    | HexToDec
+
+
 type alias Region =
     { start : Int -- Byte offset
     , end : Int -- Byte offset (inclusive)
@@ -52,6 +63,9 @@ type alias Model =
     , patches : Dict Int Int -- offset -> new byte value (for persistence)
     , editingInstruction : Maybe ( Int, String ) -- (offset, current input text)
     , editError : Maybe String -- Error message from assembler
+    , editType : Maybe EditType -- What type of value we're editing
+    , converterMode : Maybe ConverterMode -- d: dec->hex, h: hex->dec
+    , converterInput : String
     }
 
 
@@ -125,4 +139,7 @@ initModel =
     , patches = Dict.empty
     , editingInstruction = Nothing
     , editError = Nothing
+    , editType = Nothing
+    , converterMode = Nothing
+    , converterInput = ""
     }

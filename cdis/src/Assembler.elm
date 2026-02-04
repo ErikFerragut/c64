@@ -461,6 +461,7 @@ opcodeDict =
                 else
                     Nothing
             )
+        |> List.reverse  -- Documented opcodes come first, so reverse to make them win
         |> Dict.fromList
 
 

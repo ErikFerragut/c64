@@ -212,10 +212,12 @@ type Msg
     | PageUp
     | PageDown
     | NopCurrentByte
+    | StartEditByte Int
+    | StartEditText Int
     | StartEditInstruction Int
-    | UpdateEditInstruction String
-    | SaveInstruction
-    | CancelEditInstruction
+    | UpdateEditValue String
+    | SaveValue
+    | CancelEditValue
     | RunInVice
     | RequestQuit
     | ConfirmQuit
@@ -224,6 +226,10 @@ type Msg
     | WindowResized Int Int
     | GotViewport Dom.Viewport
     | GotLinesElement (Result Dom.Error Dom.Element)
+    | EnterDecToHexMode
+    | EnterHexToDecMode
+    | UpdateConverterInput String
+    | CancelConverter
     | NoOp
 
 
@@ -495,6 +501,41 @@ update msg model =
                         else
                             ( model, Cmd.none )
 
+            else if model.converterMode /= Nothing then
+                -- Handle converter mode input
+                case event.key of
+                    "Escape" ->
+                        update CancelConverter model
+
+                    "Backspace" ->
+                        ( { model | converterInput = String.dropRight 1 model.converterInput }, Cmd.none )
+
+                    key ->
+                        if String.length key == 1 then
+                            case model.converterMode of
+                                Just Types.DecToHex ->
+                                    -- Accept decimal digits only
+                                    if Char.isDigit (String.uncons key |> Maybe.map Tuple.first |> Maybe.withDefault ' ') then
+                                        ( { model | converterInput = model.converterInput ++ key }, Cmd.none )
+                                    else
+                                        ( model, Cmd.none )
+
+                                Just Types.HexToDec ->
+                                    -- Accept hex digits only
+                                    let
+                                        char = String.toUpper key
+                                        isHex = String.all Char.isHexDigit char
+                                    in
+                                    if isHex then
+                                        ( { model | converterInput = model.converterInput ++ char }, Cmd.none )
+                                    else
+                                        ( model, Cmd.none )
+
+                                Nothing ->
+                                    ( model, Cmd.none )
+                        else
+                            ( model, Cmd.none )
+
             else if model.outlineMode then
                 -- Handle outline mode input
                 case event.key of
@@ -570,21 +611,22 @@ update msg model =
                                 ( model, Cmd.none )
 
                     "s" ->
-                        -- s: mark selection as segment
-                        update MarkSelectionAsSegment model
+                        if event.ctrl then
+                            -- Ctrl+S: save project
+                            update SaveProject model
+
+                        else
+                            -- s: mark selection as segment
+                            update MarkSelectionAsSegment model
 
                     "S" ->
-                        -- Shift+S: clear segment at cursor (or save if no segment)
+                        -- Shift+S: clear segment at cursor
                         case model.selectedOffset of
                             Just offset ->
-                                if List.any (\seg -> offset >= seg.start && offset <= seg.end) model.segments then
-                                    update (ClearSegment offset) model
-
-                                else
-                                    update SaveProject model
+                                update (ClearSegment offset) model
 
                             Nothing ->
-                                update SaveProject model
+                                ( model, Cmd.none )
 
                     "a" ->
                         update ExportAsm model
@@ -670,16 +712,34 @@ update msg model =
                         update NopCurrentByte model
 
                     "Enter" ->
-                        -- Enter edit mode
+                        -- Enter edit mode based on line type
                         case model.selectedOffset of
                             Just offset ->
-                                update (StartEditInstruction offset) model
+                                let
+                                    inByteRegion =
+                                        List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+                                    inTextRegion =
+                                        List.any (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+                                in
+                                if inByteRegion then
+                                    update (StartEditByte offset) model
+                                else if inTextRegion then
+                                    update (StartEditText offset) model
+                                else
+                                    update (StartEditInstruction offset) model
 
                             Nothing ->
                                 ( model, Cmd.none )
 
                     "v" ->
                         update RunInVice model
+
+                    "d" ->
+                        update EnterDecToHexMode model
+
+                    "h" ->
+                        update EnterHexToDecMode model
 
                     _ ->
                         ( model, Cmd.none )
@@ -853,21 +913,85 @@ update msg model =
 
         ClearByteRegion offset ->
             let
+                -- Use selection range if available, otherwise just the single byte
+                ( clearStart, clearEnd ) =
+                    case model.mark of
+                        Just markOffset ->
+                            ( Basics.min markOffset offset, Basics.max markOffset offset )
+
+                        Nothing ->
+                            ( offset, offset )
+
+                -- Remove the clear range from byte regions, potentially splitting them
                 newRegions =
-                    List.filter
-                        (\r -> not (r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end))
+                    List.concatMap
+                        (\r ->
+                            if r.regionType /= Types.ByteRegion then
+                                [ r ]
+                            else if r.end < clearStart || r.start > clearEnd then
+                                -- No overlap, keep as is
+                                [ r ]
+                            else
+                                -- There's overlap, split the region
+                                let
+                                    leftPart =
+                                        if r.start < clearStart then
+                                            [ { r | end = clearStart - 1 } ]
+                                        else
+                                            []
+
+                                    rightPart =
+                                        if r.end > clearEnd then
+                                            [ { r | start = clearEnd + 1 } ]
+                                        else
+                                            []
+                                in
+                                leftPart ++ rightPart
+                        )
                         model.regions
             in
-            ( { model | regions = newRegions, dirty = True }, Cmd.none )
+            ( { model | regions = newRegions, mark = Nothing, dirty = True }, Cmd.none )
 
         ClearTextRegion offset ->
             let
+                -- Use selection range if available, otherwise just the single byte
+                ( clearStart, clearEnd ) =
+                    case model.mark of
+                        Just markOffset ->
+                            ( Basics.min markOffset offset, Basics.max markOffset offset )
+
+                        Nothing ->
+                            ( offset, offset )
+
+                -- Remove the clear range from text regions, potentially splitting them
                 newRegions =
-                    List.filter
-                        (\r -> not (r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end))
+                    List.concatMap
+                        (\r ->
+                            if r.regionType /= Types.TextRegion then
+                                [ r ]
+                            else if r.end < clearStart || r.start > clearEnd then
+                                -- No overlap, keep as is
+                                [ r ]
+                            else
+                                -- There's overlap, split the region
+                                let
+                                    leftPart =
+                                        if r.start < clearStart then
+                                            [ { r | end = clearStart - 1 } ]
+                                        else
+                                            []
+
+                                    rightPart =
+                                        if r.end > clearEnd then
+                                            [ { r | start = clearEnd + 1 } ]
+                                        else
+                                            []
+                                in
+                                leftPart ++ rightPart
+                        )
                         model.regions
             in
-            ( { model | regions = newRegions, dirty = True }, Cmd.none )
+            ( { model | regions = newRegions, mark = Nothing, dirty = True }, Cmd.none )
 
         MarkSelectionAsSegment ->
             case ( model.mark, model.selectedOffset ) of
@@ -1164,13 +1288,53 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
+        StartEditByte offset ->
+            let
+                byteValue =
+                    Array.get offset model.bytes |> Maybe.withDefault 0
+
+                initialText =
+                    "$" ++ toHex 2 byteValue
+            in
+            ( { model
+                | editingInstruction = Just ( offset, initialText )
+                , editError = Nothing
+                , editType = Just Types.EditByte
+              }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "instruction-input")
+            )
+
+        StartEditText offset ->
+            let
+                -- Find the text region containing this offset
+                textRegion =
+                    List.filter (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+                        |> List.head
+
+                initialText =
+                    case textRegion of
+                        Just tr ->
+                            List.range tr.start tr.end
+                                |> List.filterMap (\i -> Array.get i model.bytes)
+                                |> List.map (\b -> toHex 2 b)
+                                |> String.join " "
+
+                        Nothing ->
+                            ""
+            in
+            ( { model
+                | editingInstruction = Just ( offset, initialText )
+                , editError = Nothing
+                , editType = Just Types.EditText
+              }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "instruction-input")
+            )
+
         StartEditInstruction offset ->
             let
-                -- Get current disassembly text to pre-populate
                 line =
                     disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
 
-                -- Strip the leading * from undocumented opcodes for editing
                 initialText =
                     if String.startsWith "*" line.disassembly then
                         String.dropLeft 1 line.disassembly
@@ -1180,11 +1344,12 @@ update msg model =
             ( { model
                 | editingInstruction = Just ( offset, initialText )
                 , editError = Nothing
+                , editType = Just Types.EditInstruction
               }
             , Task.attempt (\_ -> NoOp) (Dom.focus "instruction-input")
             )
 
-        UpdateEditInstruction text ->
+        UpdateEditValue text ->
             case model.editingInstruction of
                 Just ( offset, _ ) ->
                     ( { model | editingInstruction = Just ( offset, text ), editError = Nothing }, Cmd.none )
@@ -1192,111 +1357,232 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        SaveInstruction ->
+        SaveValue ->
             case model.editingInstruction of
                 Just ( offset, text ) ->
                     let
-                        currentAddress =
-                            model.loadAddress + offset
+                        -- Get the current line to check its type
+                        currentLine =
+                            disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
 
-                        -- Get the size of the current instruction
-                        inByteRegion =
-                            List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+                        textRegion =
+                            List.filter (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+                                |> List.head
 
-                        inTextRegion =
-                            List.any (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
-
-                        currentByte =
-                            Array.get offset model.bytes |> Maybe.withDefault 0
-
-                        oldSize =
-                            if inByteRegion || inTextRegion then
-                                1
-                            else
-                                opcodeBytes currentByte
                         fileSize =
                             Array.length model.bytes
                     in
-                    case assemble currentAddress text of
-                        Err err ->
-                            ( { model | editError = Just (formatAssembleError err) }, Cmd.none )
+                    if List.head (String.words currentLine.disassembly) == Just ".byte" then
+                        -- Parse as single hex byte
+                        case parseHex text of
+                            Just byteValue ->
+                                if byteValue > 255 then
+                                    ( { model | editError = Just "Value must be 0-255 ($00-$FF)" }, Cmd.none )
 
-                        Ok result ->
-                            if offset + result.size > fileSize then
-                                -- New instruction extends past end of file
-                                ( { model | editError = Just ("Instruction extends past end of file") }
-                                , Cmd.none
-                                )
+                                else
+                                    let
+                                        newBytes =
+                                            Array.set offset byteValue model.bytes
 
-                            else
+                                        newPatches =
+                                            Dict.insert offset byteValue model.patches
+
+                                        nextOffset =
+                                            if offset + 1 < fileSize then
+                                                offset + 1
+
+                                            else
+                                                offset
+                                    in
+                                    ( ensureSelectionVisible
+                                        { model
+                                            | bytes = newBytes
+                                            , patches = newPatches
+                                            , selectedOffset = Just nextOffset
+                                            , editingInstruction = Nothing
+                                            , editError = Nothing
+                                            , editType = Nothing
+                                            , dirty = True
+                                        }
+                                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                                    )
+
+                            Nothing ->
+                                ( { model | editError = Just "Invalid hex value" }, Cmd.none )
+
+                    else if List.head (String.words currentLine.disassembly) == Just ".text" then
+                        case textRegion of
+                            Just tr ->
+                                -- Parse as space-separated hex bytes for text region
                                 let
-                                    -- Apply the new bytes
-                                    ( newBytes, newPatches ) =
-                                        List.foldl
-                                            (\( idx, byte ) ( bytes, patches ) ->
-                                                ( Array.set (offset + idx) byte bytes
-                                                , Dict.insert (offset + idx) byte patches
+                                    hexStrings =
+                                        text
+                                            |> String.words
+
+                                    parsedBytes =
+                                        hexStrings
+                                            |> List.map parseHex
+                                            |> List.foldr
+                                                (\maybeB acc ->
+                                                    case ( maybeB, acc ) of
+                                                        ( Just b, Just bs ) ->
+                                                            if b <= 255 then
+                                                                Just (b :: bs)
+
+                                                            else
+                                                                Nothing
+
+                                                        _ ->
+                                                            Nothing
                                                 )
-                                            )
-                                            ( model.bytes, model.patches )
-                                            (List.indexedMap Tuple.pair result.bytes)
+                                                (Just [])
 
-                                    -- Remove any regions that overlap with the new instruction
-                                    newEnd =
-                                        offset + result.size - 1
-
-                                    regionsWithoutOverlap =
-                                        List.filter
-                                            (\r -> r.end < offset || r.start > newEnd)
-                                            model.regions
-
-                                    -- If new instruction is smaller than old, leftover bytes become .byte regions
-                                    newRegions =
-                                        if result.size < oldSize then
-                                            let
-                                                leftoverStart =
-                                                    offset + result.size
-
-                                                leftoverEnd =
-                                                    offset + oldSize - 1
-
-                                                leftoverRegion =
-                                                    { start = leftoverStart
-                                                    , end = leftoverEnd
-                                                    , regionType = Types.ByteRegion
-                                                    }
-                                            in
-                                            mergeRegion leftoverRegion regionsWithoutOverlap
-                                        else
-                                            regionsWithoutOverlap
-                                    -- Move to next instruction
-                                    nextOffset =
-                                        offset + result.size
-
-                                    newSelectedOffset =
-                                        if nextOffset < fileSize then
-                                            Just nextOffset
-                                        else
-                                            Just offset
+                                    regionSize =
+                                        tr.end - tr.start + 1
                                 in
-                                ( ensureSelectionVisible
-                                    { model
-                                        | bytes = newBytes
-                                        , patches = newPatches
-                                        , regions = newRegions
-                                        , selectedOffset = newSelectedOffset
-                                        , editingInstruction = Nothing
-                                        , editError = Nothing
-                                        , dirty = True
-                                    }
-                                , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
-                                )
+                                case parsedBytes of
+                                    Just newByteList ->
+                                        if List.length newByteList /= regionSize then
+                                            ( { model | editError = Just ("Expected " ++ String.fromInt regionSize ++ " bytes, got " ++ String.fromInt (List.length newByteList)) }
+                                            , Cmd.none
+                                            )
+
+                                        else
+                                            let
+                                                -- Apply all bytes to the text region
+                                                ( updatedBytes, updatedPatches ) =
+                                                    List.foldl
+                                                        (\( idx, byte ) ( bytes, patches ) ->
+                                                            ( Array.set (tr.start + idx) byte bytes
+                                                            , Dict.insert (tr.start + idx) byte patches
+                                                            )
+                                                        )
+                                                        ( model.bytes, model.patches )
+                                                        (List.indexedMap Tuple.pair newByteList)
+
+                                                -- Move to next line after text region
+                                                nextOffset =
+                                                    if tr.end + 1 < fileSize then
+                                                        tr.end + 1
+
+                                                    else
+                                                        offset
+                                            in
+                                            ( ensureSelectionVisible
+                                                { model
+                                                    | bytes = updatedBytes
+                                                    , patches = updatedPatches
+                                                    , selectedOffset = Just nextOffset
+                                                    , editingInstruction = Nothing
+                                                    , editError = Nothing
+                                                    , editType = Nothing
+                                                    , dirty = True
+                                                }
+                                            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                                            )
+
+                                    Nothing ->
+                                        ( { model | editError = Just "Invalid hex values (use space-separated bytes like: 48 45 4C 4C 4F)" }, Cmd.none )
+
+                            Nothing ->
+                                ( { model | editError = Just "Text region not found" }, Cmd.none )
+
+                    else
+                        -- Normal instruction - use assembler
+                        let
+                            currentAddress =
+                                model.loadAddress + offset
+
+                            currentByte =
+                                Array.get offset model.bytes |> Maybe.withDefault 0
+
+                            oldSize =
+                                opcodeBytes currentByte
+                        in
+                        case assemble currentAddress text of
+                            Err err ->
+                                ( { model | editError = Just (formatAssembleError err) }, Cmd.none )
+
+                            Ok result ->
+                                if offset + result.size > fileSize then
+                                    -- New instruction extends past end of file
+                                    ( { model | editError = Just "Instruction extends past end of file" }
+                                    , Cmd.none
+                                    )
+
+                                else
+                                    let
+                                        -- Apply the new bytes
+                                        ( newBytes, newPatches ) =
+                                            List.foldl
+                                                (\( idx, byte ) ( bytes, patches ) ->
+                                                    ( Array.set (offset + idx) byte bytes
+                                                    , Dict.insert (offset + idx) byte patches
+                                                    )
+                                                )
+                                                ( model.bytes, model.patches )
+                                                (List.indexedMap Tuple.pair result.bytes)
+
+                                        -- Remove any regions that overlap with the new instruction
+                                        newEnd =
+                                            offset + result.size - 1
+
+                                        regionsWithoutOverlap =
+                                            List.filter
+                                                (\r -> r.end < offset || r.start > newEnd)
+                                                model.regions
+
+                                        -- If new instruction is smaller than old, leftover bytes become .byte regions
+                                        newRegions =
+                                            if result.size < oldSize then
+                                                let
+                                                    leftoverStart =
+                                                        offset + result.size
+
+                                                    leftoverEnd =
+                                                        offset + oldSize - 1
+
+                                                    leftoverRegion =
+                                                        { start = leftoverStart
+                                                        , end = leftoverEnd
+                                                        , regionType = Types.ByteRegion
+                                                        }
+                                                in
+                                                mergeRegion leftoverRegion regionsWithoutOverlap
+
+                                            else
+                                                regionsWithoutOverlap
+
+                                        -- Move to next instruction
+                                        nextOffset =
+                                            offset + result.size
+
+                                        newSelectedOffset =
+                                            if nextOffset < fileSize then
+                                                Just nextOffset
+
+                                            else
+                                                Just offset
+                                    in
+                                    ( ensureSelectionVisible
+                                        { model
+                                            | bytes = newBytes
+                                            , patches = newPatches
+                                            , regions = newRegions
+                                            , selectedOffset = newSelectedOffset
+                                            , editingInstruction = Nothing
+                                            , editError = Nothing
+                                            , editType = Nothing
+                                            , dirty = True
+                                        }
+                                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                                    )
 
                 Nothing ->
                     ( model, Cmd.none )
 
-        CancelEditInstruction ->
-            ( { model | editingInstruction = Nothing, editError = Nothing }
+        CancelEditValue ->
+            ( { model | editingInstruction = Nothing, editError = Nothing, editType = Nothing }
             , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
             )
 
@@ -1364,6 +1650,20 @@ update msg model =
                 Err _ ->
                     -- Element not found (file not loaded yet), keep default
                     ( model, Cmd.none )
+
+        EnterDecToHexMode ->
+            ( { model | converterMode = Just Types.DecToHex, converterInput = "" }, Cmd.none )
+
+        EnterHexToDecMode ->
+            ( { model | converterMode = Just Types.HexToDec, converterInput = "" }, Cmd.none )
+
+        UpdateConverterInput str ->
+            ( { model | converterInput = str }, Cmd.none )
+
+        CancelConverter ->
+            ( { model | converterMode = Nothing, converterInput = "" }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
 
         NoOp ->
             ( model, Cmd.none )
@@ -1897,8 +2197,8 @@ viewDisasmOrEdit model line =
                     [ input
                         [ type_ "text"
                         , value editText
-                        , onInput UpdateEditInstruction
-                        , onBlur SaveInstruction
+                        , onInput UpdateEditValue
+                        , onBlur SaveValue
                         , onKeyDownInstruction
                         , id "instruction-input"
                         , autofocus True
@@ -1927,10 +2227,10 @@ onKeyDownInstruction =
             |> JD.map
                 (\key ->
                     if key == "Enter" then
-                        ( SaveInstruction, True )
+                        ( SaveValue, True )
 
                     else if key == "Escape" then
-                        ( CancelEditInstruction, True )
+                        ( CancelEditValue, True )
 
                     else
                         ( NoOp, True )
@@ -2194,6 +2494,41 @@ viewFooter model =
             , hint
             ]
 
+    else if model.converterMode /= Nothing then
+        let
+            ( prompt, inputVal, resultVal ) =
+                case model.converterMode of
+                    Just Types.DecToHex ->
+                        let
+                            result =
+                                String.toInt model.converterInput
+                                    |> Maybe.map (\n -> "$" ++ toHexAuto n)
+                                    |> Maybe.withDefault ""
+                        in
+                        ( "DEC→HEX: ", model.converterInput, result )
+
+                    Just Types.HexToDec ->
+                        let
+                            result =
+                                parseHex model.converterInput
+                                    |> Maybe.map String.fromInt
+                                    |> Maybe.withDefault ""
+                        in
+                        ( "HEX→DEC: $", model.converterInput, result )
+
+                    Nothing ->
+                        ( "", "", "" )
+        in
+        footer [ class "cdis-footer goto-mode" ]
+            [ span [ class "goto-prompt" ] [ text prompt ]
+            , span [ class "goto-input" ] [ text inputVal ]
+            , span [ class "goto-cursor" ] [ text "_" ]
+            , if String.isEmpty resultVal then
+                span [ class "goto-hint" ] [ text "  (Esc to close)" ]
+              else
+                span [ class "goto-hint" ] [ text ("  = " ++ resultVal ++ "  (Esc to close)") ]
+            ]
+
     else if model.outlineMode then
         let
             segmentCount =
@@ -2265,10 +2600,11 @@ viewFooter model =
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Enter" ], text "Edit instruction" ]
                     ]
                 , div [ class "help-section" ]
-                    [ div [ class "help-title" ] [ text "File" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Shift+S" ], text "Save project" ]
+                    [ div [ class "help-title" ] [ text "File & Tools" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+S" ], text "Save project" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "A" ], text "Export as .asm" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "V" ], text "Run in VICE" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "D / H" ], text "Dec↔Hex converter" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
                     ]
                 , div [ class "help-section" ]
@@ -2279,7 +2615,22 @@ viewFooter model =
             ]
 
     else
-        footer [ class "cdis-footer" ]
+        let
+            footerStyle =
+                case model.editType of
+                    Just Types.EditByte ->
+                        [ style "background-color" "#e94560" ]  -- Red (highlight-color)
+
+                    Just Types.EditText ->
+                        [ style "background-color" "#0f6040" ]  -- Green
+
+                    Just Types.EditInstruction ->
+                        [ style "background-color" "#0f3460" ]  -- Blue (accent-color)
+
+                    Nothing ->
+                        []
+        in
+        footer ([ class "cdis-footer" ] ++ footerStyle)
             [ span []
                 [ text "?: Help | "
                 , text "↑↓: Navigate | "
@@ -2288,7 +2639,7 @@ viewFooter model =
                 , text "O: Outline | "
                 , text ";/:/\": Comments | "
                 , text "B/T/S: Regions | "
-                , text "Shift+S: Save | "
+                , text "Ctrl+S: Save | "
                 , text "A: Asm"
                 ]
             ]
@@ -2640,6 +2991,16 @@ toHexHelper n acc =
         toHexHelper (n // 16) (char ++ acc)
 
 
+toHexAuto : Int -> String
+toHexAuto n =
+    if n <= 255 then
+        toHex 2 n
+    else if n <= 65535 then
+        toHex 4 n
+    else
+        toHex 8 n
+
+
 parseHex : String -> Maybe Int
 parseHex str =
     let
@@ -2650,18 +3011,18 @@ parseHex str =
                 |> String.replace "$" ""
                 |> String.replace "0X" ""
     in
-    parseHexHelper (String.toList cleaned) 0
+    if String.isEmpty cleaned then
+        Nothing
+
+    else
+        parseHexHelper (String.toList cleaned) 0
 
 
 parseHexHelper : List Char -> Int -> Maybe Int
 parseHexHelper chars acc =
     case chars of
         [] ->
-            if acc > 0 then
-                Just acc
-
-            else
-                Nothing
+            Just acc
 
         c :: rest ->
             case hexDigitValue c of
