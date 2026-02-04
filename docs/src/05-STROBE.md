@@ -13,7 +13,7 @@ Create `src/strobe.asm`:
 * = $0801                       ; BASIC start address
 
 ; BASIC stub: 10 SYS 2064
-!byte $0c, $08                  ; Pointer to next BASIC line
+!byte $0b, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
 !text "2064"                    ; Address as ASCII

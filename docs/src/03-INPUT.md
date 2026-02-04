@@ -13,7 +13,7 @@ Create `src/colors.asm`:
 * = $0801                       ; BASIC start address
 
 ; BASIC standard stub: 10 SYS 2064
-!byte $0c, $08
+!byte $0b, $08
 !byte $0a, $00
 !byte $9e
 !text "2064"

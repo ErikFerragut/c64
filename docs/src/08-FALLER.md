@@ -145,7 +145,7 @@ Here's the full listing. Changes from Chapter 7 are marked with `; ← NEW`:
 * = $0801                       ; BASIC start address
 
 ; BASIC stub: 10 SYS 2304
-!byte $0c, $08                  ; Pointer to next BASIC line
+!byte $0b, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
 !text "2304"                    ; Address as ASCII

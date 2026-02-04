@@ -209,6 +209,8 @@ We write each character individually with LDA/STA pairs:
 
 This is tedious but straightforward. The C64 has no "print string" instruction -- everything goes to memory one byte at a time. In later chapters we will use a loop with indexed addressing to write strings more efficiently, but for short labels the direct approach is clear and costs no extra code.
 
+[COMMENT: Not entirely true if you consider C64 BASIC, whose subroutines can be called from assembly, too. I believe there's a print routine.]
+
 Each character also needs a color set in **color RAM** at `$D800`. The layout mirrors screen memory: `$D800` corresponds to `$0400`, `$D801` to `$0401`, and so on. We color the entire first row white with a loop:
 
 ```asm
@@ -262,6 +264,10 @@ ss_h_loop:
 This is 16-bit subtraction: we subtract 100 from the low byte, and the SBC on the high byte propagates the borrow. If the high byte goes negative (carry clear after SBC means a borrow occurred), we have subtracted too many times -- the count in X is our hundreds digit and the value in `$0d` (before the last subtraction) is the remainder.
 
 The tens digit uses the same approach but only needs 8-bit subtraction since the remainder is always less than 100. Whatever is left after extracting tens is the ones digit. Each digit is converted to a screen code by adding `$30` and written directly to the screen positions after "SCORE:".
+
+[COMMENT: There are faster approaches. Also, we could probably have just stored the number of catches and then written the 0 after it. Third option is BCD encoding, which makes addition harder but printing easier -- ah, I see this is exercise 2.]
+
+[QUESTION: If the score goes multiple digits and then we restart, are we left with old digits to the right of the new 0 score? I suppose we avoid this by not allowing a game to restart.]
 
 ## Compiling
 

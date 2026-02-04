@@ -138,7 +138,7 @@ Here is the full listing:
 * = $0801                       ; BASIC start address
 
 ; BASIC stub: 10 SYS 2304
-!byte $0c, $08                  ; Pointer to next BASIC line
+!byte $0b, $08                  ; Pointer to next BASIC line
 !byte $0a, $00                  ; Line number 10
 !byte $9e                       ; SYS token
 !text "2304"                    ; Address as ASCII
@@ -493,7 +493,9 @@ We AND with `%00000011` to isolate just sprites 0 and 1, then CMP with `%0000001
 
 ### The Caught Flag
 
-A subtle problem arises with collision detection: the ball overlaps the bucket for multiple frames as it falls through. Without protection, we would register a catch every frame of overlap. The `caught` flag prevents this:
+A subtle problem arises with collision detection: the ball overlaps the bucket for multiple frames as it falls through. Without protection, we would register a catch every frame of overlap. [QUESTION: If after reading the value it is zero'd out, what would cause it to be reset? Does it happen at rasterization?] The `caught` flag prevents this:
+
+[QUESTION: This is kind of confusing because the operation of setting caught to 1 is idempotent. There's no need to avoid it happening again. This would make more sense if we were increasing score here. But I do see how this teaches debouncing in general.]
 
 ```asm
     lda caught                  ; Already caught this pass?
@@ -526,6 +528,7 @@ show_lives:
     sta $d800                   ; Color RAM
     rts
 ```
+[QUESTION: In this particular program, we could set d800 to 01 in the initialization. It never changes after that.]
 
 The C64's screen memory starts at `$0400` -- each byte represents one character on the 40x25 screen. The digits 0-9 have screen codes `$30`-`$39`, so adding `$30` to a number gives the correct character. This is the same offset as ASCII, which is no coincidence -- Commodore borrowed this convention.
 
