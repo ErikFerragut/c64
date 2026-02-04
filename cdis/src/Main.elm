@@ -237,6 +237,26 @@ type Msg
 -- UPDATE
 
 
+{-| Start editing at the given offset, choosing the appropriate edit mode
+based on whether the offset is in a byte region, text region, or code.
+-}
+startEditAtOffset : Int -> Model -> ( Model, Cmd Msg )
+startEditAtOffset offset model =
+    let
+        inByteRegion =
+            List.any (\r -> r.regionType == Types.ByteRegion && offset >= r.start && offset <= r.end) model.regions
+
+        inTextRegion =
+            List.any (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
+    in
+    if inByteRegion then
+        update (StartEditByte offset) model
+    else if inTextRegion then
+        update (StartEditText offset) model
+    else
+        update (StartEditInstruction offset) model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -1388,24 +1408,24 @@ update msg model =
                                             Dict.insert offset byteValue model.patches
 
                                         nextOffset =
-                                            if offset + 1 < fileSize then
-                                                offset + 1
+                                            offset + 1
 
-                                            else
-                                                offset
+                                        updatedModel =
+                                            ensureSelectionVisible
+                                                { model
+                                                    | bytes = newBytes
+                                                    , patches = newPatches
+                                                    , selectedOffset = Just nextOffset
+                                                    , editingInstruction = Nothing
+                                                    , editError = Nothing
+                                                    , editType = Nothing
+                                                    , dirty = True
+                                                }
                                     in
-                                    ( ensureSelectionVisible
-                                        { model
-                                            | bytes = newBytes
-                                            , patches = newPatches
-                                            , selectedOffset = Just nextOffset
-                                            , editingInstruction = Nothing
-                                            , editError = Nothing
-                                            , editType = Nothing
-                                            , dirty = True
-                                        }
-                                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
-                                    )
+                                    if nextOffset < fileSize then
+                                        startEditAtOffset nextOffset updatedModel
+                                    else
+                                        ( updatedModel, Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main") )
 
                             Nothing ->
                                 ( { model | editError = Just "Invalid hex value" }, Cmd.none )
@@ -1462,24 +1482,24 @@ update msg model =
 
                                                 -- Move to next line after text region
                                                 nextOffset =
-                                                    if tr.end + 1 < fileSize then
-                                                        tr.end + 1
+                                                    tr.end + 1
 
-                                                    else
-                                                        offset
+                                                updatedModel =
+                                                    ensureSelectionVisible
+                                                        { model
+                                                            | bytes = updatedBytes
+                                                            , patches = updatedPatches
+                                                            , selectedOffset = Just nextOffset
+                                                            , editingInstruction = Nothing
+                                                            , editError = Nothing
+                                                            , editType = Nothing
+                                                            , dirty = True
+                                                        }
                                             in
-                                            ( ensureSelectionVisible
-                                                { model
-                                                    | bytes = updatedBytes
-                                                    , patches = updatedPatches
-                                                    , selectedOffset = Just nextOffset
-                                                    , editingInstruction = Nothing
-                                                    , editError = Nothing
-                                                    , editType = Nothing
-                                                    , dirty = True
-                                                }
-                                            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
-                                            )
+                                            if nextOffset < fileSize then
+                                                startEditAtOffset nextOffset updatedModel
+                                            else
+                                                ( updatedModel, Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main") )
 
                                     Nothing ->
                                         ( { model | editError = Just "Invalid hex values (use space-separated bytes like: 48 45 4C 4C 4F)" }, Cmd.none )
@@ -1557,26 +1577,23 @@ update msg model =
                                         nextOffset =
                                             offset + result.size
 
-                                        newSelectedOffset =
-                                            if nextOffset < fileSize then
-                                                Just nextOffset
-
-                                            else
-                                                Just offset
+                                        updatedModel =
+                                            ensureSelectionVisible
+                                                { model
+                                                    | bytes = newBytes
+                                                    , patches = newPatches
+                                                    , regions = newRegions
+                                                    , selectedOffset = Just nextOffset
+                                                    , editingInstruction = Nothing
+                                                    , editError = Nothing
+                                                    , editType = Nothing
+                                                    , dirty = True
+                                                }
                                     in
-                                    ( ensureSelectionVisible
-                                        { model
-                                            | bytes = newBytes
-                                            , patches = newPatches
-                                            , regions = newRegions
-                                            , selectedOffset = newSelectedOffset
-                                            , editingInstruction = Nothing
-                                            , editError = Nothing
-                                            , editType = Nothing
-                                            , dirty = True
-                                        }
-                                    , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
-                                    )
+                                    if nextOffset < fileSize then
+                                        startEditAtOffset nextOffset updatedModel
+                                    else
+                                        ( updatedModel, Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main") )
 
                 Nothing ->
                     ( model, Cmd.none )

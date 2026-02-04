@@ -9765,6 +9765,31 @@ var $author$project$Project$toModel = F2(
 					data.segments)
 			});
 	});
+var $author$project$Main$startEditAtOffset = F2(
+	function (offset, model) {
+		var inTextRegion = A2(
+			$elm$core$List$any,
+			function (r) {
+				return _Utils_eq(r.regionType, $author$project$Types$TextRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+			},
+			model.regions);
+		var inByteRegion = A2(
+			$elm$core$List$any,
+			function (r) {
+				return _Utils_eq(r.regionType, $author$project$Types$ByteRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+			},
+			model.regions);
+		return inByteRegion ? A2(
+			$author$project$Main$update,
+			$author$project$Main$StartEditByte(offset),
+			model) : (inTextRegion ? A2(
+			$author$project$Main$update,
+			$author$project$Main$StartEditText(offset),
+			model) : A2(
+			$author$project$Main$update,
+			$author$project$Main$StartEditInstruction(offset),
+			model));
+	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		update:
@@ -11217,22 +11242,23 @@ var $author$project$Main$update = F2(
 											}),
 										$elm$core$Platform$Cmd$none);
 								} else {
-									var nextOffset = (_Utils_cmp(offset + 1, fileSize) < 0) ? (offset + 1) : offset;
+									var nextOffset = offset + 1;
 									var newPatches = A3($elm$core$Dict$insert, offset, byteValue, model.patches);
 									var newBytes = A3($elm$core$Array$set, offset, byteValue, model.bytes);
-									return _Utils_Tuple2(
-										$author$project$Main$ensureSelectionVisible(
-											_Utils_update(
-												model,
-												{
-													bytes: newBytes,
-													dirty: true,
-													editError: $elm$core$Maybe$Nothing,
-													editType: $elm$core$Maybe$Nothing,
-													editingInstruction: $elm$core$Maybe$Nothing,
-													patches: newPatches,
-													selectedOffset: $elm$core$Maybe$Just(nextOffset)
-												})),
+									var updatedModel = $author$project$Main$ensureSelectionVisible(
+										_Utils_update(
+											model,
+											{
+												bytes: newBytes,
+												dirty: true,
+												editError: $elm$core$Maybe$Nothing,
+												editType: $elm$core$Maybe$Nothing,
+												editingInstruction: $elm$core$Maybe$Nothing,
+												patches: newPatches,
+												selectedOffset: $elm$core$Maybe$Just(nextOffset)
+											}));
+									return (_Utils_cmp(nextOffset, fileSize) < 0) ? A2($author$project$Main$startEditAtOffset, nextOffset, updatedModel) : _Utils_Tuple2(
+										updatedModel,
 										A2(
 											$elm$core$Task$attempt,
 											function (_v78) {
@@ -11289,7 +11315,7 @@ var $author$project$Main$update = F2(
 													}),
 												$elm$core$Platform$Cmd$none);
 										} else {
-											var nextOffset = (_Utils_cmp(tr.end + 1, fileSize) < 0) ? (tr.end + 1) : offset;
+											var nextOffset = tr.end + 1;
 											var _v81 = A3(
 												$elm$core$List$foldl,
 												F2(
@@ -11306,19 +11332,20 @@ var $author$project$Main$update = F2(
 												A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, newByteList));
 											var updatedBytes = _v81.a;
 											var updatedPatches = _v81.b;
-											return _Utils_Tuple2(
-												$author$project$Main$ensureSelectionVisible(
-													_Utils_update(
-														model,
-														{
-															bytes: updatedBytes,
-															dirty: true,
-															editError: $elm$core$Maybe$Nothing,
-															editType: $elm$core$Maybe$Nothing,
-															editingInstruction: $elm$core$Maybe$Nothing,
-															patches: updatedPatches,
-															selectedOffset: $elm$core$Maybe$Just(nextOffset)
-														})),
+											var updatedModel = $author$project$Main$ensureSelectionVisible(
+												_Utils_update(
+													model,
+													{
+														bytes: updatedBytes,
+														dirty: true,
+														editError: $elm$core$Maybe$Nothing,
+														editType: $elm$core$Maybe$Nothing,
+														editingInstruction: $elm$core$Maybe$Nothing,
+														patches: updatedPatches,
+														selectedOffset: $elm$core$Maybe$Just(nextOffset)
+													}));
+											return (_Utils_cmp(nextOffset, fileSize) < 0) ? A2($author$project$Main$startEditAtOffset, nextOffset, updatedModel) : _Utils_Tuple2(
+												updatedModel,
 												A2(
 													$elm$core$Task$attempt,
 													function (_v84) {
@@ -11374,7 +11401,6 @@ var $author$project$Main$update = F2(
 											$elm$core$Platform$Cmd$none);
 									} else {
 										var nextOffset = offset + result.size;
-										var newSelectedOffset = (_Utils_cmp(nextOffset, fileSize) < 0) ? $elm$core$Maybe$Just(nextOffset) : $elm$core$Maybe$Just(offset);
 										var newEnd = (offset + result.size) - 1;
 										var regionsWithoutOverlap = A2(
 											$elm$core$List$filter,
@@ -11408,11 +11434,21 @@ var $author$project$Main$update = F2(
 											A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, result.bytes));
 										var newBytes = _v87.a;
 										var newPatches = _v87.b;
-										return _Utils_Tuple2(
-											$author$project$Main$ensureSelectionVisible(
-												_Utils_update(
-													model,
-													{bytes: newBytes, dirty: true, editError: $elm$core$Maybe$Nothing, editType: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, patches: newPatches, regions: newRegions, selectedOffset: newSelectedOffset})),
+										var updatedModel = $author$project$Main$ensureSelectionVisible(
+											_Utils_update(
+												model,
+												{
+													bytes: newBytes,
+													dirty: true,
+													editError: $elm$core$Maybe$Nothing,
+													editType: $elm$core$Maybe$Nothing,
+													editingInstruction: $elm$core$Maybe$Nothing,
+													patches: newPatches,
+													regions: newRegions,
+													selectedOffset: $elm$core$Maybe$Just(nextOffset)
+												}));
+										return (_Utils_cmp(nextOffset, fileSize) < 0) ? A2($author$project$Main$startEditAtOffset, nextOffset, updatedModel) : _Utils_Tuple2(
+											updatedModel,
 											A2(
 												$elm$core$Task$attempt,
 												function (_v90) {
