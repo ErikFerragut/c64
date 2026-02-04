@@ -3,3 +3,6 @@
 asm_tutorial/out/
 asm_tutorial/mermaid-filter.err
 *~
+scratch/
+cdis/*.asm
+cdis/*.cdis
