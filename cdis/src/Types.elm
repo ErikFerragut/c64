@@ -66,7 +66,18 @@ type alias Model =
     , editType : Maybe EditType -- What type of value we're editing
     , converterMode : Maybe ConverterMode -- d: dec->hex, h: hex->dec
     , converterInput : String
+    , symbols : Dict Int String -- User-defined symbols for variables/equates
+    , variableMode : Maybe VariableInputPhase -- v: define variable
+    , variableAddress : String -- Address being entered
+    , variableName : String -- Name being entered
+    , variableListMode : Bool -- V: viewing variable list
+    , variableListSelection : Int -- Selected index in variable list
     }
+
+
+type VariableInputPhase
+    = EnteringAddress
+    | EnteringName
 
 
 type alias Line =
@@ -142,4 +153,10 @@ initModel =
     , editType = Nothing
     , converterMode = Nothing
     , converterInput = ""
+    , symbols = Dict.empty
+    , variableMode = Nothing
+    , variableAddress = ""
+    , variableName = ""
+    , variableListMode = False
+    , variableListSelection = 0
     }

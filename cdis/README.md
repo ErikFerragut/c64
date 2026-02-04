@@ -68,7 +68,9 @@ Launch cdis and open a `.prg` file. The two-byte load address header is parsed a
 |-----|--------|
 | `Ctrl+S` | Save project (.cdis file) |
 | `A` | Export as .asm |
-| `V` | Run in VICE |
+| `X` | eXecute in VICE |
+| `v` | Define variable/symbol (prompts for address, then name) |
+| `V` | View/manage variable list |
 | `D` | Decimal to hex converter |
 | `H` | Hex to decimal converter |
 | `?` | Toggle help |
@@ -80,6 +82,7 @@ When you save (`Ctrl+S`), cdis creates a `.cdis` file alongside your `.prg` cont
 - Region definitions (bytes/text)
 - Segment boundaries
 - Byte patches
+- User-defined symbols/variables
 
 This file is automatically loaded when you reopen the PRG.
 

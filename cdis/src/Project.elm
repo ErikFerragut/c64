@@ -16,7 +16,7 @@ import Types exposing (Model, Region, RegionType(..), Segment, initModel)
 
 currentVersion : Int
 currentVersion =
-    5
+    6
 
 
 type alias SaveData =
@@ -29,6 +29,7 @@ type alias SaveData =
     , segments : List { start : Int, end : Int }
     , majorComments : List ( Int, String )
     , patches : List ( Int, Int ) -- (offset, newByte) for byte modifications
+    , symbols : List ( Int, String ) -- (address, name) for user-defined symbols
     }
 
 
@@ -48,6 +49,15 @@ encode data =
         , ( "segments", JE.list encodeSegment data.segments )
         , ( "majorComments", JE.list encodeMajorComment data.majorComments )
         , ( "patches", JE.list encodePatch data.patches )
+        , ( "symbols", JE.list encodeSymbol data.symbols )
+        ]
+
+
+encodeSymbol : ( Int, String ) -> JE.Value
+encodeSymbol ( addr, name ) =
+    JE.object
+        [ ( "address", JE.int addr )
+        , ( "name", JE.string name )
         ]
 
 
@@ -128,6 +138,9 @@ decoderForVersion version =
         5 ->
             decodeV5
 
+        6 ->
+            decodeV6
+
         _ ->
             JD.fail ("Unknown save file version: " ++ String.fromInt version)
 
@@ -156,6 +169,7 @@ toSaveDataWithPatches version fileName loadAddress comments labels regions segme
     , segments = segments
     , majorComments = majorComments
     , patches = []
+    , symbols = []
     }
 
 
@@ -215,6 +229,36 @@ decodeV5 =
                 optionalField "patches" (JD.list decodePatch) []
                     |> JD.map (\p -> { partial | patches = p })
             )
+
+
+decodeV6 : JD.Decoder SaveData
+decodeV6 =
+    JD.map8 toSaveDataWithPatches
+        (JD.succeed currentVersion)
+        (JD.field "fileName" JD.string)
+        (JD.field "loadAddress" JD.int)
+        (optionalField "comments" (JD.list decodeComment) [])
+        (optionalField "labels" (JD.list decodeLabel) [])
+        (optionalField "regions" (JD.list decodeRegion) [])
+        (optionalField "segments" (JD.list decodeSegment) [])
+        (optionalField "majorComments" (JD.list decodeMajorComment) [])
+        |> JD.andThen
+            (\partial ->
+                optionalField "patches" (JD.list decodePatch) []
+                    |> JD.map (\p -> { partial | patches = p })
+            )
+        |> JD.andThen
+            (\partial ->
+                optionalField "symbols" (JD.list decodeSymbol) []
+                    |> JD.map (\s -> { partial | symbols = s })
+            )
+
+
+decodeSymbol : JD.Decoder ( Int, String )
+decodeSymbol =
+    JD.map2 Tuple.pair
+        (JD.field "address" JD.int)
+        (JD.field "name" JD.string)
 
 
 decodePatch : JD.Decoder ( Int, Int )
@@ -316,6 +360,7 @@ fromModel model =
     , segments = List.map (\s -> { start = s.start, end = s.end }) model.segments
     , majorComments = Dict.toList model.majorComments
     , patches = Dict.toList model.patches
+    , symbols = Dict.toList model.symbols
     }
 
 
@@ -350,4 +395,5 @@ toModel data model =
         , majorComments = Dict.fromList data.majorComments
         , patches = patchesDict
         , bytes = patchedBytes
+        , symbols = Dict.fromList data.symbols
     }

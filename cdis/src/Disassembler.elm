@@ -10,20 +10,20 @@ import Types exposing (AddressingMode(..), Line, OpcodeInfo, Region, RegionType(
 {-| Disassemble a range of bytes starting at a given offset
     Returns a list of disassembled lines
 -}
-disassembleRange : Int -> Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> List Line
-disassembleRange loadAddress startOffset count bytes comments labels regions segments majorComments =
-    disassembleHelper loadAddress startOffset count bytes comments labels regions segments majorComments []
+disassembleRange : Int -> Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> Dict Int String -> List Line
+disassembleRange loadAddress startOffset count bytes comments labels regions segments majorComments userSymbols =
+    disassembleHelper loadAddress startOffset count bytes comments labels regions segments majorComments userSymbols []
 
 
-disassembleHelper : Int -> Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> List Line -> List Line
-disassembleHelper loadAddress offset remaining bytes comments labels regions segments majorComments acc =
+disassembleHelper : Int -> Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> Dict Int String -> List Line -> List Line
+disassembleHelper loadAddress offset remaining bytes comments labels regions segments majorComments userSymbols acc =
     if remaining <= 0 || offset >= Array.length bytes then
         List.reverse acc
 
     else
         let
             line =
-                disassembleLine loadAddress offset bytes comments labels regions segments majorComments
+                disassembleLine loadAddress offset bytes comments labels regions segments majorComments userSymbols
 
             newOffset =
                 offset + List.length line.bytes
@@ -31,14 +31,14 @@ disassembleHelper loadAddress offset remaining bytes comments labels regions seg
             newRemaining =
                 remaining - 1
         in
-        disassembleHelper loadAddress newOffset newRemaining bytes comments labels regions segments majorComments (line :: acc)
+        disassembleHelper loadAddress newOffset newRemaining bytes comments labels regions segments majorComments userSymbols (line :: acc)
 
 
 {-| Disassemble a single instruction at the given offset
 -}
-disassemble : Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> Line
-disassemble loadAddress offset bytes comments labels regions segments majorComments =
-    disassembleLine loadAddress offset bytes comments labels regions segments majorComments
+disassemble : Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> Dict Int String -> Line
+disassemble loadAddress offset bytes comments labels regions segments majorComments userSymbols =
+    disassembleLine loadAddress offset bytes comments labels regions segments majorComments userSymbols
 
 
 {-| Check if an offset falls within a byte region
@@ -133,8 +133,8 @@ bytesToPetscii byteList =
         |> String.fromList
 
 
-disassembleLine : Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> Line
-disassembleLine loadAddress offset bytes comments labels regions segments majorComments =
+disassembleLine : Int -> Int -> Array Int -> Dict Int String -> Dict Int String -> List Region -> List Segment -> Dict Int String -> Dict Int String -> Line
+disassembleLine loadAddress offset bytes comments labels regions segments majorComments userSymbols =
     let
         address =
             loadAddress + offset
@@ -224,7 +224,7 @@ disassembleLine loadAddress offset bytes comments labels regions segments majorC
                         getOperandValue instrBytes
 
                     disasm =
-                        formatInstruction info operandValue address
+                        formatInstruction info operandValue address userSymbols
 
                     endAddress =
                         loadAddress + Array.length bytes
@@ -287,8 +287,8 @@ getOperandValue instrBytes =
 
 {-| Format a complete instruction
 -}
-formatInstruction : OpcodeInfo -> Int -> Int -> String
-formatInstruction info operand address =
+formatInstruction : OpcodeInfo -> Int -> Int -> Dict Int String -> String
+formatInstruction info operand address userSymbols =
     let
         mnemonic =
             if info.undocumented then
@@ -298,7 +298,7 @@ formatInstruction info operand address =
                 info.mnemonic
 
         operandStr =
-            formatOperand info.mode operand address
+            formatOperandWithSymbols info.mode operand address userSymbols
     in
     if String.isEmpty operandStr then
         mnemonic
@@ -307,10 +307,17 @@ formatInstruction info operand address =
         mnemonic ++ " " ++ operandStr
 
 
-{-| Format the operand based on addressing mode
+{-| Format the operand based on addressing mode (without user symbols, for export)
 -}
 formatOperand : AddressingMode -> Int -> Int -> String
 formatOperand mode operand instrAddress =
+    formatOperandWithSymbols mode operand instrAddress Dict.empty
+
+
+{-| Format the operand based on addressing mode with user symbols
+-}
+formatOperandWithSymbols : AddressingMode -> Int -> Int -> Dict Int String -> String
+formatOperandWithSymbols mode operand instrAddress userSymbols =
     case mode of
         Implied ->
             ""
@@ -322,31 +329,31 @@ formatOperand mode operand instrAddress =
             "#" ++ formatByte operand
 
         ZeroPage ->
-            formatByteWithSymbol operand
+            formatByteWithSymbol operand userSymbols
 
         ZeroPageX ->
-            formatByteWithSymbol operand ++ ",X"
+            formatByteWithSymbol operand userSymbols ++ ",X"
 
         ZeroPageY ->
-            formatByteWithSymbol operand ++ ",Y"
+            formatByteWithSymbol operand userSymbols ++ ",Y"
 
         Absolute ->
-            formatWordWithSymbol operand
+            formatWordWithSymbol operand userSymbols
 
         AbsoluteX ->
-            formatWordWithSymbol operand ++ ",X"
+            formatWordWithSymbol operand userSymbols ++ ",X"
 
         AbsoluteY ->
-            formatWordWithSymbol operand ++ ",Y"
+            formatWordWithSymbol operand userSymbols ++ ",Y"
 
         Indirect ->
-            "(" ++ formatWordWithSymbol operand ++ ")"
+            "(" ++ formatWordWithSymbol operand userSymbols ++ ")"
 
         IndirectX ->
-            "(" ++ formatByteWithSymbol operand ++ ",X)"
+            "(" ++ formatByteWithSymbol operand userSymbols ++ ",X)"
 
         IndirectY ->
-            "(" ++ formatByteWithSymbol operand ++ "),Y"
+            "(" ++ formatByteWithSymbol operand userSymbols ++ "),Y"
 
         Relative ->
             let
@@ -362,7 +369,7 @@ formatOperand mode operand instrAddress =
                 target =
                     instrAddress + 2 + signedOffset
             in
-            formatWordWithSymbol target
+            formatWordWithSymbol target userSymbols
 
 
 {-| Compute the target address for clickable operands
@@ -441,28 +448,38 @@ formatWord n =
     "$" ++ toHex 4 n
 
 
-{-| Format a byte, substituting symbol if available
+{-| Format a byte, substituting symbol if available (user symbols take priority)
 -}
-formatByteWithSymbol : Int -> String
-formatByteWithSymbol addr =
-    case getSymbol addr of
+formatByteWithSymbol : Int -> Dict Int String -> String
+formatByteWithSymbol addr userSymbols =
+    case Dict.get addr userSymbols of
         Just sym ->
             sym
 
         Nothing ->
-            formatByte addr
+            case getSymbol addr of
+                Just sym ->
+                    sym
+
+                Nothing ->
+                    formatByte addr
 
 
-{-| Format a word, substituting symbol if available
+{-| Format a word, substituting symbol if available (user symbols take priority)
 -}
-formatWordWithSymbol : Int -> String
-formatWordWithSymbol addr =
-    case getSymbol addr of
+formatWordWithSymbol : Int -> Dict Int String -> String
+formatWordWithSymbol addr userSymbols =
+    case Dict.get addr userSymbols of
         Just sym ->
             sym
 
         Nothing ->
-            formatWord addr
+            case getSymbol addr of
+                Just sym ->
+                    sym
+
+                Nothing ->
+                    formatWord addr
 
 
 {-| Convert an integer to a hex string with specified width

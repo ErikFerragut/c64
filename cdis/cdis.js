@@ -5206,7 +5206,7 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
-var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, confirmQuit: false, converterInput: '', converterMode: $elm$core$Maybe$Nothing, dirty: false, editError: $elm$core$Maybe$Nothing, editType: $elm$core$Maybe$Nothing, editingComment: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, editingMajorComment: $elm$core$Maybe$Nothing, fileName: '', gotoError: false, gotoInput: '', gotoMode: false, helpExpanded: false, jumpHistory: _List_Nil, labels: $elm$core$Dict$empty, loadAddress: 0, majorComments: $elm$core$Dict$empty, mark: $elm$core$Maybe$Nothing, outlineMode: false, outlineSelection: 0, patches: $elm$core$Dict$empty, regions: _List_Nil, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, viewLines: 25, viewStart: 0};
+var $author$project$Types$initModel = {bytes: $elm$core$Array$empty, comments: $elm$core$Dict$empty, confirmQuit: false, converterInput: '', converterMode: $elm$core$Maybe$Nothing, dirty: false, editError: $elm$core$Maybe$Nothing, editType: $elm$core$Maybe$Nothing, editingComment: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing, editingLabel: $elm$core$Maybe$Nothing, editingMajorComment: $elm$core$Maybe$Nothing, fileName: '', gotoError: false, gotoInput: '', gotoMode: false, helpExpanded: false, jumpHistory: _List_Nil, labels: $elm$core$Dict$empty, loadAddress: 0, majorComments: $elm$core$Dict$empty, mark: $elm$core$Maybe$Nothing, outlineMode: false, outlineSelection: 0, patches: $elm$core$Dict$empty, regions: _List_Nil, restartPoints: $elm$core$Set$empty, segments: _List_Nil, selectedOffset: $elm$core$Maybe$Nothing, symbols: $elm$core$Dict$empty, variableAddress: '', variableListMode: false, variableListSelection: 0, variableMode: $elm$core$Maybe$Nothing, variableName: '', viewLines: 25, viewStart: 0};
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
 		$author$project$Types$initModel,
@@ -5664,6 +5664,8 @@ var $author$project$Main$CancelConverter = {$: 'CancelConverter'};
 var $author$project$Main$CancelGoto = {$: 'CancelGoto'};
 var $author$project$Main$CancelOutline = {$: 'CancelOutline'};
 var $author$project$Main$CancelQuit = {$: 'CancelQuit'};
+var $author$project$Main$CancelVariable = {$: 'CancelVariable'};
+var $author$project$Main$CancelVariableList = {$: 'CancelVariableList'};
 var $author$project$Main$ClearByteRegion = function (a) {
 	return {$: 'ClearByteRegion', a: a};
 };
@@ -5677,7 +5679,9 @@ var $author$project$Main$ClickAddress = function (a) {
 	return {$: 'ClickAddress', a: a};
 };
 var $author$project$Main$ConfirmQuit = {$: 'ConfirmQuit'};
+var $author$project$Main$ConfirmVariableAddress = {$: 'ConfirmVariableAddress'};
 var $author$project$Types$DecToHex = {$: 'DecToHex'};
+var $author$project$Main$DeleteSelectedVariable = {$: 'DeleteSelectedVariable'};
 var $author$project$Types$EditByte = {$: 'EditByte'};
 var $author$project$Types$EditInstruction = {$: 'EditInstruction'};
 var $author$project$Types$EditText = {$: 'EditText'};
@@ -5685,6 +5689,10 @@ var $author$project$Main$EnterDecToHexMode = {$: 'EnterDecToHexMode'};
 var $author$project$Main$EnterGotoMode = {$: 'EnterGotoMode'};
 var $author$project$Main$EnterHexToDecMode = {$: 'EnterHexToDecMode'};
 var $author$project$Main$EnterOutlineMode = {$: 'EnterOutlineMode'};
+var $author$project$Main$EnterVariableListMode = {$: 'EnterVariableListMode'};
+var $author$project$Main$EnterVariableMode = {$: 'EnterVariableMode'};
+var $author$project$Types$EnteringAddress = {$: 'EnteringAddress'};
+var $author$project$Types$EnteringName = {$: 'EnteringName'};
 var $author$project$Main$ExecuteGoto = {$: 'ExecuteGoto'};
 var $author$project$Main$ExportAsm = {$: 'ExportAsm'};
 var $author$project$Main$FocusResult = {$: 'FocusResult'};
@@ -5707,6 +5715,7 @@ var $author$project$Main$RequestQuit = {$: 'RequestQuit'};
 var $author$project$Main$RestartDisassembly = {$: 'RestartDisassembly'};
 var $author$project$Main$RunInVice = {$: 'RunInVice'};
 var $author$project$Main$SaveProject = {$: 'SaveProject'};
+var $author$project$Main$SaveVariable = {$: 'SaveVariable'};
 var $author$project$Main$SelectNextLine = {$: 'SelectNextLine'};
 var $author$project$Main$SelectPrevLine = {$: 'SelectPrevLine'};
 var $author$project$Main$StartEditByte = function (a) {
@@ -5730,6 +5739,8 @@ var $author$project$Main$StartEditText = function (a) {
 var $author$project$Types$TextRegion = {$: 'TextRegion'};
 var $author$project$Main$ToggleHelp = {$: 'ToggleHelp'};
 var $author$project$Main$ToggleMark = {$: 'ToggleMark'};
+var $author$project$Main$VariableListNext = {$: 'VariableListNext'};
+var $author$project$Main$VariableListPrev = {$: 'VariableListPrev'};
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
 		any:
@@ -6721,7 +6732,7 @@ var $elm$core$List$concatMap = F2(
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $elm$json$Json$Decode$andThen = _Json_andThen;
-var $author$project$Project$currentVersion = 5;
+var $author$project$Project$currentVersion = 6;
 var $author$project$Project$decodeComment = A3(
 	$elm$json$Json$Decode$map2,
 	$elm$core$Tuple$pair,
@@ -6753,7 +6764,7 @@ var $author$project$Project$optionalField = F3(
 	});
 var $author$project$Project$toSaveDataWithPatches = F8(
 	function (version, fileName, loadAddress, comments, labels, regions, segments, majorComments) {
-		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, majorComments: majorComments, patches: _List_Nil, regions: regions, segments: segments, version: version};
+		return {comments: comments, fileName: fileName, labels: labels, loadAddress: loadAddress, majorComments: majorComments, patches: _List_Nil, regions: regions, segments: segments, symbols: _List_Nil, version: version};
 	});
 var $author$project$Project$decodeV1 = A9(
 	$elm$json$Json$Decode$map8,
@@ -6930,6 +6941,74 @@ var $author$project$Project$decodeV5 = A2(
 			'majorComments',
 			$elm$json$Json$Decode$list($author$project$Project$decodeMajorComment),
 			_List_Nil)));
+var $author$project$Project$decodeSymbol = A3(
+	$elm$json$Json$Decode$map2,
+	$elm$core$Tuple$pair,
+	A2($elm$json$Json$Decode$field, 'address', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string));
+var $author$project$Project$decodeV6 = A2(
+	$elm$json$Json$Decode$andThen,
+	function (partial) {
+		return A2(
+			$elm$json$Json$Decode$map,
+			function (s) {
+				return _Utils_update(
+					partial,
+					{symbols: s});
+			},
+			A3(
+				$author$project$Project$optionalField,
+				'symbols',
+				$elm$json$Json$Decode$list($author$project$Project$decodeSymbol),
+				_List_Nil));
+	},
+	A2(
+		$elm$json$Json$Decode$andThen,
+		function (partial) {
+			return A2(
+				$elm$json$Json$Decode$map,
+				function (p) {
+					return _Utils_update(
+						partial,
+						{patches: p});
+				},
+				A3(
+					$author$project$Project$optionalField,
+					'patches',
+					$elm$json$Json$Decode$list($author$project$Project$decodePatch),
+					_List_Nil));
+		},
+		A9(
+			$elm$json$Json$Decode$map8,
+			$author$project$Project$toSaveDataWithPatches,
+			$elm$json$Json$Decode$succeed($author$project$Project$currentVersion),
+			A2($elm$json$Json$Decode$field, 'fileName', $elm$json$Json$Decode$string),
+			A2($elm$json$Json$Decode$field, 'loadAddress', $elm$json$Json$Decode$int),
+			A3(
+				$author$project$Project$optionalField,
+				'comments',
+				$elm$json$Json$Decode$list($author$project$Project$decodeComment),
+				_List_Nil),
+			A3(
+				$author$project$Project$optionalField,
+				'labels',
+				$elm$json$Json$Decode$list($author$project$Project$decodeLabel),
+				_List_Nil),
+			A3(
+				$author$project$Project$optionalField,
+				'regions',
+				$elm$json$Json$Decode$list($author$project$Project$decodeRegion),
+				_List_Nil),
+			A3(
+				$author$project$Project$optionalField,
+				'segments',
+				$elm$json$Json$Decode$list($author$project$Project$decodeSegment),
+				_List_Nil),
+			A3(
+				$author$project$Project$optionalField,
+				'majorComments',
+				$elm$json$Json$Decode$list($author$project$Project$decodeMajorComment),
+				_List_Nil))));
 var $elm$json$Json$Decode$fail = _Json_fail;
 var $author$project$Project$decoderForVersion = function (version) {
 	switch (version) {
@@ -6943,6 +7022,8 @@ var $author$project$Project$decoderForVersion = function (version) {
 			return $author$project$Project$decodeV4;
 		case 5:
 			return $author$project$Project$decodeV5;
+		case 6:
+			return $author$project$Project$decodeV6;
 		default:
 			return $elm$json$Json$Decode$fail(
 				'Unknown save file version: ' + $elm$core$String$fromInt(version));
@@ -7816,29 +7897,43 @@ var $author$project$Symbols$getSymbol = function (addr) {
 		},
 		A2($elm$core$Dict$get, addr, $author$project$Symbols$symbolTable));
 };
-var $author$project$Disassembler$formatByteWithSymbol = function (addr) {
-	var _v0 = $author$project$Symbols$getSymbol(addr);
-	if (_v0.$ === 'Just') {
-		var sym = _v0.a;
-		return sym;
-	} else {
-		return $author$project$Disassembler$formatByte(addr);
-	}
-};
+var $author$project$Disassembler$formatByteWithSymbol = F2(
+	function (addr, userSymbols) {
+		var _v0 = A2($elm$core$Dict$get, addr, userSymbols);
+		if (_v0.$ === 'Just') {
+			var sym = _v0.a;
+			return sym;
+		} else {
+			var _v1 = $author$project$Symbols$getSymbol(addr);
+			if (_v1.$ === 'Just') {
+				var sym = _v1.a;
+				return sym;
+			} else {
+				return $author$project$Disassembler$formatByte(addr);
+			}
+		}
+	});
 var $author$project$Disassembler$formatWord = function (n) {
 	return '$' + A2($author$project$Disassembler$toHex, 4, n);
 };
-var $author$project$Disassembler$formatWordWithSymbol = function (addr) {
-	var _v0 = $author$project$Symbols$getSymbol(addr);
-	if (_v0.$ === 'Just') {
-		var sym = _v0.a;
-		return sym;
-	} else {
-		return $author$project$Disassembler$formatWord(addr);
-	}
-};
-var $author$project$Disassembler$formatOperand = F3(
-	function (mode, operand, instrAddress) {
+var $author$project$Disassembler$formatWordWithSymbol = F2(
+	function (addr, userSymbols) {
+		var _v0 = A2($elm$core$Dict$get, addr, userSymbols);
+		if (_v0.$ === 'Just') {
+			var sym = _v0.a;
+			return sym;
+		} else {
+			var _v1 = $author$project$Symbols$getSymbol(addr);
+			if (_v1.$ === 'Just') {
+				var sym = _v1.a;
+				return sym;
+			} else {
+				return $author$project$Disassembler$formatWord(addr);
+			}
+		}
+	});
+var $author$project$Disassembler$formatOperandWithSymbols = F4(
+	function (mode, operand, instrAddress, userSymbols) {
 		switch (mode.$) {
 			case 'Implied':
 				return '';
@@ -7847,32 +7942,32 @@ var $author$project$Disassembler$formatOperand = F3(
 			case 'Immediate':
 				return '#' + $author$project$Disassembler$formatByte(operand);
 			case 'ZeroPage':
-				return $author$project$Disassembler$formatByteWithSymbol(operand);
+				return A2($author$project$Disassembler$formatByteWithSymbol, operand, userSymbols);
 			case 'ZeroPageX':
-				return $author$project$Disassembler$formatByteWithSymbol(operand) + ',X';
+				return A2($author$project$Disassembler$formatByteWithSymbol, operand, userSymbols) + ',X';
 			case 'ZeroPageY':
-				return $author$project$Disassembler$formatByteWithSymbol(operand) + ',Y';
+				return A2($author$project$Disassembler$formatByteWithSymbol, operand, userSymbols) + ',Y';
 			case 'Absolute':
-				return $author$project$Disassembler$formatWordWithSymbol(operand);
+				return A2($author$project$Disassembler$formatWordWithSymbol, operand, userSymbols);
 			case 'AbsoluteX':
-				return $author$project$Disassembler$formatWordWithSymbol(operand) + ',X';
+				return A2($author$project$Disassembler$formatWordWithSymbol, operand, userSymbols) + ',X';
 			case 'AbsoluteY':
-				return $author$project$Disassembler$formatWordWithSymbol(operand) + ',Y';
+				return A2($author$project$Disassembler$formatWordWithSymbol, operand, userSymbols) + ',Y';
 			case 'Indirect':
-				return '(' + ($author$project$Disassembler$formatWordWithSymbol(operand) + ')');
+				return '(' + (A2($author$project$Disassembler$formatWordWithSymbol, operand, userSymbols) + ')');
 			case 'IndirectX':
-				return '(' + ($author$project$Disassembler$formatByteWithSymbol(operand) + ',X)');
+				return '(' + (A2($author$project$Disassembler$formatByteWithSymbol, operand, userSymbols) + ',X)');
 			case 'IndirectY':
-				return '(' + ($author$project$Disassembler$formatByteWithSymbol(operand) + '),Y');
+				return '(' + (A2($author$project$Disassembler$formatByteWithSymbol, operand, userSymbols) + '),Y');
 			default:
 				var signedOffset = (operand > 127) ? (operand - 256) : operand;
 				var target = (instrAddress + 2) + signedOffset;
-				return $author$project$Disassembler$formatWordWithSymbol(target);
+				return A2($author$project$Disassembler$formatWordWithSymbol, target, userSymbols);
 		}
 	});
-var $author$project$Disassembler$formatInstruction = F3(
-	function (info, operand, address) {
-		var operandStr = A3($author$project$Disassembler$formatOperand, info.mode, operand, address);
+var $author$project$Disassembler$formatInstruction = F4(
+	function (info, operand, address, userSymbols) {
+		var operandStr = A4($author$project$Disassembler$formatOperandWithSymbols, info.mode, operand, address, userSymbols);
 		var mnemonic = info.undocumented ? ('*' + info.mnemonic) : info.mnemonic;
 		return $elm$core$String$isEmpty(operandStr) ? mnemonic : (mnemonic + (' ' + operandStr));
 	});
@@ -8243,8 +8338,8 @@ var $author$project$Disassembler$isInTextRegion = F2(
 			},
 			regions);
 	});
-var $author$project$Disassembler$disassembleLine = F8(
-	function (loadAddress, offset, bytes, comments, labels, regions, segments, majorComments) {
+var $author$project$Disassembler$disassembleLine = F9(
+	function (loadAddress, offset, bytes, comments, labels, regions, segments, majorComments, userSymbols) {
 		var majorComment = A2($elm$core$Dict$get, offset, majorComments);
 		var inSeg = A2($author$project$Disassembler$isInSegment, offset, segments);
 		var address = loadAddress + offset;
@@ -8320,7 +8415,7 @@ var $author$project$Disassembler$disassembleLine = F8(
 					var operandValue = $author$project$Disassembler$getOperandValue(instrBytes);
 					var endAddress = loadAddress + $elm$core$Array$length(bytes);
 					var targetAddr = A5($author$project$Disassembler$computeTargetAddress, info.mode, operandValue, address, loadAddress, endAddress);
-					var disasm = A3($author$project$Disassembler$formatInstruction, info, operandValue, address);
+					var disasm = A4($author$project$Disassembler$formatInstruction, info, operandValue, address, userSymbols);
 					return {
 						address: address,
 						bytes: instrBytes,
@@ -8338,9 +8433,9 @@ var $author$project$Disassembler$disassembleLine = F8(
 			}
 		}
 	});
-var $author$project$Disassembler$disassemble = F8(
-	function (loadAddress, offset, bytes, comments, labels, regions, segments, majorComments) {
-		return A8($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, regions, segments, majorComments);
+var $author$project$Disassembler$disassemble = F9(
+	function (loadAddress, offset, bytes, comments, labels, regions, segments, majorComments, userSymbols) {
+		return A9($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, regions, segments, majorComments, userSymbols);
 	});
 var $elm$json$Json$Encode$int = _Json_wrap;
 var $elm$json$Json$Encode$object = function (pairs) {
@@ -8440,6 +8535,20 @@ var $author$project$Project$encodeSegment = function (segment) {
 				$elm$json$Json$Encode$int(segment.end))
 			]));
 };
+var $author$project$Project$encodeSymbol = function (_v0) {
+	var addr = _v0.a;
+	var name = _v0.b;
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'address',
+				$elm$json$Json$Encode$int(addr)),
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(name))
+			]));
+};
 var $elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -8479,7 +8588,10 @@ var $author$project$Project$encode = function (data) {
 				A2($elm$json$Json$Encode$list, $author$project$Project$encodeMajorComment, data.majorComments)),
 				_Utils_Tuple2(
 				'patches',
-				A2($elm$json$Json$Encode$list, $author$project$Project$encodePatch, data.patches))
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodePatch, data.patches)),
+				_Utils_Tuple2(
+				'symbols',
+				A2($elm$json$Json$Encode$list, $author$project$Project$encodeSymbol, data.symbols))
 			]));
 };
 var $author$project$Opcodes$opcodeBytes = function (_byte) {
@@ -8641,6 +8753,7 @@ var $author$project$Project$fromModel = function (model) {
 				return {end: s.end, start: s.start};
 			},
 			model.segments),
+		symbols: $elm$core$Dict$toList(model.symbols),
 		version: $author$project$Project$currentVersion
 	};
 };
@@ -8936,6 +9049,13 @@ var $elm$browser$Browser$Dom$getElement = _Browser_getElement;
 var $elm$core$Array$isEmpty = function (_v0) {
 	var len = _v0.a;
 	return !len;
+};
+var $elm$core$Dict$isEmpty = function (dict) {
+	if (dict.$ === 'RBEmpty_elm_builtin') {
+		return true;
+	} else {
+		return false;
+	}
 };
 var $elm$core$List$isEmpty = function (xs) {
 	if (!xs.b) {
@@ -9591,6 +9711,26 @@ var $elm$core$Array$set = F3(
 			A4($elm$core$Array$setHelp, startShift, index, value, tree),
 			tail));
 	});
+var $elm$core$Dict$sizeHelp = F2(
+	function (n, dict) {
+		sizeHelp:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return n;
+			} else {
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$n = A2($elm$core$Dict$sizeHelp, n + 1, right),
+					$temp$dict = left;
+				n = $temp$n;
+				dict = $temp$dict;
+				continue sizeHelp;
+			}
+		}
+	});
+var $elm$core$Dict$size = function (dict) {
+	return A2($elm$core$Dict$sizeHelp, 0, dict);
+};
 var $elm$core$List$takeReverse = F3(
 	function (n, list, kept) {
 		takeReverse:
@@ -9762,7 +9902,8 @@ var $author$project$Project$toModel = F2(
 					function (s) {
 						return {end: s.end, start: s.start};
 					},
-					data.segments)
+					data.segments),
+				symbols: $elm$core$Dict$fromList(data.symbols)
 			});
 	});
 var $author$project$Main$startEditAtOffset = F2(
@@ -10228,322 +10369,483 @@ var $author$project$Main$update = F2(
 										}
 								}
 							} else {
-								if (model.outlineMode) {
+								if (!_Utils_eq(model.variableMode, $elm$core$Maybe$Nothing)) {
 									var _v29 = event.key;
 									switch (_v29) {
-										case 'ArrowLeft':
-											var $temp$msg = $author$project$Main$OutlinePrev,
-												$temp$model = model;
-											msg = $temp$msg;
-											model = $temp$model;
-											continue update;
-										case 'ArrowRight':
-											var $temp$msg = $author$project$Main$OutlineNext,
+										case 'Escape':
+											var $temp$msg = $author$project$Main$CancelVariable,
 												$temp$model = model;
 											msg = $temp$msg;
 											model = $temp$model;
 											continue update;
 										case 'Enter':
-											var $temp$msg = $author$project$Main$OutlineSelect,
-												$temp$model = model;
-											msg = $temp$msg;
-											model = $temp$model;
-											continue update;
-										case 'Escape':
-											var $temp$msg = $author$project$Main$CancelOutline,
-												$temp$model = model;
-											msg = $temp$msg;
-											model = $temp$model;
-											continue update;
+											var _v30 = model.variableMode;
+											if (_v30.$ === 'Just') {
+												if (_v30.a.$ === 'EnteringAddress') {
+													var _v31 = _v30.a;
+													var $temp$msg = $author$project$Main$ConfirmVariableAddress,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												} else {
+													var _v32 = _v30.a;
+													var $temp$msg = $author$project$Main$SaveVariable,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												}
+											} else {
+												return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+											}
+										case 'Backspace':
+											var _v33 = model.variableMode;
+											if (_v33.$ === 'Just') {
+												if (_v33.a.$ === 'EnteringAddress') {
+													var _v34 = _v33.a;
+													return _Utils_Tuple2(
+														_Utils_update(
+															model,
+															{
+																variableAddress: A2($elm$core$String$dropRight, 1, model.variableAddress)
+															}),
+														$elm$core$Platform$Cmd$none);
+												} else {
+													var _v35 = _v33.a;
+													return _Utils_Tuple2(
+														_Utils_update(
+															model,
+															{
+																variableName: A2($elm$core$String$dropRight, 1, model.variableName)
+															}),
+														$elm$core$Platform$Cmd$none);
+												}
+											} else {
+												return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+											}
 										default:
-											return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+											var key = _v29;
+											if ($elm$core$String$length(key) === 1) {
+												var _v36 = model.variableMode;
+												if (_v36.$ === 'Just') {
+													if (_v36.a.$ === 'EnteringAddress') {
+														var _v37 = _v36.a;
+														var _char = $elm$core$String$toUpper(key);
+														return ($elm$core$Char$isHexDigit(
+															A2(
+																$elm$core$Maybe$withDefault,
+																_Utils_chr(' '),
+																A2(
+																	$elm$core$Maybe$map,
+																	$elm$core$Tuple$first,
+																	$elm$core$String$uncons(_char)))) && ($elm$core$String$length(model.variableAddress) < 4)) ? _Utils_Tuple2(
+															_Utils_update(
+																model,
+																{
+																	variableAddress: _Utils_ap(model.variableAddress, _char)
+																}),
+															$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+													} else {
+														var _v38 = _v36.a;
+														var _char = A2(
+															$elm$core$Maybe$withDefault,
+															_Utils_chr(' '),
+															A2(
+																$elm$core$Maybe$map,
+																$elm$core$Tuple$first,
+																$elm$core$String$uncons(key)));
+														return ($elm$core$Char$isAlphaNum(_char) || _Utils_eq(
+															_char,
+															_Utils_chr('_'))) ? _Utils_Tuple2(
+															_Utils_update(
+																model,
+																{
+																	variableName: _Utils_ap(model.variableName, key)
+																}),
+															$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+													}
+												} else {
+													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+												}
+											} else {
+												return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+											}
 									}
 								} else {
-									if (model.confirmQuit) {
-										if (event.key === 'q') {
-											var $temp$msg = $author$project$Main$ConfirmQuit,
-												$temp$model = model;
-											msg = $temp$msg;
-											model = $temp$model;
-											continue update;
-										} else {
-											var $temp$msg = $author$project$Main$CancelQuit,
-												$temp$model = model;
-											msg = $temp$msg;
-											model = $temp$model;
-											continue update;
-										}
-									} else {
-										var _v30 = event.key;
-										switch (_v30) {
-											case ' ':
-												if (event.ctrl) {
-													var $temp$msg = $author$project$Main$ToggleMark,
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 'g':
-												var $temp$msg = $author$project$Main$EnterGotoMode,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'l':
-												return event.ctrl ? $author$project$Main$centerSelectedLine(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-											case ';':
-												var _v31 = model.selectedOffset;
-												if (_v31.$ === 'Just') {
-													var offset = _v31.a;
-													var $temp$msg = $author$project$Main$StartEditComment(offset),
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case ':':
-												var _v32 = model.selectedOffset;
-												if (_v32.$ === 'Just') {
-													var offset = _v32.a;
-													var address = model.loadAddress + offset;
-													var $temp$msg = $author$project$Main$StartEditLabel(address),
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case '\"':
-												var _v33 = model.selectedOffset;
-												if (_v33.$ === 'Just') {
-													var offset = _v33.a;
-													var $temp$msg = $author$project$Main$StartEditMajorComment(offset),
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 's':
-												if (event.ctrl) {
-													var $temp$msg = $author$project$Main$SaveProject,
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													var $temp$msg = $author$project$Main$MarkSelectionAsSegment,
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												}
-											case 'S':
-												var _v34 = model.selectedOffset;
-												if (_v34.$ === 'Just') {
-													var offset = _v34.a;
-													var $temp$msg = $author$project$Main$ClearSegment(offset),
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 'a':
-												var $temp$msg = $author$project$Main$ExportAsm,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'q':
-												var $temp$msg = $author$project$Main$RequestQuit,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'o':
-												var $temp$msg = $author$project$Main$EnterOutlineMode,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'j':
-												var _v35 = model.selectedOffset;
-												if (_v35.$ === 'Just') {
-													var offset = _v35.a;
-													var line = A8($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments);
-													var _v36 = line.targetAddress;
-													if (_v36.$ === 'Just') {
-														var addr = _v36.a;
-														var $temp$msg = $author$project$Main$ClickAddress(addr),
-															$temp$model = model;
-														msg = $temp$msg;
-														model = $temp$model;
-														continue update;
-													} else {
-														return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-													}
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 'b':
-												var $temp$msg = $author$project$Main$MarkSelectionAsBytes,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'B':
-												var _v37 = model.selectedOffset;
-												if (_v37.$ === 'Just') {
-													var offset = _v37.a;
-													var $temp$msg = $author$project$Main$ClearByteRegion(offset),
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 't':
-												var $temp$msg = $author$project$Main$MarkSelectionAsText,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'T':
-												var _v38 = model.selectedOffset;
-												if (_v38.$ === 'Just') {
-													var offset = _v38.a;
-													var $temp$msg = $author$project$Main$ClearTextRegion(offset),
-														$temp$model = model;
-													msg = $temp$msg;
-													model = $temp$model;
-													continue update;
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 'r':
-												var $temp$msg = $author$project$Main$RestartDisassembly,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
+									if (model.variableListMode) {
+										var _v39 = event.key;
+										switch (_v39) {
 											case 'Escape':
-												return _Utils_Tuple2(
-													_Utils_update(
-														model,
-														{mark: $elm$core$Maybe$Nothing}),
-													$elm$core$Platform$Cmd$none);
-											case '?':
-												var $temp$msg = $author$project$Main$ToggleHelp,
+												var $temp$msg = $author$project$Main$CancelVariableList,
 													$temp$model = model;
 												msg = $temp$msg;
 												model = $temp$model;
 												continue update;
-											case 'J':
-												var $temp$msg = $author$project$Main$JumpBack,
+											case 'ArrowLeft':
+												var $temp$msg = $author$project$Main$VariableListPrev,
 													$temp$model = model;
 												msg = $temp$msg;
 												model = $temp$model;
 												continue update;
-											case 'PageUp':
-												var $temp$msg = $author$project$Main$PageUp,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'PageDown':
-												var $temp$msg = $author$project$Main$PageDown,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'ArrowDown':
-												var $temp$msg = $author$project$Main$SelectNextLine,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'ArrowUp':
-												var $temp$msg = $author$project$Main$SelectPrevLine,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'n':
-												var $temp$msg = $author$project$Main$NopCurrentByte,
-													$temp$model = model;
-												msg = $temp$msg;
-												model = $temp$model;
-												continue update;
-											case 'Enter':
-												var _v39 = model.selectedOffset;
-												if (_v39.$ === 'Just') {
-													var offset = _v39.a;
-													var inTextRegion = A2(
-														$elm$core$List$any,
-														function (r) {
-															return _Utils_eq(r.regionType, $author$project$Types$TextRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
-														},
-														model.regions);
-													var inByteRegion = A2(
-														$elm$core$List$any,
-														function (r) {
-															return _Utils_eq(r.regionType, $author$project$Types$ByteRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
-														},
-														model.regions);
-													if (inByteRegion) {
-														var $temp$msg = $author$project$Main$StartEditByte(offset),
-															$temp$model = model;
-														msg = $temp$msg;
-														model = $temp$model;
-														continue update;
-													} else {
-														if (inTextRegion) {
-															var $temp$msg = $author$project$Main$StartEditText(offset),
-																$temp$model = model;
-															msg = $temp$msg;
-															model = $temp$model;
-															continue update;
-														} else {
-															var $temp$msg = $author$project$Main$StartEditInstruction(offset),
-																$temp$model = model;
-															msg = $temp$msg;
-															model = $temp$model;
-															continue update;
-														}
-													}
-												} else {
-													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-												}
-											case 'v':
-												var $temp$msg = $author$project$Main$RunInVice,
+											case 'ArrowRight':
+												var $temp$msg = $author$project$Main$VariableListNext,
 													$temp$model = model;
 												msg = $temp$msg;
 												model = $temp$model;
 												continue update;
 											case 'd':
-												var $temp$msg = $author$project$Main$EnterDecToHexMode,
+												var $temp$msg = $author$project$Main$DeleteSelectedVariable,
 													$temp$model = model;
 												msg = $temp$msg;
 												model = $temp$model;
 												continue update;
-											case 'h':
-												var $temp$msg = $author$project$Main$EnterHexToDecMode,
+											case 'Delete':
+												var $temp$msg = $author$project$Main$DeleteSelectedVariable,
+													$temp$model = model;
+												msg = $temp$msg;
+												model = $temp$model;
+												continue update;
+											case 'Backspace':
+												var $temp$msg = $author$project$Main$DeleteSelectedVariable,
 													$temp$model = model;
 												msg = $temp$msg;
 												model = $temp$model;
 												continue update;
 											default:
 												return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+										}
+									} else {
+										if (model.outlineMode) {
+											var _v40 = event.key;
+											switch (_v40) {
+												case 'ArrowLeft':
+													var $temp$msg = $author$project$Main$OutlinePrev,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												case 'ArrowRight':
+													var $temp$msg = $author$project$Main$OutlineNext,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												case 'Enter':
+													var $temp$msg = $author$project$Main$OutlineSelect,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												case 'Escape':
+													var $temp$msg = $author$project$Main$CancelOutline,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												default:
+													return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+											}
+										} else {
+											if (model.confirmQuit) {
+												if (event.key === 'q') {
+													var $temp$msg = $author$project$Main$ConfirmQuit,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												} else {
+													var $temp$msg = $author$project$Main$CancelQuit,
+														$temp$model = model;
+													msg = $temp$msg;
+													model = $temp$model;
+													continue update;
+												}
+											} else {
+												var _v41 = event.key;
+												switch (_v41) {
+													case ' ':
+														if (event.ctrl) {
+															var $temp$msg = $author$project$Main$ToggleMark,
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 'g':
+														var $temp$msg = $author$project$Main$EnterGotoMode,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'l':
+														return event.ctrl ? $author$project$Main$centerSelectedLine(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+													case ';':
+														var _v42 = model.selectedOffset;
+														if (_v42.$ === 'Just') {
+															var offset = _v42.a;
+															var $temp$msg = $author$project$Main$StartEditComment(offset),
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case ':':
+														var _v43 = model.selectedOffset;
+														if (_v43.$ === 'Just') {
+															var offset = _v43.a;
+															var address = model.loadAddress + offset;
+															var $temp$msg = $author$project$Main$StartEditLabel(address),
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case '\"':
+														var _v44 = model.selectedOffset;
+														if (_v44.$ === 'Just') {
+															var offset = _v44.a;
+															var $temp$msg = $author$project$Main$StartEditMajorComment(offset),
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 's':
+														if (event.ctrl) {
+															var $temp$msg = $author$project$Main$SaveProject,
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															var $temp$msg = $author$project$Main$MarkSelectionAsSegment,
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														}
+													case 'S':
+														var _v45 = model.selectedOffset;
+														if (_v45.$ === 'Just') {
+															var offset = _v45.a;
+															var $temp$msg = $author$project$Main$ClearSegment(offset),
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 'a':
+														var $temp$msg = $author$project$Main$ExportAsm,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'q':
+														var $temp$msg = $author$project$Main$RequestQuit,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'o':
+														var $temp$msg = $author$project$Main$EnterOutlineMode,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'j':
+														var _v46 = model.selectedOffset;
+														if (_v46.$ === 'Just') {
+															var offset = _v46.a;
+															var line = A9($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments, model.symbols);
+															var _v47 = line.targetAddress;
+															if (_v47.$ === 'Just') {
+																var addr = _v47.a;
+																var $temp$msg = $author$project$Main$ClickAddress(addr),
+																	$temp$model = model;
+																msg = $temp$msg;
+																model = $temp$model;
+																continue update;
+															} else {
+																return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+															}
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 'b':
+														var $temp$msg = $author$project$Main$MarkSelectionAsBytes,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'B':
+														var _v48 = model.selectedOffset;
+														if (_v48.$ === 'Just') {
+															var offset = _v48.a;
+															var $temp$msg = $author$project$Main$ClearByteRegion(offset),
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 't':
+														var $temp$msg = $author$project$Main$MarkSelectionAsText,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'T':
+														var _v49 = model.selectedOffset;
+														if (_v49.$ === 'Just') {
+															var offset = _v49.a;
+															var $temp$msg = $author$project$Main$ClearTextRegion(offset),
+																$temp$model = model;
+															msg = $temp$msg;
+															model = $temp$model;
+															continue update;
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 'r':
+														var $temp$msg = $author$project$Main$RestartDisassembly,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'Escape':
+														return _Utils_Tuple2(
+															_Utils_update(
+																model,
+																{mark: $elm$core$Maybe$Nothing}),
+															$elm$core$Platform$Cmd$none);
+													case '?':
+														var $temp$msg = $author$project$Main$ToggleHelp,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'J':
+														var $temp$msg = $author$project$Main$JumpBack,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'PageUp':
+														var $temp$msg = $author$project$Main$PageUp,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'PageDown':
+														var $temp$msg = $author$project$Main$PageDown,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'ArrowDown':
+														var $temp$msg = $author$project$Main$SelectNextLine,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'ArrowUp':
+														var $temp$msg = $author$project$Main$SelectPrevLine,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'n':
+														var $temp$msg = $author$project$Main$NopCurrentByte,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'Enter':
+														var _v50 = model.selectedOffset;
+														if (_v50.$ === 'Just') {
+															var offset = _v50.a;
+															var inTextRegion = A2(
+																$elm$core$List$any,
+																function (r) {
+																	return _Utils_eq(r.regionType, $author$project$Types$TextRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+																},
+																model.regions);
+															var inByteRegion = A2(
+																$elm$core$List$any,
+																function (r) {
+																	return _Utils_eq(r.regionType, $author$project$Types$ByteRegion) && ((_Utils_cmp(offset, r.start) > -1) && (_Utils_cmp(offset, r.end) < 1));
+																},
+																model.regions);
+															if (inByteRegion) {
+																var $temp$msg = $author$project$Main$StartEditByte(offset),
+																	$temp$model = model;
+																msg = $temp$msg;
+																model = $temp$model;
+																continue update;
+															} else {
+																if (inTextRegion) {
+																	var $temp$msg = $author$project$Main$StartEditText(offset),
+																		$temp$model = model;
+																	msg = $temp$msg;
+																	model = $temp$model;
+																	continue update;
+																} else {
+																	var $temp$msg = $author$project$Main$StartEditInstruction(offset),
+																		$temp$model = model;
+																	msg = $temp$msg;
+																	model = $temp$model;
+																	continue update;
+																}
+															}
+														} else {
+															return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+														}
+													case 'x':
+														var $temp$msg = $author$project$Main$RunInVice,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'v':
+														var $temp$msg = $author$project$Main$EnterVariableMode,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'V':
+														var $temp$msg = $author$project$Main$EnterVariableListMode,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'd':
+														var $temp$msg = $author$project$Main$EnterDecToHexMode,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													case 'h':
+														var $temp$msg = $author$project$Main$EnterHexToDecMode,
+															$temp$model = model;
+														msg = $temp$msg;
+														model = $temp$model;
+														continue update;
+													default:
+														return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+												}
+											}
 										}
 									}
 								}
@@ -10557,9 +10859,9 @@ var $author$project$Main$update = F2(
 							{helpExpanded: !model.helpExpanded}),
 						$elm$core$Platform$Cmd$none);
 				case 'SelectNextLine':
-					var _v40 = model.selectedOffset;
-					if (_v40.$ === 'Just') {
-						var offset = _v40.a;
+					var _v51 = model.selectedOffset;
+					if (_v51.$ === 'Just') {
+						var offset = _v51.a;
 						var textRegion = $elm$core$List$head(
 							A2(
 								$elm$core$List$filter,
@@ -10608,13 +10910,13 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				case 'SelectPrevLine':
-					var _v42 = model.selectedOffset;
-					if (_v42.$ === 'Just') {
-						var offset = _v42.a;
+					var _v53 = model.selectedOffset;
+					if (_v53.$ === 'Just') {
+						var offset = _v53.a;
 						if (offset > 0) {
-							var _v43 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, offset);
-							var currentStart = _v43.a;
-							var prevStart = _v43.b;
+							var _v54 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, offset);
+							var currentStart = _v54.a;
+							var prevStart = _v54.b;
 							var newOffset = (_Utils_cmp(currentStart, offset) < 0) ? currentStart : prevStart;
 							return _Utils_Tuple2(
 								$author$project$Main$ensureSelectionVisible(
@@ -10660,9 +10962,9 @@ var $author$project$Main$update = F2(
 					var errorMsg = msg.a;
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				case 'ToggleMark':
-					var _v44 = model.selectedOffset;
-					if (_v44.$ === 'Just') {
-						var offset = _v44.a;
+					var _v55 = model.selectedOffset;
+					if (_v55.$ === 'Just') {
+						var offset = _v55.a;
 						return _Utils_eq(
 							model.mark,
 							$elm$core$Maybe$Just(offset)) ? _Utils_Tuple2(
@@ -10680,10 +10982,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'MarkSelectionAsBytes':
-					var _v45 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v45.a.$ === 'Just') && (_v45.b.$ === 'Just')) {
-						var markOffset = _v45.a.a;
-						var cursorOffset = _v45.b.a;
+					var _v56 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v56.a.$ === 'Just') && (_v56.b.$ === 'Just')) {
+						var markOffset = _v56.a.a;
+						var cursorOffset = _v56.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newRegion = {end: endOff, regionType: $author$project$Types$ByteRegion, start: startOff};
@@ -10697,10 +10999,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'MarkSelectionAsText':
-					var _v46 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v46.a.$ === 'Just') && (_v46.b.$ === 'Just')) {
-						var markOffset = _v46.a.a;
-						var cursorOffset = _v46.b.a;
+					var _v57 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v57.a.$ === 'Just') && (_v57.b.$ === 'Just')) {
+						var markOffset = _v57.a.a;
+						var cursorOffset = _v57.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newRegion = {end: endOff, regionType: $author$project$Types$TextRegion, start: startOff};
@@ -10715,10 +11017,10 @@ var $author$project$Main$update = F2(
 					}
 				case 'ClearByteRegion':
 					var offset = msg.a;
-					var _v47 = function () {
-						var _v48 = model.mark;
-						if (_v48.$ === 'Just') {
-							var markOffset = _v48.a;
+					var _v58 = function () {
+						var _v59 = model.mark;
+						if (_v59.$ === 'Just') {
+							var markOffset = _v59.a;
 							return _Utils_Tuple2(
 								A2($elm$core$Basics$min, markOffset, offset),
 								A2($elm$core$Basics$max, markOffset, offset));
@@ -10726,8 +11028,8 @@ var $author$project$Main$update = F2(
 							return _Utils_Tuple2(offset, offset);
 						}
 					}();
-					var clearStart = _v47.a;
-					var clearEnd = _v47.b;
+					var clearStart = _v58.a;
+					var clearEnd = _v58.b;
 					var newRegions = A2(
 						$elm$core$List$concatMap,
 						function (r) {
@@ -10763,10 +11065,10 @@ var $author$project$Main$update = F2(
 						$elm$core$Platform$Cmd$none);
 				case 'ClearTextRegion':
 					var offset = msg.a;
-					var _v49 = function () {
-						var _v50 = model.mark;
-						if (_v50.$ === 'Just') {
-							var markOffset = _v50.a;
+					var _v60 = function () {
+						var _v61 = model.mark;
+						if (_v61.$ === 'Just') {
+							var markOffset = _v61.a;
 							return _Utils_Tuple2(
 								A2($elm$core$Basics$min, markOffset, offset),
 								A2($elm$core$Basics$max, markOffset, offset));
@@ -10774,8 +11076,8 @@ var $author$project$Main$update = F2(
 							return _Utils_Tuple2(offset, offset);
 						}
 					}();
-					var clearStart = _v49.a;
-					var clearEnd = _v49.b;
+					var clearStart = _v60.a;
+					var clearEnd = _v60.b;
 					var newRegions = A2(
 						$elm$core$List$concatMap,
 						function (r) {
@@ -10810,10 +11112,10 @@ var $author$project$Main$update = F2(
 							{dirty: true, mark: $elm$core$Maybe$Nothing, regions: newRegions}),
 						$elm$core$Platform$Cmd$none);
 				case 'MarkSelectionAsSegment':
-					var _v51 = _Utils_Tuple2(model.mark, model.selectedOffset);
-					if ((_v51.a.$ === 'Just') && (_v51.b.$ === 'Just')) {
-						var markOffset = _v51.a.a;
-						var cursorOffset = _v51.b.a;
+					var _v62 = _Utils_Tuple2(model.mark, model.selectedOffset);
+					if ((_v62.a.$ === 'Just') && (_v62.b.$ === 'Just')) {
+						var markOffset = _v62.a.a;
+						var cursorOffset = _v62.b.a;
 						var startOff = A2($elm$core$Basics$min, markOffset, cursorOffset);
 						var endOff = A2($elm$core$Basics$max, markOffset, cursorOffset);
 						var newSegment = {end: endOff, start: startOff};
@@ -10854,16 +11156,16 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v52) {
+							function (_v63) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('major-comment-input')));
 				case 'UpdateEditMajorComment':
 					var text = msg.a;
-					var _v53 = model.editingMajorComment;
-					if (_v53.$ === 'Just') {
-						var _v54 = _v53.a;
-						var offset = _v54.a;
+					var _v64 = model.editingMajorComment;
+					if (_v64.$ === 'Just') {
+						var _v65 = _v64.a;
+						var offset = _v65.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -10876,11 +11178,11 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveMajorComment':
-					var _v55 = model.editingMajorComment;
-					if (_v55.$ === 'Just') {
-						var _v56 = _v55.a;
-						var offset = _v56.a;
-						var text = _v56.b;
+					var _v66 = model.editingMajorComment;
+					if (_v66.$ === 'Just') {
+						var _v67 = _v66.a;
+						var offset = _v67.a;
+						var text = _v67.b;
 						var newMajorComments = $elm$core$String$isEmpty(
 							$elm$core$String$trim(text)) ? A2($elm$core$Dict$remove, offset, model.majorComments) : A3($elm$core$Dict$insert, offset, text, model.majorComments);
 						return _Utils_Tuple2(
@@ -10889,7 +11191,7 @@ var $author$project$Main$update = F2(
 								{dirty: true, editingMajorComment: $elm$core$Maybe$Nothing, majorComments: newMajorComments}),
 							A2(
 								$elm$core$Task$attempt,
-								function (_v57) {
+								function (_v68) {
 									return $author$project$Main$FocusResult;
 								},
 								$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -10903,7 +11205,7 @@ var $author$project$Main$update = F2(
 							{editingMajorComment: $elm$core$Maybe$Nothing}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v58) {
+							function (_v69) {
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -10921,8 +11223,8 @@ var $author$project$Main$update = F2(
 								$elm$core$List$head(
 									A2(
 										$elm$core$List$filter,
-										function (_v59) {
-											var s = _v59.b;
+										function (_v70) {
+											var s = _v70.b;
 											return (_Utils_cmp(currentOffset, s.start) > -1) && (_Utils_cmp(currentOffset, s.end) < 1);
 										},
 										A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, model.segments)))));
@@ -10963,7 +11265,7 @@ var $author$project$Main$update = F2(
 									})),
 							A2(
 								$elm$core$Task$attempt,
-								function (_v61) {
+								function (_v72) {
 									return $author$project$Main$FocusResult;
 								},
 								$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -10981,14 +11283,14 @@ var $author$project$Main$update = F2(
 							{outlineMode: false}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v62) {
+							function (_v73) {
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
 				case 'RestartDisassembly':
-					var _v63 = model.selectedOffset;
-					if (_v63.$ === 'Just') {
-						var offset = _v63.a;
+					var _v74 = model.selectedOffset;
+					if (_v74.$ === 'Just') {
+						var offset = _v74.a;
 						if (_Utils_cmp(
 							offset,
 							$elm$core$Array$length(model.bytes) - 1) < 0) {
@@ -11012,10 +11314,10 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'JumpBack':
-					var _v64 = model.jumpHistory;
-					if (_v64.b) {
-						var prevOffset = _v64.a;
-						var rest = _v64.b;
+					var _v75 = model.jumpHistory;
+					if (_v75.b) {
+						var prevOffset = _v75.a;
+						var rest = _v75.b;
 						return _Utils_Tuple2(
 							$author$project$Main$ensureSelectionVisible(
 								_Utils_update(
@@ -11031,8 +11333,8 @@ var $author$project$Main$update = F2(
 					}
 				case 'PageUp':
 					var newViewStart = A2($elm$core$Basics$max, 0, model.viewStart - model.viewLines);
-					var _v65 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
-					var instrStart = _v65.a;
+					var _v76 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
+					var instrStart = _v76.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -11044,8 +11346,8 @@ var $author$project$Main$update = F2(
 				case 'PageDown':
 					var maxOffset = $elm$core$Array$length(model.bytes) - 1;
 					var newViewStart = A2($elm$core$Basics$min, maxOffset, model.viewStart + model.viewLines);
-					var _v66 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
-					var instrStart = _v66.a;
+					var _v77 = A3($author$project$Main$findInstructionBoundaries, model.bytes, model.regions, newViewStart);
+					var instrStart = _v77.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -11055,12 +11357,12 @@ var $author$project$Main$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'NopCurrentByte':
-					var _v67 = model.selectedOffset;
-					if (_v67.$ === 'Just') {
-						var offset = _v67.a;
-						var _v68 = A2($elm$core$Array$get, offset, model.bytes);
-						if (_v68.$ === 'Just') {
-							var currentByte = _v68.a;
+					var _v78 = model.selectedOffset;
+					if (_v78.$ === 'Just') {
+						var offset = _v78.a;
+						var _v79 = A2($elm$core$Array$get, offset, model.bytes);
+						if (_v79.$ === 'Just') {
+							var currentByte = _v79.a;
 							var newPatches = A3($elm$core$Dict$insert, offset, 234, model.patches);
 							var newOffset = (_Utils_cmp(
 								offset + 1,
@@ -11125,7 +11427,7 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v69) {
+							function (_v80) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('instruction-input')));
@@ -11170,13 +11472,13 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v70) {
+							function (_v81) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('instruction-input')));
 				case 'StartEditInstruction':
 					var offset = msg.a;
-					var line = A8($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments);
+					var line = A9($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments, model.symbols);
 					var initialText = A2($elm$core$String$startsWith, '*', line.disassembly) ? A2($elm$core$String$dropLeft, 1, line.disassembly) : line.disassembly;
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -11189,16 +11491,16 @@ var $author$project$Main$update = F2(
 							}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v72) {
+							function (_v83) {
 								return $author$project$Main$NoOp;
 							},
 							$elm$browser$Browser$Dom$focus('instruction-input')));
 				case 'UpdateEditValue':
 					var text = msg.a;
-					var _v73 = model.editingInstruction;
-					if (_v73.$ === 'Just') {
-						var _v74 = _v73.a;
-						var offset = _v74.a;
+					var _v84 = model.editingInstruction;
+					if (_v84.$ === 'Just') {
+						var _v85 = _v84.a;
+						var offset = _v85.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -11212,11 +11514,11 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'SaveValue':
-					var _v75 = model.editingInstruction;
-					if (_v75.$ === 'Just') {
-						var _v76 = _v75.a;
-						var offset = _v76.a;
-						var text = _v76.b;
+					var _v86 = model.editingInstruction;
+					if (_v86.$ === 'Just') {
+						var _v87 = _v86.a;
+						var offset = _v87.a;
+						var text = _v87.b;
 						var textRegion = $elm$core$List$head(
 							A2(
 								$elm$core$List$filter,
@@ -11225,14 +11527,14 @@ var $author$project$Main$update = F2(
 								},
 								model.regions));
 						var fileSize = $elm$core$Array$length(model.bytes);
-						var currentLine = A8($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments);
+						var currentLine = A9($author$project$Disassembler$disassemble, model.loadAddress, offset, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments, model.symbols);
 						if (_Utils_eq(
 							$elm$core$List$head(
 								$elm$core$String$words(currentLine.disassembly)),
 							$elm$core$Maybe$Just('.byte'))) {
-							var _v77 = $author$project$Main$parseHex(text);
-							if (_v77.$ === 'Just') {
-								var byteValue = _v77.a;
+							var _v88 = $author$project$Main$parseHex(text);
+							if (_v88.$ === 'Just') {
+								var byteValue = _v88.a;
 								if (byteValue > 255) {
 									return _Utils_Tuple2(
 										_Utils_update(
@@ -11261,7 +11563,7 @@ var $author$project$Main$update = F2(
 										updatedModel,
 										A2(
 											$elm$core$Task$attempt,
-											function (_v78) {
+											function (_v89) {
 												return $author$project$Main$FocusResult;
 											},
 											$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -11288,10 +11590,10 @@ var $author$project$Main$update = F2(
 										$elm$core$List$foldr,
 										F2(
 											function (maybeB, acc) {
-												var _v85 = _Utils_Tuple2(maybeB, acc);
-												if ((_v85.a.$ === 'Just') && (_v85.b.$ === 'Just')) {
-													var b = _v85.a.a;
-													var bs = _v85.b.a;
+												var _v96 = _Utils_Tuple2(maybeB, acc);
+												if ((_v96.a.$ === 'Just') && (_v96.b.$ === 'Just')) {
+													var b = _v96.a.a;
+													var bs = _v96.b.a;
 													return (b <= 255) ? $elm$core$Maybe$Just(
 														A2($elm$core$List$cons, b, bs)) : $elm$core$Maybe$Nothing;
 												} else {
@@ -11316,22 +11618,22 @@ var $author$project$Main$update = F2(
 												$elm$core$Platform$Cmd$none);
 										} else {
 											var nextOffset = tr.end + 1;
-											var _v81 = A3(
+											var _v92 = A3(
 												$elm$core$List$foldl,
 												F2(
-													function (_v82, _v83) {
-														var idx = _v82.a;
-														var _byte = _v82.b;
-														var bytes = _v83.a;
-														var patches = _v83.b;
+													function (_v93, _v94) {
+														var idx = _v93.a;
+														var _byte = _v93.b;
+														var bytes = _v94.a;
+														var patches = _v94.b;
 														return _Utils_Tuple2(
 															A3($elm$core$Array$set, tr.start + idx, _byte, bytes),
 															A3($elm$core$Dict$insert, tr.start + idx, _byte, patches));
 													}),
 												_Utils_Tuple2(model.bytes, model.patches),
 												A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, newByteList));
-											var updatedBytes = _v81.a;
-											var updatedPatches = _v81.b;
+											var updatedBytes = _v92.a;
+											var updatedPatches = _v92.b;
 											var updatedModel = $author$project$Main$ensureSelectionVisible(
 												_Utils_update(
 													model,
@@ -11348,7 +11650,7 @@ var $author$project$Main$update = F2(
 												updatedModel,
 												A2(
 													$elm$core$Task$attempt,
-													function (_v84) {
+													function (_v95) {
 														return $author$project$Main$FocusResult;
 													},
 													$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -11378,9 +11680,9 @@ var $author$project$Main$update = F2(
 									A2($elm$core$Array$get, offset, model.bytes));
 								var oldSize = $author$project$Opcodes$opcodeBytes(currentByte);
 								var currentAddress = model.loadAddress + offset;
-								var _v86 = A2($author$project$Assembler$assemble, currentAddress, text);
-								if (_v86.$ === 'Err') {
-									var err = _v86.a;
+								var _v97 = A2($author$project$Assembler$assemble, currentAddress, text);
+								if (_v97.$ === 'Err') {
+									var err = _v97.a;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -11390,7 +11692,7 @@ var $author$project$Main$update = F2(
 											}),
 										$elm$core$Platform$Cmd$none);
 								} else {
-									var result = _v86.a;
+									var result = _v97.a;
 									if (_Utils_cmp(offset + result.size, fileSize) > 0) {
 										return _Utils_Tuple2(
 											_Utils_update(
@@ -11418,22 +11720,22 @@ var $author$project$Main$update = F2(
 												return regionsWithoutOverlap;
 											}
 										}();
-										var _v87 = A3(
+										var _v98 = A3(
 											$elm$core$List$foldl,
 											F2(
-												function (_v88, _v89) {
-													var idx = _v88.a;
-													var _byte = _v88.b;
-													var bytes = _v89.a;
-													var patches = _v89.b;
+												function (_v99, _v100) {
+													var idx = _v99.a;
+													var _byte = _v99.b;
+													var bytes = _v100.a;
+													var patches = _v100.b;
 													return _Utils_Tuple2(
 														A3($elm$core$Array$set, offset + idx, _byte, bytes),
 														A3($elm$core$Dict$insert, offset + idx, _byte, patches));
 												}),
 											_Utils_Tuple2(model.bytes, model.patches),
 											A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, result.bytes));
-										var newBytes = _v87.a;
-										var newPatches = _v87.b;
+										var newBytes = _v98.a;
+										var newPatches = _v98.b;
 										var updatedModel = $author$project$Main$ensureSelectionVisible(
 											_Utils_update(
 												model,
@@ -11451,7 +11753,7 @@ var $author$project$Main$update = F2(
 											updatedModel,
 											A2(
 												$elm$core$Task$attempt,
-												function (_v90) {
+												function (_v101) {
 													return $author$project$Main$FocusResult;
 												},
 												$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -11469,7 +11771,7 @@ var $author$project$Main$update = F2(
 							{editError: $elm$core$Maybe$Nothing, editType: $elm$core$Maybe$Nothing, editingInstruction: $elm$core$Maybe$Nothing}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v91) {
+							function (_v102) {
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -11572,7 +11874,164 @@ var $author$project$Main$update = F2(
 							{converterInput: '', converterMode: $elm$core$Maybe$Nothing}),
 						A2(
 							$elm$core$Task$attempt,
-							function (_v93) {
+							function (_v104) {
+								return $author$project$Main$FocusResult;
+							},
+							$elm$browser$Browser$Dom$focus('cdis-main')));
+				case 'EnterVariableMode':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								variableAddress: '',
+								variableMode: $elm$core$Maybe$Just($author$project$Types$EnteringAddress),
+								variableName: ''
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'UpdateVariableAddress':
+					var str = msg.a;
+					var filtered = A2(
+						$elm$core$String$filter,
+						$elm$core$Char$isHexDigit,
+						$elm$core$String$toUpper(str));
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								variableAddress: A2($elm$core$String$left, 4, filtered)
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'ConfirmVariableAddress':
+					var _v105 = $author$project$Main$parseHex(model.variableAddress);
+					if (_v105.$ === 'Just') {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									variableMode: $elm$core$Maybe$Just($author$project$Types$EnteringName)
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'UpdateVariableName':
+					var str = msg.a;
+					var filtered = A2(
+						$elm$core$String$filter,
+						function (c) {
+							return $elm$core$Char$isAlphaNum(c) || _Utils_eq(
+								c,
+								_Utils_chr('_'));
+						},
+						str);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{variableName: filtered}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveVariable':
+					var _v106 = _Utils_Tuple2(
+						$author$project$Main$parseHex(model.variableAddress),
+						model.variableName);
+					if (_v106.a.$ === 'Just') {
+						var addr = _v106.a.a;
+						var name = _v106.b;
+						return $elm$core$String$isEmpty(name) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									dirty: true,
+									symbols: A3($elm$core$Dict$insert, addr, name, model.symbols),
+									variableAddress: '',
+									variableMode: $elm$core$Maybe$Nothing,
+									variableName: ''
+								}),
+							A2(
+								$elm$core$Task$attempt,
+								function (_v107) {
+									return $author$project$Main$FocusResult;
+								},
+								$elm$browser$Browser$Dom$focus('cdis-main')));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CancelVariable':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{variableAddress: '', variableMode: $elm$core$Maybe$Nothing, variableName: ''}),
+						A2(
+							$elm$core$Task$attempt,
+							function (_v108) {
+								return $author$project$Main$FocusResult;
+							},
+							$elm$browser$Browser$Dom$focus('cdis-main')));
+				case 'EnterVariableListMode':
+					return $elm$core$Dict$isEmpty(model.symbols) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{variableListMode: true, variableListSelection: 0}),
+						$elm$core$Platform$Cmd$none);
+				case 'VariableListNext':
+					var maxIdx = $elm$core$Dict$size(model.symbols) - 1;
+					var newSelection = A2($elm$core$Basics$min, maxIdx, model.variableListSelection + 1);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{variableListSelection: newSelection}),
+						$elm$core$Platform$Cmd$none);
+				case 'VariableListPrev':
+					var newSelection = A2($elm$core$Basics$max, 0, model.variableListSelection - 1);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{variableListSelection: newSelection}),
+						$elm$core$Platform$Cmd$none);
+				case 'DeleteSelectedVariable':
+					var symbolList = A2(
+						$elm$core$List$sortBy,
+						$elm$core$Tuple$first,
+						$elm$core$Dict$toList(model.symbols));
+					var maybeAddr = A2(
+						$elm$core$Maybe$map,
+						$elm$core$Tuple$first,
+						$elm$core$List$head(
+							A2($elm$core$List$drop, model.variableListSelection, symbolList)));
+					if (maybeAddr.$ === 'Just') {
+						var addr = maybeAddr.a;
+						var newSymbols = A2($elm$core$Dict$remove, addr, model.symbols);
+						var newSelection = A2(
+							$elm$core$Basics$max,
+							0,
+							A2(
+								$elm$core$Basics$min,
+								model.variableListSelection,
+								$elm$core$Dict$size(newSymbols) - 1));
+						return $elm$core$Dict$isEmpty(newSymbols) ? _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{dirty: true, symbols: newSymbols, variableListMode: false}),
+							A2(
+								$elm$core$Task$attempt,
+								function (_v110) {
+									return $author$project$Main$FocusResult;
+								},
+								$elm$browser$Browser$Dom$focus('cdis-main'))) : _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{dirty: true, symbols: newSymbols, variableListSelection: newSelection}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CancelVariableList':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{variableListMode: false}),
+						A2(
+							$elm$core$Task$attempt,
+							function (_v111) {
 								return $author$project$Main$FocusResult;
 							},
 							$elm$browser$Browser$Dom$focus('cdis-main')));
@@ -12416,40 +12875,44 @@ var $author$project$Disassembler$disassembleHelper = function (loadAddress) {
 						return function (regions) {
 							return function (segments) {
 								return function (majorComments) {
-									return function (acc) {
-										disassembleHelper:
-										while (true) {
-											if ((remaining <= 0) || (_Utils_cmp(
-												offset,
-												$elm$core$Array$length(bytes)) > -1)) {
-												return $elm$core$List$reverse(acc);
-											} else {
-												var newRemaining = remaining - 1;
-												var line = A8($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, regions, segments, majorComments);
-												var newOffset = offset + $elm$core$List$length(line.bytes);
-												var $temp$loadAddress = loadAddress,
-													$temp$offset = newOffset,
-													$temp$remaining = newRemaining,
-													$temp$bytes = bytes,
-													$temp$comments = comments,
-													$temp$labels = labels,
-													$temp$regions = regions,
-													$temp$segments = segments,
-													$temp$majorComments = majorComments,
-													$temp$acc = A2($elm$core$List$cons, line, acc);
-												loadAddress = $temp$loadAddress;
-												offset = $temp$offset;
-												remaining = $temp$remaining;
-												bytes = $temp$bytes;
-												comments = $temp$comments;
-												labels = $temp$labels;
-												regions = $temp$regions;
-												segments = $temp$segments;
-												majorComments = $temp$majorComments;
-												acc = $temp$acc;
-												continue disassembleHelper;
+									return function (userSymbols) {
+										return function (acc) {
+											disassembleHelper:
+											while (true) {
+												if ((remaining <= 0) || (_Utils_cmp(
+													offset,
+													$elm$core$Array$length(bytes)) > -1)) {
+													return $elm$core$List$reverse(acc);
+												} else {
+													var newRemaining = remaining - 1;
+													var line = A9($author$project$Disassembler$disassembleLine, loadAddress, offset, bytes, comments, labels, regions, segments, majorComments, userSymbols);
+													var newOffset = offset + $elm$core$List$length(line.bytes);
+													var $temp$loadAddress = loadAddress,
+														$temp$offset = newOffset,
+														$temp$remaining = newRemaining,
+														$temp$bytes = bytes,
+														$temp$comments = comments,
+														$temp$labels = labels,
+														$temp$regions = regions,
+														$temp$segments = segments,
+														$temp$majorComments = majorComments,
+														$temp$userSymbols = userSymbols,
+														$temp$acc = A2($elm$core$List$cons, line, acc);
+													loadAddress = $temp$loadAddress;
+													offset = $temp$offset;
+													remaining = $temp$remaining;
+													bytes = $temp$bytes;
+													comments = $temp$comments;
+													labels = $temp$labels;
+													regions = $temp$regions;
+													segments = $temp$segments;
+													majorComments = $temp$majorComments;
+													userSymbols = $temp$userSymbols;
+													acc = $temp$acc;
+													continue disassembleHelper;
+												}
 											}
-										}
+										};
 									};
 								};
 							};
@@ -12460,10 +12923,27 @@ var $author$project$Disassembler$disassembleHelper = function (loadAddress) {
 		};
 	};
 };
-var $author$project$Disassembler$disassembleRange = F9(
-	function (loadAddress, startOffset, count, bytes, comments, labels, regions, segments, majorComments) {
-		return $author$project$Disassembler$disassembleHelper(loadAddress)(startOffset)(count)(bytes)(comments)(labels)(regions)(segments)(majorComments)(_List_Nil);
-	});
+var $author$project$Disassembler$disassembleRange = function (loadAddress) {
+	return function (startOffset) {
+		return function (count) {
+			return function (bytes) {
+				return function (comments) {
+					return function (labels) {
+						return function (regions) {
+							return function (segments) {
+								return function (majorComments) {
+									return function (userSymbols) {
+										return $author$project$Disassembler$disassembleHelper(loadAddress)(startOffset)(count)(bytes)(comments)(labels)(regions)(segments)(majorComments)(userSymbols)(_List_Nil);
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
 var $elm$json$Json$Decode$float = _Json_decodeFloat;
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
@@ -13178,7 +13658,7 @@ var $author$project$Main$viewDisassembly = function (model) {
 						]))
 				]))
 		]) : _List_Nil;
-	var lines = A9($author$project$Disassembler$disassembleRange, model.loadAddress, model.viewStart, model.viewLines, model.bytes, model.comments, model.labels, model.regions, model.segments, model.majorComments);
+	var lines = $author$project$Disassembler$disassembleRange(model.loadAddress)(model.viewStart)(model.viewLines)(model.bytes)(model.comments)(model.labels)(model.regions)(model.segments)(model.majorComments)(model.symbols);
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -13462,88 +13942,221 @@ var $author$project$Main$viewFooter = function (model) {
 								]))
 						]));
 			} else {
-				if (model.outlineMode) {
-					var separator = A2(
-						$elm$html$Html$span,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$class('outline-sep')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text(' | ')
-							]));
-					var segmentItems = A2(
-						$elm$core$List$indexedMap,
-						F2(
-							function (idx, seg) {
-								var segName = A2($author$project$Main$getSegmentName, model, seg);
-								var isSelected = _Utils_eq(idx, model.outlineSelection);
-								var itemClass = isSelected ? 'outline-item selected' : 'outline-item';
-								return A2(
-									$elm$html$Html$span,
-									_List_fromArray(
-										[
-											$elm$html$Html$Attributes$class(itemClass)
-										]),
-									_List_fromArray(
-										[
-											$elm$html$Html$text(segName)
-										]));
-							}),
-						model.segments);
-					var segmentCount = $elm$core$List$length(model.segments);
-					var itemsWithSeparators = A2($elm$core$List$intersperse, separator, segmentItems);
+				if (!_Utils_eq(model.variableMode, $elm$core$Maybe$Nothing)) {
+					var _v4 = function () {
+						var _v5 = model.variableMode;
+						if (_v5.$ === 'Just') {
+							if (_v5.a.$ === 'EnteringAddress') {
+								var _v6 = _v5.a;
+								return _Utils_Tuple3('VAR ADDRESS: $', model.variableAddress, '  (Enter to continue, Esc to cancel)');
+							} else {
+								var _v7 = _v5.a;
+								return _Utils_Tuple3('VAR NAME ($' + (model.variableAddress + '): '), model.variableName, '  (Enter to save, Esc to cancel)');
+							}
+						} else {
+							return _Utils_Tuple3('', '', '');
+						}
+					}();
+					var prompt = _v4.a;
+					var inputVal = _v4.b;
+					var hint = _v4.c;
 					return A2(
 						$elm$html$Html$footer,
 						_List_fromArray(
 							[
-								$elm$html$Html$Attributes$class('cdis-footer outline-mode')
+								$elm$html$Html$Attributes$class('cdis-footer goto-mode')
 							]),
-						_Utils_ap(
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('goto-prompt')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(prompt)
+									])),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('goto-input')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(inputVal)
+									])),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('goto-cursor')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('_')
+									])),
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('goto-hint')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(hint)
+									]))
+							]));
+				} else {
+					if (model.variableListMode) {
+						var symbolList = A2(
+							$elm$core$List$sortBy,
+							$elm$core$Tuple$first,
+							$elm$core$Dict$toList(model.symbols));
+						var symbolItems = A2(
+							$elm$core$List$indexedMap,
+							F2(
+								function (idx, _v8) {
+									var addr = _v8.a;
+									var name = _v8.b;
+									var itemText = '$' + (A2($author$project$Main$toHex, 4, addr) + ('=' + name));
+									var isSelected = _Utils_eq(idx, model.variableListSelection);
+									var itemClass = isSelected ? 'outline-item selected' : 'outline-item';
+									return A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class(itemClass)
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text(itemText)
+											]));
+								}),
+							symbolList);
+						var separator = A2(
+							$elm$html$Html$span,
 							_List_fromArray(
 								[
-									A2(
-									$elm$html$Html$span,
-									_List_fromArray(
-										[
-											$elm$html$Html$Attributes$class('outline-label')
-										]),
-									_List_fromArray(
-										[
-											$elm$html$Html$text('OUTLINE: ')
-										]))
+									$elm$html$Html$Attributes$class('outline-sep')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(' | ')
+								]));
+						var itemsWithSeparators = A2($elm$core$List$intersperse, separator, symbolItems);
+						return A2(
+							$elm$html$Html$footer,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('cdis-footer outline-mode')
 								]),
 							_Utils_ap(
-								itemsWithSeparators,
 								_List_fromArray(
 									[
 										A2(
 										$elm$html$Html$span,
 										_List_fromArray(
 											[
-												$elm$html$Html$Attributes$class('outline-hint')
+												$elm$html$Html$Attributes$class('outline-label')
 											]),
 										_List_fromArray(
 											[
-												$elm$html$Html$text('  (←→ navigate, Enter select, Esc cancel)')
+												$elm$html$Html$text('VARS: ')
 											]))
-									]))));
-				} else {
-					if (model.helpExpanded) {
-						return A2(
-							$elm$html$Html$footer,
-							_List_fromArray(
-								[
-									$elm$html$Html$Attributes$class('cdis-footer expanded')
-								]),
-							_List_fromArray(
-								[
-									A2(
-									$elm$html$Html$div,
+									]),
+								_Utils_ap(
+									itemsWithSeparators,
 									_List_fromArray(
 										[
-											$elm$html$Html$Attributes$class('help-grid')
+											A2(
+											$elm$html$Html$span,
+											_List_fromArray(
+												[
+													$elm$html$Html$Attributes$class('outline-hint')
+												]),
+											_List_fromArray(
+												[
+													$elm$html$Html$text('  (←→ navigate, d delete, Esc close)')
+												]))
+										]))));
+					} else {
+						if (model.outlineMode) {
+							var separator = A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('outline-sep')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(' | ')
+									]));
+							var segmentItems = A2(
+								$elm$core$List$indexedMap,
+								F2(
+									function (idx, seg) {
+										var segName = A2($author$project$Main$getSegmentName, model, seg);
+										var isSelected = _Utils_eq(idx, model.outlineSelection);
+										var itemClass = isSelected ? 'outline-item selected' : 'outline-item';
+										return A2(
+											$elm$html$Html$span,
+											_List_fromArray(
+												[
+													$elm$html$Html$Attributes$class(itemClass)
+												]),
+											_List_fromArray(
+												[
+													$elm$html$Html$text(segName)
+												]));
+									}),
+								model.segments);
+							var segmentCount = $elm$core$List$length(model.segments);
+							var itemsWithSeparators = A2($elm$core$List$intersperse, separator, segmentItems);
+							return A2(
+								$elm$html$Html$footer,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('cdis-footer outline-mode')
+									]),
+								_Utils_ap(
+									_List_fromArray(
+										[
+											A2(
+											$elm$html$Html$span,
+											_List_fromArray(
+												[
+													$elm$html$Html$Attributes$class('outline-label')
+												]),
+											_List_fromArray(
+												[
+													$elm$html$Html$text('OUTLINE: ')
+												]))
+										]),
+									_Utils_ap(
+										itemsWithSeparators,
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('outline-hint')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('  (←→ navigate, Enter select, Esc cancel)')
+													]))
+											]))));
+						} else {
+							if (model.helpExpanded) {
+								return A2(
+									$elm$html$Html$footer,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('cdis-footer expanded')
 										]),
 									_List_fromArray(
 										[
@@ -13551,7 +14164,7 @@ var $author$project$Main$viewFooter = function (model) {
 											$elm$html$Html$div,
 											_List_fromArray(
 												[
-													$elm$html$Html$Attributes$class('help-section')
+													$elm$html$Html$Attributes$class('help-grid')
 												]),
 											_List_fromArray(
 												[
@@ -13559,635 +14172,665 @@ var $author$project$Main$viewFooter = function (model) {
 													$elm$html$Html$div,
 													_List_fromArray(
 														[
-															$elm$html$Html$Attributes$class('help-title')
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text('Navigation')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
+															$elm$html$Html$Attributes$class('help-section')
 														]),
 													_List_fromArray(
 														[
 															A2(
-															$elm$html$Html$span,
+															$elm$html$Html$div,
 															_List_fromArray(
 																[
-																	$elm$html$Html$Attributes$class('key')
+																	$elm$html$Html$Attributes$class('help-title')
 																]),
 															_List_fromArray(
 																[
-																	$elm$html$Html$text('↑ / ↓')
+																	$elm$html$Html$text('Navigation')
 																])),
-															$elm$html$Html$text('Prev/Next line')
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('↑ / ↓')
+																		])),
+																	$elm$html$Html$text('Prev/Next line')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('PgUp / PgDn')
+																		])),
+																	$elm$html$Html$text('Page up/down')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('G')
+																		])),
+																	$elm$html$Html$text('Go to address')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('J / Shift+J')
+																		])),
+																	$elm$html$Html$text('Jump to address / back')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('O')
+																		])),
+																	$elm$html$Html$text('Outline (segment picker)')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Ctrl+L')
+																		])),
+																	$elm$html$Html$text('Center selected line')
+																]))
 														])),
 													A2(
 													$elm$html$Html$div,
 													_List_fromArray(
 														[
-															$elm$html$Html$Attributes$class('help-row')
+															$elm$html$Html$Attributes$class('help-section')
 														]),
 													_List_fromArray(
 														[
 															A2(
-															$elm$html$Html$span,
+															$elm$html$Html$div,
 															_List_fromArray(
 																[
-																	$elm$html$Html$Attributes$class('key')
+																	$elm$html$Html$Attributes$class('help-title')
 																]),
 															_List_fromArray(
 																[
-																	$elm$html$Html$text('PgUp / PgDn')
+																	$elm$html$Html$text('Editing')
 																])),
-															$elm$html$Html$text('Page up/down')
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Click')
+																		])),
+																	$elm$html$Html$text('Select line')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text(';')
+																		])),
+																	$elm$html$Html$text('Edit comment')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text(':')
+																		])),
+																	$elm$html$Html$text('Edit label')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('\"')
+																		])),
+																	$elm$html$Html$text('Edit major comment')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Enter')
+																		])),
+																	$elm$html$Html$text('Save (Ctrl+Enter for major)')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Escape')
+																		])),
+																	$elm$html$Html$text('Cancel / Clear mark')
+																]))
 														])),
 													A2(
 													$elm$html$Html$div,
 													_List_fromArray(
 														[
-															$elm$html$Html$Attributes$class('help-row')
+															$elm$html$Html$Attributes$class('help-section')
 														]),
 													_List_fromArray(
 														[
 															A2(
-															$elm$html$Html$span,
+															$elm$html$Html$div,
 															_List_fromArray(
 																[
-																	$elm$html$Html$Attributes$class('key')
+																	$elm$html$Html$Attributes$class('help-title')
 																]),
 															_List_fromArray(
 																[
-																	$elm$html$Html$text('G')
+																	$elm$html$Html$text('Regions & Segments')
 																])),
-															$elm$html$Html$text('Go to address')
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Ctrl+Space')
+																		])),
+																	$elm$html$Html$text('Set/Clear mark')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('B / Shift+B')
+																		])),
+																	$elm$html$Html$text('Mark/Clear bytes')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('T / Shift+T')
+																		])),
+																	$elm$html$Html$text('Mark/Clear text')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('S / Shift+S')
+																		])),
+																	$elm$html$Html$text('Mark/Clear segment')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('R')
+																		])),
+																	$elm$html$Html$text('Restart (peel byte)')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('N')
+																		])),
+																	$elm$html$Html$text('NOP current byte')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Enter')
+																		])),
+																	$elm$html$Html$text('Edit instruction')
+																]))
 														])),
 													A2(
 													$elm$html$Html$div,
 													_List_fromArray(
 														[
-															$elm$html$Html$Attributes$class('help-row')
+															$elm$html$Html$Attributes$class('help-section')
 														]),
 													_List_fromArray(
 														[
 															A2(
-															$elm$html$Html$span,
+															$elm$html$Html$div,
 															_List_fromArray(
 																[
-																	$elm$html$Html$Attributes$class('key')
+																	$elm$html$Html$Attributes$class('help-title')
 																]),
 															_List_fromArray(
 																[
-																	$elm$html$Html$text('J / Shift+J')
+																	$elm$html$Html$text('File & Tools')
 																])),
-															$elm$html$Html$text('Jump to address / back')
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('Ctrl+S')
+																		])),
+																	$elm$html$Html$text('Save project')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('A')
+																		])),
+																	$elm$html$Html$text('Export as .asm')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('X')
+																		])),
+																	$elm$html$Html$text('eXecute in VICE')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('v / V')
+																		])),
+																	$elm$html$Html$text('Define / list variables')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('D / H')
+																		])),
+																	$elm$html$Html$text('Dec↔Hex converter')
+																])),
+															A2(
+															$elm$html$Html$div,
+															_List_fromArray(
+																[
+																	$elm$html$Html$Attributes$class('help-row')
+																]),
+															_List_fromArray(
+																[
+																	A2(
+																	$elm$html$Html$span,
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$Attributes$class('key')
+																		]),
+																	_List_fromArray(
+																		[
+																			$elm$html$Html$text('?')
+																		])),
+																	$elm$html$Html$text('Toggle this help')
+																]))
 														])),
 													A2(
 													$elm$html$Html$div,
 													_List_fromArray(
 														[
-															$elm$html$Html$Attributes$class('help-row')
+															$elm$html$Html$Attributes$class('help-section')
 														]),
 													_List_fromArray(
 														[
 															A2(
-															$elm$html$Html$span,
+															$elm$html$Html$div,
 															_List_fromArray(
 																[
-																	$elm$html$Html$Attributes$class('key')
+																	$elm$html$Html$Attributes$class('help-title')
 																]),
 															_List_fromArray(
 																[
-																	$elm$html$Html$text('O')
+																	$elm$html$Html$text('Credits')
 																])),
-															$elm$html$Html$text('Outline (segment picker)')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
 															A2(
-															$elm$html$Html$span,
+															$elm$html$Html$div,
 															_List_fromArray(
 																[
-																	$elm$html$Html$Attributes$class('key')
+																	$elm$html$Html$Attributes$class('help-row')
 																]),
 															_List_fromArray(
 																[
-																	$elm$html$Html$text('Ctrl+L')
-																])),
-															$elm$html$Html$text('Center selected line')
-														]))
-												])),
-											A2(
-											$elm$html$Html$div,
-											_List_fromArray(
-												[
-													$elm$html$Html$Attributes$class('help-section')
-												]),
-											_List_fromArray(
-												[
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-title')
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text('Editing')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('Click')
-																])),
-															$elm$html$Html$text('Select line')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text(';')
-																])),
-															$elm$html$Html$text('Edit comment')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text(':')
-																])),
-															$elm$html$Html$text('Edit label')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('\"')
-																])),
-															$elm$html$Html$text('Edit major comment')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('Enter')
-																])),
-															$elm$html$Html$text('Save (Ctrl+Enter for major)')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('Escape')
-																])),
-															$elm$html$Html$text('Cancel / Clear mark')
-														]))
-												])),
-											A2(
-											$elm$html$Html$div,
-											_List_fromArray(
-												[
-													$elm$html$Html$Attributes$class('help-section')
-												]),
-											_List_fromArray(
-												[
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-title')
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text('Regions & Segments')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('Ctrl+Space')
-																])),
-															$elm$html$Html$text('Set/Clear mark')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('B / Shift+B')
-																])),
-															$elm$html$Html$text('Mark/Clear bytes')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('T / Shift+T')
-																])),
-															$elm$html$Html$text('Mark/Clear text')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('S / Shift+S')
-																])),
-															$elm$html$Html$text('Mark/Clear segment')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('R')
-																])),
-															$elm$html$Html$text('Restart (peel byte)')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('N')
-																])),
-															$elm$html$Html$text('NOP current byte')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('Enter')
-																])),
-															$elm$html$Html$text('Edit instruction')
-														]))
-												])),
-											A2(
-											$elm$html$Html$div,
-											_List_fromArray(
-												[
-													$elm$html$Html$Attributes$class('help-section')
-												]),
-											_List_fromArray(
-												[
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-title')
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text('File & Tools')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('Ctrl+S')
-																])),
-															$elm$html$Html$text('Save project')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('A')
-																])),
-															$elm$html$Html$text('Export as .asm')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('V')
-																])),
-															$elm$html$Html$text('Run in VICE')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('D / H')
-																])),
-															$elm$html$Html$text('Dec↔Hex converter')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															A2(
-															$elm$html$Html$span,
-															_List_fromArray(
-																[
-																	$elm$html$Html$Attributes$class('key')
-																]),
-															_List_fromArray(
-																[
-																	$elm$html$Html$text('?')
-																])),
-															$elm$html$Html$text('Toggle this help')
-														]))
-												])),
-											A2(
-											$elm$html$Html$div,
-											_List_fromArray(
-												[
-													$elm$html$Html$Attributes$class('help-section')
-												]),
-											_List_fromArray(
-												[
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-title')
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text('Credits')
-														])),
-													A2(
-													$elm$html$Html$div,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$class('help-row')
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text('PETSCII font: Pet Me 64 by Kreative Software')
+																	$elm$html$Html$text('PETSCII font: Pet Me 64 by Kreative Software')
+																]))
 														]))
 												]))
-										]))
-								]));
-					} else {
-						var footerStyle = function () {
-							var _v4 = model.editType;
-							if (_v4.$ === 'Just') {
-								switch (_v4.a.$) {
-									case 'EditByte':
-										var _v5 = _v4.a;
-										return _List_fromArray(
-											[
-												A2($elm$html$Html$Attributes$style, 'background-color', '#e94560')
-											]);
-									case 'EditText':
-										var _v6 = _v4.a;
-										return _List_fromArray(
-											[
-												A2($elm$html$Html$Attributes$style, 'background-color', '#0f6040')
-											]);
-									default:
-										var _v7 = _v4.a;
-										return _List_fromArray(
-											[
-												A2($elm$html$Html$Attributes$style, 'background-color', '#0f3460')
-											]);
-								}
+										]));
 							} else {
-								return _List_Nil;
-							}
-						}();
-						return A2(
-							$elm$html$Html$footer,
-							_Utils_ap(
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$class('cdis-footer')
-									]),
-								footerStyle),
-							_List_fromArray(
-								[
-									A2(
-									$elm$html$Html$span,
-									_List_Nil,
+								var footerStyle = function () {
+									var _v9 = model.editType;
+									if (_v9.$ === 'Just') {
+										switch (_v9.a.$) {
+											case 'EditByte':
+												var _v10 = _v9.a;
+												return _List_fromArray(
+													[
+														A2($elm$html$Html$Attributes$style, 'background-color', '#e94560')
+													]);
+											case 'EditText':
+												var _v11 = _v9.a;
+												return _List_fromArray(
+													[
+														A2($elm$html$Html$Attributes$style, 'background-color', '#0f6040')
+													]);
+											default:
+												var _v12 = _v9.a;
+												return _List_fromArray(
+													[
+														A2($elm$html$Html$Attributes$style, 'background-color', '#0f3460')
+													]);
+										}
+									} else {
+										return _List_Nil;
+									}
+								}();
+								return A2(
+									$elm$html$Html$footer,
+									_Utils_ap(
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('cdis-footer')
+											]),
+										footerStyle),
 									_List_fromArray(
 										[
-											$elm$html$Html$text('?: Help | '),
-											$elm$html$Html$text('↑↓: Navigate | '),
-											$elm$html$Html$text('G: Goto | '),
-											$elm$html$Html$text('J: Jump | '),
-											$elm$html$Html$text('O: Outline | '),
-											$elm$html$Html$text(';/:/\": Comments | '),
-											$elm$html$Html$text('B/T/S: Regions | '),
-											$elm$html$Html$text('Ctrl+S: Save | '),
-											$elm$html$Html$text('A: Asm')
-										]))
-								]));
+											A2(
+											$elm$html$Html$span,
+											_List_Nil,
+											_List_fromArray(
+												[
+													$elm$html$Html$text('?: Help | '),
+													$elm$html$Html$text('↑↓: Navigate | '),
+													$elm$html$Html$text('G: Goto | '),
+													$elm$html$Html$text('J: Jump | '),
+													$elm$html$Html$text('O: Outline | '),
+													$elm$html$Html$text(';/:/\": Comments | '),
+													$elm$html$Html$text('B/T/S: Regions | '),
+													$elm$html$Html$text('Ctrl+S: Save | '),
+													$elm$html$Html$text('A: Asm')
+												]))
+										]));
+							}
+						}
 					}
 				}
 			}

@@ -230,6 +230,17 @@ type Msg
     | EnterHexToDecMode
     | UpdateConverterInput String
     | CancelConverter
+    | EnterVariableMode
+    | UpdateVariableAddress String
+    | ConfirmVariableAddress
+    | UpdateVariableName String
+    | SaveVariable
+    | CancelVariable
+    | EnterVariableListMode
+    | VariableListNext
+    | VariableListPrev
+    | DeleteSelectedVariable
+    | CancelVariableList
     | NoOp
 
 
@@ -556,6 +567,84 @@ update msg model =
                         else
                             ( model, Cmd.none )
 
+            else if model.variableMode /= Nothing then
+                -- Handle variable definition mode
+                case event.key of
+                    "Escape" ->
+                        update CancelVariable model
+
+                    "Enter" ->
+                        case model.variableMode of
+                            Just Types.EnteringAddress ->
+                                update ConfirmVariableAddress model
+
+                            Just Types.EnteringName ->
+                                update SaveVariable model
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                    "Backspace" ->
+                        case model.variableMode of
+                            Just Types.EnteringAddress ->
+                                ( { model | variableAddress = String.dropRight 1 model.variableAddress }, Cmd.none )
+
+                            Just Types.EnteringName ->
+                                ( { model | variableName = String.dropRight 1 model.variableName }, Cmd.none )
+
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                    key ->
+                        if String.length key == 1 then
+                            case model.variableMode of
+                                Just Types.EnteringAddress ->
+                                    let
+                                        char = String.toUpper key
+                                    in
+                                    if Char.isHexDigit (String.uncons char |> Maybe.map Tuple.first |> Maybe.withDefault ' ') && String.length model.variableAddress < 4 then
+                                        ( { model | variableAddress = model.variableAddress ++ char }, Cmd.none )
+                                    else
+                                        ( model, Cmd.none )
+
+                                Just Types.EnteringName ->
+                                    let
+                                        char = String.uncons key |> Maybe.map Tuple.first |> Maybe.withDefault ' '
+                                    in
+                                    if Char.isAlphaNum char || char == '_' then
+                                        ( { model | variableName = model.variableName ++ key }, Cmd.none )
+                                    else
+                                        ( model, Cmd.none )
+
+                                Nothing ->
+                                    ( model, Cmd.none )
+                        else
+                            ( model, Cmd.none )
+
+            else if model.variableListMode then
+                -- Handle variable list mode
+                case event.key of
+                    "Escape" ->
+                        update CancelVariableList model
+
+                    "ArrowLeft" ->
+                        update VariableListPrev model
+
+                    "ArrowRight" ->
+                        update VariableListNext model
+
+                    "d" ->
+                        update DeleteSelectedVariable model
+
+                    "Delete" ->
+                        update DeleteSelectedVariable model
+
+                    "Backspace" ->
+                        update DeleteSelectedVariable model
+
+                    _ ->
+                        ( model, Cmd.none )
+
             else if model.outlineMode then
                 -- Handle outline mode input
                 case event.key of
@@ -663,7 +752,7 @@ update msg model =
                             Just offset ->
                                 let
                                     line =
-                                        disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
+                                        disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments model.symbols
                                 in
                                 case line.targetAddress of
                                     Just addr ->
@@ -752,8 +841,14 @@ update msg model =
                             Nothing ->
                                 ( model, Cmd.none )
 
-                    "v" ->
+                    "x" ->
                         update RunInVice model
+
+                    "v" ->
+                        update EnterVariableMode model
+
+                    "V" ->
+                        update EnterVariableListMode model
 
                     "d" ->
                         update EnterDecToHexMode model
@@ -1353,7 +1448,7 @@ update msg model =
         StartEditInstruction offset ->
             let
                 line =
-                    disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
+                    disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments model.symbols
 
                 initialText =
                     if String.startsWith "*" line.disassembly then
@@ -1383,7 +1478,7 @@ update msg model =
                     let
                         -- Get the current line to check its type
                         currentLine =
-                            disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments
+                            disassemble model.loadAddress offset model.bytes model.comments model.labels model.regions model.segments model.majorComments model.symbols
 
                         textRegion =
                             List.filter (\r -> r.regionType == Types.TextRegion && offset >= r.start && offset <= r.end) model.regions
@@ -1679,6 +1774,114 @@ update msg model =
 
         CancelConverter ->
             ( { model | converterMode = Nothing, converterInput = "" }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
+
+        EnterVariableMode ->
+            ( { model | variableMode = Just Types.EnteringAddress, variableAddress = "", variableName = "" }, Cmd.none )
+
+        UpdateVariableAddress str ->
+            let
+                filtered =
+                    String.filter Char.isHexDigit (String.toUpper str)
+            in
+            ( { model | variableAddress = String.left 4 filtered }, Cmd.none )
+
+        ConfirmVariableAddress ->
+            case parseHex model.variableAddress of
+                Just _ ->
+                    ( { model | variableMode = Just Types.EnteringName }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        UpdateVariableName str ->
+            -- Allow alphanumeric and underscore
+            let
+                filtered =
+                    String.filter (\c -> Char.isAlphaNum c || c == '_') str
+            in
+            ( { model | variableName = filtered }, Cmd.none )
+
+        SaveVariable ->
+            case ( parseHex model.variableAddress, model.variableName ) of
+                ( Just addr, name ) ->
+                    if String.isEmpty name then
+                        ( model, Cmd.none )
+                    else
+                        ( { model
+                            | symbols = Dict.insert addr name model.symbols
+                            , variableMode = Nothing
+                            , variableAddress = ""
+                            , variableName = ""
+                            , dirty = True
+                          }
+                        , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        CancelVariable ->
+            ( { model | variableMode = Nothing, variableAddress = "", variableName = "" }
+            , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+            )
+
+        EnterVariableListMode ->
+            if Dict.isEmpty model.symbols then
+                ( model, Cmd.none )
+            else
+                ( { model | variableListMode = True, variableListSelection = 0 }, Cmd.none )
+
+        VariableListNext ->
+            let
+                maxIdx =
+                    Dict.size model.symbols - 1
+
+                newSelection =
+                    Basics.min maxIdx (model.variableListSelection + 1)
+            in
+            ( { model | variableListSelection = newSelection }, Cmd.none )
+
+        VariableListPrev ->
+            let
+                newSelection =
+                    Basics.max 0 (model.variableListSelection - 1)
+            in
+            ( { model | variableListSelection = newSelection }, Cmd.none )
+
+        DeleteSelectedVariable ->
+            let
+                symbolList =
+                    Dict.toList model.symbols |> List.sortBy Tuple.first
+
+                maybeAddr =
+                    List.drop model.variableListSelection symbolList
+                        |> List.head
+                        |> Maybe.map Tuple.first
+            in
+            case maybeAddr of
+                Just addr ->
+                    let
+                        newSymbols =
+                            Dict.remove addr model.symbols
+
+                        newSelection =
+                            Basics.min model.variableListSelection (Dict.size newSymbols - 1)
+                                |> Basics.max 0
+                    in
+                    if Dict.isEmpty newSymbols then
+                        ( { model | symbols = newSymbols, variableListMode = False, dirty = True }
+                        , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
+                        )
+                    else
+                        ( { model | symbols = newSymbols, variableListSelection = newSelection, dirty = True }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        CancelVariableList ->
+            ( { model | variableListMode = False }
             , Task.attempt (\_ -> FocusResult) (Dom.focus "cdis-main")
             )
 
@@ -2108,6 +2311,7 @@ viewDisassembly model =
                 model.regions
                 model.segments
                 model.majorComments
+                model.symbols
 
         originLine =
             if model.viewStart == 0 then
@@ -2546,6 +2750,63 @@ viewFooter model =
                 span [ class "goto-hint" ] [ text ("  = " ++ resultVal ++ "  (Esc to close)") ]
             ]
 
+    else if model.variableMode /= Nothing then
+        let
+            ( prompt, inputVal, hint ) =
+                case model.variableMode of
+                    Just Types.EnteringAddress ->
+                        ( "VAR ADDRESS: $", model.variableAddress, "  (Enter to continue, Esc to cancel)" )
+
+                    Just Types.EnteringName ->
+                        ( "VAR NAME ($" ++ model.variableAddress ++ "): ", model.variableName, "  (Enter to save, Esc to cancel)" )
+
+                    Nothing ->
+                        ( "", "", "" )
+        in
+        footer [ class "cdis-footer goto-mode" ]
+            [ span [ class "goto-prompt" ] [ text prompt ]
+            , span [ class "goto-input" ] [ text inputVal ]
+            , span [ class "goto-cursor" ] [ text "_" ]
+            , span [ class "goto-hint" ] [ text hint ]
+            ]
+
+    else if model.variableListMode then
+        let
+            symbolList =
+                Dict.toList model.symbols |> List.sortBy Tuple.first
+
+            symbolItems =
+                symbolList
+                    |> List.indexedMap
+                        (\idx ( addr, name ) ->
+                            let
+                                itemText =
+                                    "$" ++ toHex 4 addr ++ "=" ++ name
+
+                                isSelected =
+                                    idx == model.variableListSelection
+
+                                itemClass =
+                                    if isSelected then
+                                        "outline-item selected"
+                                    else
+                                        "outline-item"
+                            in
+                            span [ class itemClass ] [ text itemText ]
+                        )
+
+            separator =
+                span [ class "outline-sep" ] [ text " | " ]
+
+            itemsWithSeparators =
+                symbolItems |> List.intersperse separator
+        in
+        footer [ class "cdis-footer outline-mode" ]
+            ([ span [ class "outline-label" ] [ text "VARS: " ] ]
+                ++ itemsWithSeparators
+                ++ [ span [ class "outline-hint" ] [ text "  (←→ navigate, d delete, Esc close)" ] ]
+            )
+
     else if model.outlineMode then
         let
             segmentCount =
@@ -2620,7 +2881,8 @@ viewFooter model =
                     [ div [ class "help-title" ] [ text "File & Tools" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "Ctrl+S" ], text "Save project" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "A" ], text "Export as .asm" ]
-                    , div [ class "help-row" ] [ span [ class "key" ] [ text "V" ], text "Run in VICE" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "X" ], text "eXecute in VICE" ]
+                    , div [ class "help-row" ] [ span [ class "key" ] [ text "v / V" ], text "Define / list variables" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "D / H" ], text "Dec↔Hex converter" ]
                     , div [ class "help-row" ] [ span [ class "key" ] [ text "?" ], text "Toggle this help" ]
                     ]
