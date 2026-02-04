@@ -59,14 +59,14 @@ acme --help
 Create a directory structure for your C64 projects:
 
 ```bash
-mkdir -p ~/c64/{src,docs,games}
+mkdir -p ~/c64/{src,asm_tutorial,games}
 ```
 
 ```
 ~/c64/
-├── src/      # Assembly source files
-├── docs/     # Documentation and tutorials
-└── games/    # Downloaded games and disk images
+├── src/           # Assembly source files
+├── asm_tutorial/  # This tutorial
+└── games/         # Downloaded games and disk images
 ```
 
 ## Next Steps

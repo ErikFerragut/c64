@@ -28,5 +28,5 @@ pandoc -s src/*.md \
   --metadata title="$TITLE" \
   -V monofont="DejaVu Sans Mono"
 
-echo "Done. Output in docs/out/"
+echo "Done. Output in asm_tutorial/out/"
 ls -lh out/

@@ -3,7 +3,7 @@
 ## Directory Layout
 
 ```
-docs/
+asm_tutorial/
 ├── README.md          # This file
 ├── LOG.md             # Development log
 ├── TOOLS.md           # Tool reference
@@ -32,7 +32,7 @@ Requires pandoc (`sudo apt install pandoc`).
 ### HTML (recommended)
 
 ```bash
-cd ~/c64/docs/src
+cd ~/c64/asm_tutorial/src
 pandoc -s 00-TOC.md 01-INSTALL.md 02-HELLO.md A-REF.md B-VIC-II.md \
   -o ../out/c64-tutorial.html \
   --toc \
@@ -42,7 +42,7 @@ pandoc -s 00-TOC.md 01-INSTALL.md 02-HELLO.md A-REF.md B-VIC-II.md \
 ### EPUB (e-reader)
 
 ```bash
-cd ~/c64/docs/src
+cd ~/c64/asm_tutorial/src
 pandoc -s 00-TOC.md 01-INSTALL.md 02-HELLO.md A-REF.md B-VIC-II.md \
   -o ../out/c64-tutorial.epub \
   --metadata title="C64 Assembly Tutorial"
@@ -53,7 +53,7 @@ pandoc -s 00-TOC.md 01-INSTALL.md 02-HELLO.md A-REF.md B-VIC-II.md \
 Requires xelatex for Unicode support (`sudo apt install texlive-xetex`).
 
 ```bash
-cd ~/c64/docs/src
+cd ~/c64/asm_tutorial/src
 pandoc -s 00-TOC.md 01-INSTALL.md 02-HELLO.md A-REF.md B-VIC-II.md \
   -o ../out/c64-tutorial.pdf \
   --pdf-engine=xelatex \

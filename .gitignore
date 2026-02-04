@@ -1,5 +1,5 @@
 .claude/
 *.prg
-docs/out/
-docs/mermaid-filter.err
+asm_tutorial/out/
+asm_tutorial/mermaid-filter.err
 *~

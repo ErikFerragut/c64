@@ -12,7 +12,7 @@
 
 ```
 ~/c64/
-├── docs/
+├── asm_tutorial/
 │   ├── LOG.md        # This file
 │   └── TOOLS.md      # Tool documentation
 ├── games/            # D64 disk images and PRG files
