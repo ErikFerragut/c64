@@ -137,9 +137,12 @@ Here is the full listing:
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2304
-!byte $0b, $08                  ; Pointer to next BASIC line
+; BASIC stub: 10 PRINT "{CLR}":SYS 2304
+!byte $10, $08                  ; Pointer to next BASIC line ($0810)
 !byte $0a, $00                  ; Line number 10
+!byte $99                       ; PRINT token
+!byte $22, $93, $22             ; "{CLR}" (quote, clear screen, quote)
+!byte $3a                       ; : (colon)
 !byte $9e                       ; SYS token
 !text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line

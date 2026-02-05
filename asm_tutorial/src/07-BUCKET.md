@@ -12,9 +12,12 @@ Create `src/bucket.asm`:
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2304
-!byte $0b, $08                  ; Pointer to next BASIC line
+; BASIC stub: 10 PRINT "{CLR}":SYS 2304
+!byte $10, $08                  ; Pointer to next BASIC line ($0810)
 !byte $0a, $00                  ; Line number 10
+!byte $99                       ; PRINT token
+!byte $22, $93, $22             ; "{CLR}" (quote, clear screen, quote)
+!byte $3a                       ; : (colon)
 !byte $9e                       ; SYS token
 !text "2304"                    ; Address as ASCII
 !byte $00                       ; End of line
@@ -150,9 +153,9 @@ $0840-$087F: Bucket sprite data (pointer 33)
 $0900+     : Code
 ```
 
-In Chapter 6, our code started at `$0810` and the sprite lived at `$0840` right after it. That worked because the code was tiny. Now that our programs will grow over the coming chapters, we're giving code its own region starting at `$0900`. The gap between `$0840` and `$0900` is exactly 192 bytes — room for three 64-byte sprites. The sprite data stays at fixed addresses and never needs to move, no matter how much code we add.
+In Chapter 6, our code started at `$0812` and the sprite lived at `$0840` right after it. That worked because the code was tiny. Now that our programs will grow over the coming chapters, we're giving code its own region starting at `$0900`. The gap between `$0840` and `$0900` is exactly 192 bytes — room for three 64-byte sprites. The sprite data stays at fixed addresses and never needs to move, no matter how much code we add.
 
-The BASIC stub changes accordingly: `SYS 2304` jumps to `$0900` instead of `$0810`.
+The BASIC stub changes accordingly: `SYS 2304` jumps to `$0900` instead of `$0812`.
 
 ### Game Variables and Zero Page
 

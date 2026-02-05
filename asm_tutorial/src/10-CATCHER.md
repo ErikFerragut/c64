@@ -55,6 +55,8 @@ After sprite initialization, call three subroutines to set up the display:
     jsr show_score
 ```
 
+Note: The BASIC stub now clears the screen automatically with `PRINT "{CLR}"`, so we no longer need to clear it manually in our code.
+
 The `draw_hud` subroutine writes text labels character by character to screen memory. Each letter is stored as its screen code (A=1, B=2, ... Z=26), not as PETSCII:
 
 ```asm

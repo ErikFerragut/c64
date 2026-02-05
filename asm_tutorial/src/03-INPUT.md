@@ -12,15 +12,18 @@ Create `src/colors.asm`:
 
 * = $0801                       ; BASIC start address
 
-; BASIC standard stub: 10 SYS 2064
-!byte $0b, $08
-!byte $0a, $00
-!byte $9e
-!text "2064"
-!byte $00
-!byte $00, $00
+; BASIC stub: 10 PRINT "{CLR}":SYS 2066
+!byte $10, $08                  ; Pointer to next BASIC line ($0810)
+!byte $0a, $00                  ; Line number 10
+!byte $99                       ; PRINT token
+!byte $22, $93, $22             ; "{CLR}" (quote, clear screen, quote)
+!byte $3a                       ; : (colon)
+!byte $9e                       ; SYS token
+!text "2066"                    ; Address as ASCII
+!byte $00                       ; End of line
+!byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+* = $0812                       ; Code start (2066 decimal)
 
 loop:
     jsr $ffe4                   ; Call GETIN: read key into A
@@ -233,8 +236,8 @@ The address shown (`$e5cd` or similar) is where the CPU was when you interrupted
 | Command | What it does |
 |---------|-------------|
 | `r` | Show registers: A, X, Y, SP, PC, and status flags |
-| `d 0810` | Disassemble starting at $0810 (our code) |
-| `m 0810 0840` | Hex dump of memory from $0810 to $0840 |
+| `d 0812` | Disassemble starting at $0812 (our code) |
+| `m 0812 0850` | Hex dump of memory from $0812 to $0850 |
 | `break 0813` | Set a breakpoint at address $0813 |
 | `z` | Execute one instruction (single-step) |
 | `g` | Continue running |
@@ -244,20 +247,20 @@ The address shown (`$e5cd` or similar) is where the CPU was when you interrupted
 
 1. Press **Alt+H** to open the monitor
 2. Type `r` — look at the **PC** (program counter) value
-3. If PC is between `$0810` and `$0840`, you're in your code
+3. If PC is between `$0812` and `$0850`, you're in your code
 4. If PC is in the `$E000`–`$FFFF` range, you're inside a Kernal routine (GETIN calls deep into ROM) — this is also normal
 5. Type `x` to resume
 
 ### Watching a Keypress
 
 1. Open the monitor with **Alt+H**
-2. Set a breakpoint after the `beq loop`: `break 0815`
+2. Set a breakpoint after the `beq loop`: `break 0817`
 3. Type `x` to resume, then press a key
 4. The monitor pops up at the breakpoint — type `r` to see A holds the PETSCII code of your key
 5. Type `z` repeatedly to single-step through the CMP/BNE chain and watch the comparison logic work
 6. Type `g` to let it finish, or `x` to resume normal execution
 
-The breakpoint address `$0815` is right after `jsr $ffe4` (3 bytes at $0810) and `beq loop` (2 bytes at $0813). You can verify addresses with `d 0810`.
+The breakpoint address `$0817` is right after `jsr $ffe4` (3 bytes at $0812) and `beq loop` (2 bytes at $0815). You can verify addresses with `d 0812`.
 
 On real hardware (and in normal emulation), writing to `$D020` takes effect immediately — the border changes on the very next pixel the VIC-II draws. In the monitor, behavior depends on how you're stepping: single-stepping with `z` may not visually update the display between steps, but running to a breakpoint with `g` does, because the emulator runs full emulation up to the break. Either way, typing `r` will show the new value in the register dump.
 

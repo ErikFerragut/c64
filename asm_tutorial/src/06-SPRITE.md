@@ -14,15 +14,18 @@ Create `src/sprite.asm`:
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
-!byte $0b, $08                  ; Pointer to next BASIC line
+; BASIC stub: 10 PRINT "{CLR}":SYS 2066
+!byte $10, $08                  ; Pointer to next BASIC line ($0810)
 !byte $0a, $00                  ; Line number 10
+!byte $99                       ; PRINT token
+!byte $22, $93, $22             ; "{CLR}" (quote, clear screen, quote)
+!byte $3a                       ; : (colon)
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2066"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+* = $0812                       ; Code start (2066 decimal)
 
     ; Set sprite 0 data pointer
     lda #33                     ; Sprite data at $0840 (33 x 64)
@@ -122,7 +125,7 @@ Why `$07F8`? Sprite pointers live at the end of **screen memory**. The default s
 | $07FE | Sprite 6 |
 | $07FF | Sprite 7 |
 
-Each pointer is a single byte, so sprite data can address 256 x 64 = 16,384 bytes — the first 16K of memory. Our data at `$0840` is safely within that range and doesn't conflict with the BASIC stub or our code at `$0810`.
+Each pointer is a single byte, so sprite data can address 256 x 64 = 16,384 bytes — the first 16K of memory. Our data at `$0840` is safely within that range and doesn't conflict with the BASIC stub or our code at `$0812`.
 
 ### ORA — Setting Bits
 

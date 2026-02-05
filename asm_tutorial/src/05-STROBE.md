@@ -12,15 +12,18 @@ Create `src/strobe.asm`:
 
 * = $0801                       ; BASIC start address
 
-; BASIC stub: 10 SYS 2064
-!byte $0b, $08                  ; Pointer to next BASIC line
+; BASIC stub: 10 PRINT "{CLR}":SYS 2066
+!byte $10, $08                  ; Pointer to next BASIC line ($0810)
 !byte $0a, $00                  ; Line number 10
+!byte $99                       ; PRINT token
+!byte $22, $93, $22             ; "{CLR}" (quote, clear screen, quote)
+!byte $3a                       ; : (colon)
 !byte $9e                       ; SYS token
-!text "2064"                    ; Address as ASCII
+!text "2066"                    ; Address as ASCII
 !byte $00                       ; End of line
 !byte $00, $00                  ; End of BASIC program
 
-* = $0810                       ; Code start (2064 decimal)
+* = $0812                       ; Code start (2066 decimal)
 
 loop:
     lda $dc00                   ; Read joystick port 2

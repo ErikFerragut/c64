@@ -227,7 +227,7 @@ The code is identical to the port 2 version — only the read address (`$dc01` i
 Add a speed variable and joystick up/down checks before the fire test:
 
 ```asm
-* = $0810
+* = $0812
 
 speed:  !byte $20               ; Initial speed (32)
 
